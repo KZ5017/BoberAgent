@@ -8,8 +8,15 @@ version = "0.0.0"
 description = "Core platform package for BoberAgent"
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
-dependencies = ["boberagent-contracts"]
+dependencies = [
+    "alembic>=1.16,<2",
+    "boberagent-contracts",
+    "pydantic>=2.12,<3",
+    "sqlalchemy>=2.0,<3",
+]
+
+[project.scripts]
+boberagent-core-db = "boberagent_core.persistence.migrations:main"
 
 [tool.uv.sources]
 boberagent-contracts = { workspace = true }
-

@@ -8,5 +8,7 @@ version = "0.0.0"
 description = "Transport-independent contracts for BoberAgent"
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
-dependencies = []
+dependencies = ["pydantic>=2.12,<3"]
 
+[project.scripts]
+boberagent-contract-schema = "boberagent_contracts.schema:main"

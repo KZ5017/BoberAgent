@@ -1,0 +1,1921 @@
+{
+  "$defs": {
+    "AccessMode": {
+      "description": "Contract-level Resource and Session access modes.",
+      "enum": [
+        "SHARED",
+        "EXCLUSIVE"
+      ],
+      "title": "AccessMode",
+      "type": "string"
+    },
+    "ArtifactDescriptor": {
+      "additionalProperties": false,
+      "description": "Logical metadata for persistent evidence or generated non-secret data.",
+      "properties": {
+        "artifact_id": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "artifact_type": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "created_by_run": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Created By Run",
+          "type": "string"
+        },
+        "media_type": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Media Type"
+        },
+        "metadata": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sha256Digest"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "size_bytes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Size Bytes"
+        },
+        "storage_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Storage Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "artifact_type",
+        "storage_ref",
+        "created_by_run",
+        "created_at"
+      ],
+      "title": "ArtifactDescriptor",
+      "type": "object"
+    },
+    "CapabilityDefinition": {
+      "additionalProperties": false,
+      "description": "Static, discoverable metadata for a Capability implementation.",
+      "properties": {
+        "capability_id": {
+          "$ref": "#/$defs/CapabilityId"
+        },
+        "contract_version": {
+          "$ref": "#/$defs/VersionString"
+        },
+        "dependencies": {
+          "items": {
+            "$ref": "#/$defs/DependencyDeclaration"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "description": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "execution": {
+          "$ref": "#/$defs/ExecutionCharacteristics"
+        },
+        "implementation_version": {
+          "$ref": "#/$defs/VersionString"
+        },
+        "interaction_surfaces": {
+          "$ref": "#/$defs/InteractionSurfaceDeclaration"
+        },
+        "operations": {
+          "items": {
+            "$ref": "#/$defs/OperationDefinition"
+          },
+          "minItems": 1,
+          "title": "Operations",
+          "type": "array"
+        },
+        "side_effects": {
+          "items": {
+            "$ref": "#/$defs/SideEffectDeclaration"
+          },
+          "minItems": 1,
+          "title": "Side Effects",
+          "type": "array"
+        },
+        "title": {
+          "$ref": "#/$defs/ShortStr"
+        }
+      },
+      "required": [
+        "capability_id",
+        "contract_version",
+        "implementation_version",
+        "title",
+        "description",
+        "operations",
+        "execution",
+        "interaction_surfaces",
+        "side_effects",
+        "dependencies"
+      ],
+      "title": "CapabilityDefinition",
+      "type": "object"
+    },
+    "CapabilityId": {
+      "maxLength": 255,
+      "minLength": 3,
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$",
+      "type": "string"
+    },
+    "CapabilityInvocation": {
+      "additionalProperties": false,
+      "description": "Validated request to execute one Capability operation.",
+      "properties": {
+        "capability_id": {
+          "$ref": "#/$defs/CapabilityId"
+        },
+        "inputs": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "mission_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Mission Ref",
+          "type": "string"
+        },
+        "operation": {
+          "$ref": "#/$defs/OperationName"
+        },
+        "parent_run_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Run Ref"
+        },
+        "run_id": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "workflow_run_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workflow Run Ref"
+        }
+      },
+      "required": [
+        "run_id",
+        "capability_id",
+        "operation",
+        "mission_ref"
+      ],
+      "title": "CapabilityInvocation",
+      "type": "object"
+    },
+    "CapabilityOutcome": {
+      "additionalProperties": false,
+      "description": "Assessment meaning kept separate from execution lifecycle status.",
+      "properties": {
+        "category": {
+          "$ref": "#/$defs/CapabilityOutcomeCategory"
+        },
+        "code": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolicName"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "details": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NonEmptyStr"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "category"
+      ],
+      "title": "CapabilityOutcome",
+      "type": "object"
+    },
+    "CapabilityOutcomeCategory": {
+      "description": "Shared high-level assessment outcome categories.",
+      "enum": [
+        "SUCCESS",
+        "NEGATIVE",
+        "PARTIAL",
+        "UNKNOWN"
+      ],
+      "title": "CapabilityOutcomeCategory",
+      "type": "string"
+    },
+    "CapabilityResult": {
+      "additionalProperties": false,
+      "description": "Universal envelope returned by a terminal CapabilityRun.",
+      "properties": {
+        "artifacts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ArtifactDescriptor"
+          },
+          "title": "Artifacts",
+          "type": "array"
+        },
+        "diagnostics": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Diagnostic"
+          },
+          "title": "Diagnostics",
+          "type": "array"
+        },
+        "effects": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Effect"
+          },
+          "title": "Effects",
+          "type": "array"
+        },
+        "execution_status": {
+          "$ref": "#/$defs/CapabilityRunStatus"
+        },
+        "findings": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Finding"
+          },
+          "title": "Findings",
+          "type": "array"
+        },
+        "observations": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Observation"
+          },
+          "title": "Observations",
+          "type": "array"
+        },
+        "outcome": {
+          "$ref": "#/$defs/CapabilityOutcome"
+        },
+        "resources": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ResourceDescriptor"
+          },
+          "title": "Resources",
+          "type": "array"
+        },
+        "run_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Run Ref",
+          "type": "string"
+        },
+        "sessions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SessionDescriptor"
+          },
+          "title": "Sessions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "run_ref",
+        "execution_status",
+        "outcome"
+      ],
+      "title": "CapabilityResult",
+      "type": "object"
+    },
+    "CapabilityRun": {
+      "additionalProperties": false,
+      "description": "One concrete Capability operation execution.",
+      "properties": {
+        "capability_id": {
+          "$ref": "#/$defs/CapabilityId"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "finished_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Finished At"
+        },
+        "mission_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Mission Ref",
+          "type": "string"
+        },
+        "operation": {
+          "$ref": "#/$defs/OperationName"
+        },
+        "parent_run_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Run Ref"
+        },
+        "run_id": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "started_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Started At"
+        },
+        "status": {
+          "$ref": "#/$defs/CapabilityRunStatus"
+        },
+        "workflow_run_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workflow Run Ref"
+        }
+      },
+      "required": [
+        "run_id",
+        "capability_id",
+        "operation",
+        "mission_ref",
+        "status",
+        "created_at"
+      ],
+      "title": "CapabilityRun",
+      "type": "object"
+    },
+    "CapabilityRunStatus": {
+      "description": "Lifecycle state for a CapabilityRun.",
+      "enum": [
+        "CREATED",
+        "QUEUED",
+        "RUNNING",
+        "WAITING_INPUT",
+        "WAITING_RESOURCE",
+        "PAUSED",
+        "COMPLETED",
+        "FAILED",
+        "CANCELLED",
+        "TIMED_OUT"
+      ],
+      "title": "CapabilityRunStatus",
+      "type": "string"
+    },
+    "Checkpoint": {
+      "additionalProperties": false,
+      "description": "Durable logical continuation state without live runtime objects.",
+      "properties": {
+        "artifact_refs": {
+          "default": [],
+          "items": {
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+            "type": "string"
+          },
+          "title": "Artifact Refs",
+          "type": "array"
+        },
+        "checkpoint_id": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Checkpoint Id",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "pending_interaction_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pending Interaction Ref"
+        },
+        "phase": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "resource_refs": {
+          "default": [],
+          "items": {
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+            "type": "string"
+          },
+          "title": "Resource Refs",
+          "type": "array"
+        },
+        "run_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Run Ref",
+          "type": "string"
+        },
+        "session_refs": {
+          "default": [],
+          "items": {
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+            "type": "string"
+          },
+          "title": "Session Refs",
+          "type": "array"
+        },
+        "state": {
+          "$ref": "#/$defs/JsonObject"
+        }
+      },
+      "required": [
+        "checkpoint_id",
+        "run_ref",
+        "phase",
+        "state",
+        "created_at"
+      ],
+      "title": "Checkpoint",
+      "type": "object"
+    },
+    "DependencyDeclaration": {
+      "additionalProperties": false,
+      "description": "A capability, tool, runtime, or Resource requirement.",
+      "properties": {
+        "dependency_type": {
+          "$ref": "#/$defs/DependencyType"
+        },
+        "identifier": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "version_spec": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ShortStr"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "dependency_type",
+        "identifier"
+      ],
+      "title": "DependencyDeclaration",
+      "type": "object"
+    },
+    "DependencyType": {
+      "description": "Kinds of capability implementation dependencies.",
+      "enum": [
+        "capability",
+        "tool",
+        "runtime",
+        "resource"
+      ],
+      "title": "DependencyType",
+      "type": "string"
+    },
+    "Diagnostic": {
+      "additionalProperties": false,
+      "description": "Execution-related information that is not target state.",
+      "properties": {
+        "artifact_refs": {
+          "default": [],
+          "items": {
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+            "type": "string"
+          },
+          "title": "Artifact Refs",
+          "type": "array"
+        },
+        "code": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "details": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "message": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "run_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Ref"
+        },
+        "severity": {
+          "$ref": "#/$defs/DiagnosticSeverity"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "message",
+        "occurred_at"
+      ],
+      "title": "Diagnostic",
+      "type": "object"
+    },
+    "DiagnosticSeverity": {
+      "description": "Severity of execution-related diagnostic information.",
+      "enum": [
+        "info",
+        "warning",
+        "error"
+      ],
+      "title": "DiagnosticSeverity",
+      "type": "string"
+    },
+    "Effect": {
+      "additionalProperties": false,
+      "description": "An actual target-side or assessment-context change caused by execution.",
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "after_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "After Ref"
+        },
+        "before_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Before Ref"
+        },
+        "confirmed": {
+          "title": "Confirmed",
+          "type": "boolean"
+        },
+        "effect_id": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Effect Id",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "default": [],
+          "items": {
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "intentional": {
+          "title": "Intentional",
+          "type": "boolean"
+        },
+        "metadata": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "reversibility": {
+          "$ref": "#/$defs/EffectReversibility"
+        },
+        "run_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Run Ref",
+          "type": "string"
+        },
+        "subject_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subject Ref"
+        },
+        "type": {
+          "$ref": "#/$defs/SymbolicName"
+        }
+      },
+      "required": [
+        "effect_id",
+        "type",
+        "action",
+        "run_ref",
+        "occurred_at",
+        "intentional",
+        "confirmed"
+      ],
+      "title": "Effect",
+      "type": "object"
+    },
+    "EffectReversibility": {
+      "additionalProperties": false,
+      "description": "Known cleanup and reversibility information for an Effect.",
+      "properties": {
+        "cleanup_capability_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CapabilityId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "cleanup_inputs": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "cleanup_required": {
+          "default": false,
+          "title": "Cleanup Required",
+          "type": "boolean"
+        },
+        "cleanup_status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolicName"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "description": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NonEmptyStr"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reversible": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reversible"
+        }
+      },
+      "title": "EffectReversibility",
+      "type": "object"
+    },
+    "Event": {
+      "additionalProperties": false,
+      "description": "A persistable notification carrying JSON-compatible data.",
+      "properties": {
+        "event_id": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "mission_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Mission Ref",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "source_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/SymbolicName"
+        }
+      },
+      "required": [
+        "event_id",
+        "type",
+        "timestamp",
+        "mission_ref",
+        "source_ref",
+        "payload"
+      ],
+      "title": "Event",
+      "type": "object"
+    },
+    "ExecutionCharacteristics": {
+      "additionalProperties": false,
+      "description": "Shared execution behavior used for routing, policy, and audit.",
+      "properties": {
+        "asynchronous": {
+          "const": true,
+          "default": true,
+          "title": "Asynchronous",
+          "type": "boolean"
+        },
+        "duration": {
+          "$ref": "#/$defs/ExecutionDuration"
+        },
+        "interaction": {
+          "$ref": "#/$defs/ExecutionInteraction"
+        },
+        "supports_cancellation": {
+          "default": false,
+          "title": "Supports Cancellation",
+          "type": "boolean"
+        },
+        "supports_checkpointing": {
+          "default": false,
+          "title": "Supports Checkpointing",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "duration",
+        "interaction"
+      ],
+      "title": "ExecutionCharacteristics",
+      "type": "object"
+    },
+    "ExecutionDuration": {
+      "description": "Shared duration behavior advertised by a capability.",
+      "enum": [
+        "one_shot",
+        "long_running"
+      ],
+      "title": "ExecutionDuration",
+      "type": "string"
+    },
+    "ExecutionInteraction": {
+      "description": "Whether execution depends on persistent stateful context.",
+      "enum": [
+        "stateless",
+        "stateful"
+      ],
+      "title": "ExecutionInteraction",
+      "type": "string"
+    },
+    "ExecutionPlan": {
+      "additionalProperties": false,
+      "description": "Validated structured intent; this object does not execute anything.",
+      "properties": {
+        "argument_bindings": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "created_by_run": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Created By Run"
+        },
+        "dependencies": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/DependencyDeclaration"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "entrypoint": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "execution_plan_id": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Execution Plan Id",
+          "type": "string"
+        },
+        "expected_effects": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SideEffectDeclaration"
+          },
+          "title": "Expected Effects",
+          "type": "array"
+        },
+        "expected_outcomes": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SymbolicName"
+          },
+          "title": "Expected Outcomes",
+          "type": "array"
+        },
+        "isolation": {
+          "$ref": "#/$defs/IsolationRequirement"
+        },
+        "metadata": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "resource_refs": {
+          "default": [],
+          "items": {
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+            "type": "string"
+          },
+          "title": "Resource Refs",
+          "type": "array"
+        },
+        "runtime_type": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "runtime_version": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Runtime Version"
+        },
+        "source_artifact_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Source Artifact Ref",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/ExecutionPlanStatus"
+        },
+        "uncertainties": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/NonEmptyStr"
+          },
+          "title": "Uncertainties",
+          "type": "array"
+        }
+      },
+      "required": [
+        "execution_plan_id",
+        "source_artifact_ref",
+        "status",
+        "runtime_type",
+        "isolation",
+        "entrypoint",
+        "created_at"
+      ],
+      "title": "ExecutionPlan",
+      "type": "object"
+    },
+    "ExecutionPlanStatus": {
+      "description": "Lifecycle of structured execution intent.",
+      "enum": [
+        "DRAFT",
+        "VALIDATED",
+        "APPROVED",
+        "EXECUTED",
+        "REJECTED"
+      ],
+      "title": "ExecutionPlanStatus",
+      "type": "string"
+    },
+    "Finding": {
+      "additionalProperties": false,
+      "description": "A security-relevant interpretation supported by evidence.",
+      "properties": {
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "description": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "evidence_refs": {
+          "default": [],
+          "items": {
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "finding_id": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Finding Id",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "observation_refs": {
+          "default": [],
+          "items": {
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+            "type": "string"
+          },
+          "title": "Observation Refs",
+          "type": "array"
+        },
+        "run_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Run Ref",
+          "type": "string"
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolicName"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "subject_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subject Ref"
+        },
+        "title": {
+          "$ref": "#/$defs/ShortStr"
+        },
+        "type": {
+          "$ref": "#/$defs/SymbolicName"
+        }
+      },
+      "required": [
+        "finding_id",
+        "type",
+        "title",
+        "description",
+        "run_ref",
+        "created_at"
+      ],
+      "title": "Finding",
+      "type": "object"
+    },
+    "InteractionRequest": {
+      "additionalProperties": false,
+      "description": "Structured assistance request owned by an active CapabilityRun.",
+      "properties": {
+        "description": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "input_schema": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "interaction_id": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Interaction Id",
+          "type": "string"
+        },
+        "interaction_type": {
+          "$ref": "#/$defs/InteractionType"
+        },
+        "requested_at": {
+          "format": "date-time",
+          "title": "Requested At",
+          "type": "string"
+        },
+        "resume_semantics": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "run_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Run Ref",
+          "type": "string"
+        },
+        "title": {
+          "$ref": "#/$defs/ShortStr"
+        }
+      },
+      "required": [
+        "interaction_id",
+        "run_ref",
+        "interaction_type",
+        "title",
+        "description",
+        "input_schema",
+        "resume_semantics",
+        "requested_at"
+      ],
+      "title": "InteractionRequest",
+      "type": "object"
+    },
+    "InteractionResponse": {
+      "additionalProperties": false,
+      "description": "Validated response data or a secure logical input reference.",
+      "properties": {
+        "artifact_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Ref"
+        },
+        "interaction_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Interaction Ref",
+          "type": "string"
+        },
+        "responded_at": {
+          "format": "date-time",
+          "title": "Responded At",
+          "type": "string"
+        },
+        "run_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Run Ref",
+          "type": "string"
+        },
+        "secret_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Secret Ref"
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue",
+          "default": null
+        }
+      },
+      "required": [
+        "interaction_ref",
+        "run_ref",
+        "responded_at"
+      ],
+      "title": "InteractionResponse",
+      "type": "object"
+    },
+    "InteractionSurfaceDeclaration": {
+      "additionalProperties": false,
+      "description": "Execution surfaces a capability may use.",
+      "properties": {
+        "active_session": {
+          "title": "Active Session",
+          "type": "boolean"
+        },
+        "internet_access": {
+          "title": "Internet Access",
+          "type": "boolean"
+        },
+        "local_compute": {
+          "title": "Local Compute",
+          "type": "boolean"
+        },
+        "managed_resource": {
+          "title": "Managed Resource",
+          "type": "boolean"
+        },
+        "target_network": {
+          "title": "Target Network",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "local_compute",
+        "target_network",
+        "internet_access",
+        "active_session",
+        "managed_resource"
+      ],
+      "title": "InteractionSurfaceDeclaration",
+      "type": "object"
+    },
+    "InteractionType": {
+      "description": "Supported human/external interaction request classes.",
+      "enum": [
+        "confirmation",
+        "choice",
+        "text_input",
+        "structured_form",
+        "secret_input",
+        "artifact_input"
+      ],
+      "title": "InteractionType",
+      "type": "string"
+    },
+    "IsolationRequirement": {
+      "additionalProperties": false,
+      "description": "Requested runtime isolation profile plus provider-neutral constraints.",
+      "properties": {
+        "profile": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "requirements": {
+          "$ref": "#/$defs/JsonObject"
+        }
+      },
+      "required": [
+        "profile"
+      ],
+      "title": "IsolationRequirement",
+      "type": "object"
+    },
+    "JsonObject": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "type": "object"
+    },
+    "JsonScalar": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "JsonValue": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/JsonScalar"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "array"
+        },
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "object"
+        }
+      ]
+    },
+    "NonEmptyStr": {
+      "maxLength": 1024,
+      "minLength": 1,
+      "type": "string"
+    },
+    "Observation": {
+      "additionalProperties": false,
+      "description": "An immutable fact observed or deterministically derived from evidence.",
+      "properties": {
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        },
+        "evidence_refs": {
+          "default": [],
+          "items": {
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "observation_id": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Observation Id",
+          "type": "string"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "run_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Run Ref",
+          "type": "string"
+        },
+        "subject_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Subject Ref"
+        },
+        "type": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      },
+      "required": [
+        "observation_id",
+        "type",
+        "value",
+        "run_ref",
+        "observed_at"
+      ],
+      "title": "Observation",
+      "type": "object"
+    },
+    "OperationDefinition": {
+      "additionalProperties": false,
+      "description": "One action belonging to a coherent Capability.",
+      "properties": {
+        "description": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "execution_requirements": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "input_schema": {
+          "$ref": "#/$defs/SchemaDeclaration"
+        },
+        "name": {
+          "$ref": "#/$defs/OperationName"
+        },
+        "output_schema": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SchemaDeclaration"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "required_references": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SymbolicName"
+          },
+          "title": "Required References",
+          "type": "array"
+        },
+        "result_types": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ResultObjectType"
+          },
+          "title": "Result Types",
+          "type": "array"
+        },
+        "retry_semantics": {
+          "$ref": "#/$defs/RetrySemantics"
+        },
+        "title": {
+          "$ref": "#/$defs/ShortStr"
+        }
+      },
+      "required": [
+        "name",
+        "title",
+        "description",
+        "input_schema",
+        "retry_semantics"
+      ],
+      "title": "OperationDefinition",
+      "type": "object"
+    },
+    "OperationName": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9_-]*$",
+      "type": "string"
+    },
+    "ResourceDescriptor": {
+      "additionalProperties": false,
+      "description": "Metadata for platform-managed runtime infrastructure.",
+      "properties": {
+        "access_modes": {
+          "items": {
+            "$ref": "#/$defs/AccessMode"
+          },
+          "minItems": 1,
+          "title": "Access Modes",
+          "type": "array"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "created_by_run": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Created By Run",
+          "type": "string"
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expires At"
+        },
+        "lifecycle_metadata": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "owner_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Owner Ref",
+          "type": "string"
+        },
+        "provider": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "resource_id": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Resource Id",
+          "type": "string"
+        },
+        "resource_type": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "state": {
+          "$ref": "#/$defs/SymbolicName"
+        }
+      },
+      "required": [
+        "resource_id",
+        "resource_type",
+        "provider",
+        "state",
+        "owner_ref",
+        "created_by_run",
+        "created_at",
+        "access_modes"
+      ],
+      "title": "ResourceDescriptor",
+      "type": "object"
+    },
+    "ResultObjectType": {
+      "description": "Object classes an operation may declare as outputs.",
+      "enum": [
+        "observation",
+        "finding",
+        "artifact",
+        "resource",
+        "session",
+        "effect",
+        "diagnostic"
+      ],
+      "title": "ResultObjectType",
+      "type": "string"
+    },
+    "RetrySemantics": {
+      "description": "Safety classification for retrying an operation.",
+      "enum": [
+        "SAFE",
+        "CONDITIONAL",
+        "UNSAFE",
+        "UNKNOWN"
+      ],
+      "title": "RetrySemantics",
+      "type": "string"
+    },
+    "SchemaDeclaration": {
+      "additionalProperties": false,
+      "description": "An inline JSON Schema or a stable reference to one.",
+      "properties": {
+        "inline": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonObject"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NonEmptyStr"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "SchemaDeclaration",
+      "type": "object"
+    },
+    "SessionDescriptor": {
+      "additionalProperties": false,
+      "description": "Metadata for a persistent stateful interaction context.",
+      "properties": {
+        "access_context_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Access Context Ref"
+        },
+        "access_modes": {
+          "items": {
+            "$ref": "#/$defs/AccessMode"
+          },
+          "minItems": 1,
+          "title": "Access Modes",
+          "type": "array"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "created_by_run": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Created By Run",
+          "type": "string"
+        },
+        "identity_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Identity Ref"
+        },
+        "lifecycle_metadata": {
+          "$ref": "#/$defs/JsonObject"
+        },
+        "owner_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Owner Ref",
+          "type": "string"
+        },
+        "provider": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "resource_refs": {
+          "default": [],
+          "items": {
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+            "type": "string"
+          },
+          "title": "Resource Refs",
+          "type": "array"
+        },
+        "session_id": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Session Id",
+          "type": "string"
+        },
+        "session_type": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "state": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "supported_operations": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SymbolicName"
+          },
+          "title": "Supported Operations",
+          "type": "array"
+        },
+        "target_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Ref"
+        }
+      },
+      "required": [
+        "session_id",
+        "session_type",
+        "state",
+        "provider",
+        "owner_ref",
+        "created_by_run",
+        "created_at",
+        "access_modes"
+      ],
+      "title": "SessionDescriptor",
+      "type": "object"
+    },
+    "Sha256Digest": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "ShortStr": {
+      "maxLength": 255,
+      "minLength": 1,
+      "type": "string"
+    },
+    "SideEffectCategory": {
+      "description": "Shared categories for pre-execution side-effect declarations.",
+      "enum": [
+        "local_filesystem",
+        "local_package_installation",
+        "external_network",
+        "target_state",
+        "credential_use",
+        "local_code_execution",
+        "remote_code_execution"
+      ],
+      "title": "SideEffectCategory",
+      "type": "string"
+    },
+    "SideEffectDeclaration": {
+      "additionalProperties": false,
+      "description": "A possible side effect declared before execution.",
+      "properties": {
+        "category": {
+          "$ref": "#/$defs/SideEffectCategory"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NonEmptyStr"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "level": {
+          "$ref": "#/$defs/SideEffectLevel"
+        }
+      },
+      "required": [
+        "category",
+        "level"
+      ],
+      "title": "SideEffectDeclaration",
+      "type": "object"
+    },
+    "SideEffectLevel": {
+      "description": "Declared degree or certainty of a possible side effect.",
+      "enum": [
+        "none",
+        "read",
+        "write",
+        "modify",
+        "possible",
+        "expected",
+        "unknown"
+      ],
+      "title": "SideEffectLevel",
+      "type": "string"
+    },
+    "SymbolicName": {
+      "maxLength": 255,
+      "minLength": 1,
+      "pattern": "^[A-Za-z][A-Za-z0-9._:-]*$",
+      "type": "string"
+    },
+    "VersionString": {
+      "maxLength": 64,
+      "minLength": 3,
+      "pattern": "^[0-9]+\\.[0-9]+(?:\\.[0-9]+)?(?:[-+][0-9A-Za-z.-]+)?$",
+      "type": "string"
+    }
+  },
+  "title": "BoberAgent Capability Contract 1.0"
+}

@@ -1,1 +1,144 @@
-"""Transport-independent contracts for BoberAgent."""
+"""Public API for BoberAgent Capability Contract v1."""
+
+from ._base import JsonObject, JsonScalar, JsonValue
+from .artifact import ArtifactDescriptor, Sha256Digest
+from .capability import (
+    CapabilityDefinition,
+    CapabilityId,
+    DependencyDeclaration,
+    ExecutionCharacteristics,
+    InteractionSurfaceDeclaration,
+    OperationDefinition,
+    OperationName,
+    SchemaDeclaration,
+    SideEffectDeclaration,
+)
+from .checkpoint import Checkpoint
+from .diagnostic import Diagnostic
+from .effect import Effect, EffectReversibility
+from .enums import (
+    AccessMode,
+    CapabilityOutcomeCategory,
+    CapabilityRunStatus,
+    DependencyType,
+    DiagnosticSeverity,
+    ExecutionDuration,
+    ExecutionInteraction,
+    ExecutionPlanStatus,
+    InteractionType,
+    ResultObjectType,
+    RetrySemantics,
+    SideEffectCategory,
+    SideEffectLevel,
+)
+from .event import Event
+from .execution_plan import ExecutionPlan, IsolationRequirement
+from .finding import Finding
+from .interaction import InteractionRequest, InteractionResponse
+from .invocation import CapabilityInvocation
+from .observation import Observation
+from .refs import (
+    AccessContextRef,
+    ApplicationRef,
+    ArtifactRef,
+    AssetRef,
+    CapabilityRunRef,
+    CheckpointRef,
+    CredentialRef,
+    DomainRef,
+    EffectRef,
+    EventRef,
+    ExecutionPlanRef,
+    FindingRef,
+    IdentityRef,
+    InteractionRef,
+    MissionRef,
+    ObservationRef,
+    ResourceRef,
+    SecretRef,
+    ServiceRef,
+    SessionRef,
+    StorageRef,
+    WorkflowRunRef,
+)
+from .resource import ResourceDescriptor
+from .result import CapabilityOutcome, CapabilityResult
+from .run import CapabilityRun
+from .schema import contract_schema_bundle, contract_schema_json, write_contract_schema
+from .session import SessionDescriptor
+from .version import CONTRACT_MAJOR_VERSION, CONTRACT_VERSION, VersionString
+
+__all__ = [
+    "CONTRACT_MAJOR_VERSION",
+    "CONTRACT_VERSION",
+    "AccessContextRef",
+    "AccessMode",
+    "ApplicationRef",
+    "ArtifactDescriptor",
+    "ArtifactRef",
+    "AssetRef",
+    "CapabilityDefinition",
+    "CapabilityId",
+    "CapabilityInvocation",
+    "CapabilityOutcome",
+    "CapabilityOutcomeCategory",
+    "CapabilityResult",
+    "CapabilityRun",
+    "CapabilityRunRef",
+    "CapabilityRunStatus",
+    "Checkpoint",
+    "CheckpointRef",
+    "CredentialRef",
+    "DependencyDeclaration",
+    "DependencyType",
+    "Diagnostic",
+    "DiagnosticSeverity",
+    "DomainRef",
+    "Effect",
+    "EffectRef",
+    "EffectReversibility",
+    "Event",
+    "EventRef",
+    "ExecutionCharacteristics",
+    "ExecutionDuration",
+    "ExecutionInteraction",
+    "ExecutionPlan",
+    "ExecutionPlanRef",
+    "ExecutionPlanStatus",
+    "Finding",
+    "FindingRef",
+    "IdentityRef",
+    "InteractionRef",
+    "InteractionRequest",
+    "InteractionResponse",
+    "InteractionSurfaceDeclaration",
+    "InteractionType",
+    "IsolationRequirement",
+    "JsonObject",
+    "JsonScalar",
+    "JsonValue",
+    "MissionRef",
+    "Observation",
+    "ObservationRef",
+    "OperationDefinition",
+    "OperationName",
+    "ResourceDescriptor",
+    "ResourceRef",
+    "ResultObjectType",
+    "RetrySemantics",
+    "SchemaDeclaration",
+    "SecretRef",
+    "ServiceRef",
+    "SessionDescriptor",
+    "SessionRef",
+    "Sha256Digest",
+    "SideEffectCategory",
+    "SideEffectDeclaration",
+    "SideEffectLevel",
+    "StorageRef",
+    "VersionString",
+    "WorkflowRunRef",
+    "contract_schema_bundle",
+    "contract_schema_json",
+    "write_contract_schema",
+]

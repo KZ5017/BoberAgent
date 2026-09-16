@@ -8,8 +8,10 @@ version = "0.0.0"
 description = "Capability author SDK for BoberAgent"
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
-dependencies = ["boberagent-contracts"]
+dependencies = [
+    "boberagent-contracts",
+    "pydantic>=2.12,<3",
+]
 
 [tool.uv.sources]
 boberagent-contracts = { workspace = true }
-

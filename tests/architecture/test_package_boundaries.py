@@ -25,15 +25,26 @@ FORBIDDEN_IMPORTS = {
             "boberagent_core",
             "boberagent_sdk",
             "boberagent_execution_node",
+            "mcp",
+            "sqlalchemy",
         }
     ),
     "boberagent_sdk": frozenset(
         {
+            "alembic",
             "boberagent_core",
             "boberagent_execution_node",
+            "mcp",
+            "sqlalchemy",
         }
     ),
-    "boberagent_core": frozenset({"boberagent_execution_node"}),
+    "boberagent_core": frozenset(
+        {
+            "boberagent_execution_node",
+            "boberagent_sdk",
+            "mcp",
+        }
+    ),
 }
 
 

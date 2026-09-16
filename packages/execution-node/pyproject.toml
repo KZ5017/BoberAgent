@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "boberagent-execution-node"
+version = "0.0.0"
+description = "Execution node package for BoberAgent"
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "boberagent-contracts",
+    "boberagent-sdk",
+]
+
+[tool.uv.sources]
+boberagent-contracts = { workspace = true }
+boberagent-sdk = { workspace = true }
+

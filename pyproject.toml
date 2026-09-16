@@ -1,0 +1,57 @@
+[project]
+name = "boberagent-workspace"
+version = "0.0.0"
+description = "Repository foundation for the BoberAgent platform"
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18,<2",
+    "pytest>=8.4,<9",
+    "ruff>=0.13,<1",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.pytest.ini_options]
+addopts = ["--strict-config", "--strict-markers"]
+testpaths = [
+    "packages/contracts/tests",
+    "packages/sdk/tests",
+    "packages/core/tests",
+    "packages/execution-node/tests",
+    "tests/architecture",
+    "tests/integration",
+    "tests/end_to_end",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["docs"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_configs = true
+files = ["packages", "tests"]
+mypy_path = [
+    "packages/contracts/src",
+    "packages/sdk/src",
+    "packages/core/src",
+    "packages/execution-node/src",
+]

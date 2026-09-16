@@ -1,0 +1,73 @@
+"""Static tests for the platform package dependency direction."""
+
+from __future__ import annotations
+
+import ast
+from collections.abc import Iterator
+from pathlib import Path
+
+import pytest
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+
+PACKAGE_SOURCE_ROOTS = {
+    "boberagent_contracts": REPOSITORY_ROOT / "packages/contracts/src/boberagent_contracts",
+    "boberagent_sdk": REPOSITORY_ROOT / "packages/sdk/src/boberagent_sdk",
+    "boberagent_core": REPOSITORY_ROOT / "packages/core/src/boberagent_core",
+    "boberagent_execution_node": (
+        REPOSITORY_ROOT / "packages/execution-node/src/boberagent_execution_node"
+    ),
+}
+
+FORBIDDEN_IMPORTS = {
+    "boberagent_contracts": frozenset(
+        {
+            "boberagent_core",
+            "boberagent_sdk",
+            "boberagent_execution_node",
+        }
+    ),
+    "boberagent_sdk": frozenset(
+        {
+            "boberagent_core",
+            "boberagent_execution_node",
+        }
+    ),
+    "boberagent_core": frozenset({"boberagent_execution_node"}),
+}
+
+
+def _python_files(source_root: Path) -> Iterator[Path]:
+    yield from sorted(source_root.rglob("*.py"))
+
+
+def _imports_in(path: Path) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    imports: set[str] = set()
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imports.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module is not None:
+            imports.add(node.module)
+
+    return imports
+
+
+def _matches_package(module: str, package: str) -> bool:
+    return module == package or module.startswith(f"{package}.")
+
+
+@pytest.mark.parametrize("package_name", sorted(FORBIDDEN_IMPORTS))
+def test_package_does_not_import_forbidden_dependencies(package_name: str) -> None:
+    source_root = PACKAGE_SOURCE_ROOTS[package_name]
+    forbidden = FORBIDDEN_IMPORTS[package_name]
+    violations: list[str] = []
+
+    for path in _python_files(source_root):
+        for imported_module in sorted(_imports_in(path)):
+            if any(_matches_package(imported_module, dependency) for dependency in forbidden):
+                relative_path = path.relative_to(REPOSITORY_ROOT)
+                violations.append(f"{relative_path}: imports {imported_module}")
+
+    assert not violations, "Forbidden package imports found:\n" + "\n".join(violations)

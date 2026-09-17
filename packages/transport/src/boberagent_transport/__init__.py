@@ -38,7 +38,9 @@ from .interfaces import (
 from .memory import InMemoryTransport
 from .models import (
     TRANSPORT_PROTOCOL_VERSION,
+    AdvertisedCapabilityStatus,
     AssetProjection,
+    CapabilityStatusAdvertisement,
     DeliveryAcknowledgement,
     DeliveryKind,
     EventEnvelope,
@@ -67,6 +69,7 @@ from .models import (
 __all__ = [
     "MAX_PROTOCOL_CHUNK_BYTES",
     "TRANSPORT_PROTOCOL_VERSION",
+    "AdvertisedCapabilityStatus",
     "ArtifactChunk",
     "ArtifactTransferAcknowledgement",
     "ArtifactTransferFinalize",
@@ -79,6 +82,7 @@ __all__ = [
     "ArtifactTransferUnavailable",
     "ArtifactTransport",
     "AssetProjection",
+    "CapabilityStatusAdvertisement",
     "CapabilityTransport",
     "ConflictingInvocation",
     "DeliveryAcknowledgement",

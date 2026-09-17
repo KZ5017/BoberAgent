@@ -43,6 +43,7 @@ class CapabilityProvider:
         self.manifest_path = manifest_path
         self.availability = CapabilityAvailability.AVAILABLE
         self.failure: str | None = None
+        self.availability_reason: str | None = None
         self._implementation: Capability | None = None
 
     @property
@@ -93,8 +94,13 @@ class CapabilityProvider:
 
         if missing_required:
             self.availability = CapabilityAvailability.UNAVAILABLE
+            self.availability_reason = "one or more required local dependencies are unavailable"
         elif missing_optional:
             self.availability = CapabilityAvailability.DEGRADED
+            self.availability_reason = "one or more optional local dependencies are unavailable"
+        else:
+            self.availability = CapabilityAvailability.AVAILABLE
+            self.availability_reason = None
 
 
 class CapabilityLoadError(RuntimeError):

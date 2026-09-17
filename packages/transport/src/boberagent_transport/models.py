@@ -10,6 +10,7 @@ from typing import Annotated, Literal, Self
 from boberagent_contracts import (
     AssetRef,
     CapabilityDefinition,
+    CapabilityId,
     CapabilityInvocation,
     CapabilityResult,
     CapabilityRunRef,
@@ -32,7 +33,7 @@ from pydantic import (
 
 from .errors import MalformedMessage, UnsupportedProtocolVersion
 
-TRANSPORT_PROTOCOL_VERSION = "1.1"
+TRANSPORT_PROTOCOL_VERSION = "1.2"
 
 type NodeIdentifier = Annotated[
     str,
@@ -61,6 +62,20 @@ class TransportModel(BaseModel):
 class DeliveryKind(StrEnum):
     EVENT = "event"
     RESULT = "result"
+
+
+class AdvertisedCapabilityStatus(StrEnum):
+    """Node-local provider status projected through the neutral handshake."""
+
+    AVAILABLE = "AVAILABLE"
+    DEGRADED = "DEGRADED"
+    UNAVAILABLE = "UNAVAILABLE"
+
+
+class CapabilityStatusAdvertisement(TransportModel):
+    capability_id: CapabilityId
+    status: AdvertisedCapabilityStatus
+    reason: str | None = Field(default=None, min_length=1, max_length=1024)
 
 
 class MissionProjection(TransportModel):
@@ -187,7 +202,20 @@ class NodeAdvertisement(TransportModel):
     lifecycle: str
     database_ready: bool
     capabilities: tuple[CapabilityDefinition, ...]
+    capability_statuses: tuple[CapabilityStatusAdvertisement, ...]
     degraded_reasons: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_capability_metadata(self) -> Self:
+        capability_ids = [definition.capability_id for definition in self.capabilities]
+        if len(capability_ids) != len(set(capability_ids)):
+            raise ValueError("Node advertisement contains duplicate capability definitions")
+        status_ids = [status.capability_id for status in self.capability_statuses]
+        if len(status_ids) != len(set(status_ids)):
+            raise ValueError("Node advertisement contains duplicate capability statuses")
+        if set(status_ids) != set(capability_ids):
+            raise ValueError("capability statuses must correspond exactly to definitions")
+        return self
 
 
 class TransportFailure(TransportModel):

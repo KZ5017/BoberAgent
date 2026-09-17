@@ -4,6 +4,22 @@ Core owns BoberAgent's canonical assessment state. Milestone 2 provides a SQLite
 foundation, explicit repositories and the first deterministic `network.service` materializer. It
 does not execute capabilities or implement workflow/goal behavior.
 
+Milestone 8 adds the Core-owned Capability Registry and deterministic Router. A Capability is the
+stable Contract ability; a provider is one Node's current implementation. Provider identity is a
+UUID5 of `(node_id, capability_id)`, while implementation version remains mutable metadata. Node
+handshakes refresh definitions, provider status, health, and `last_seen`; omitted capabilities are
+retained as unavailable rather than deleted.
+
+Persisted providers are marked `STALE` whenever a new Registry instance starts and remain
+ineligible until refreshed. A five-minute, injectable freshness TTL provides an additional guard.
+`READY` Nodes are eligible; `DEGRADED` Nodes are eligible only for specifically `AVAILABLE`
+providers. Router v1 selects the lexicographically smallest eligible provider ID. Explicit Node or
+provider constraints fail without fallback. Transport lifecycle integration explicitly marks a
+disconnected Node stale; reconnecting and handshaking refreshes the same provider identities. Each
+dispatch records the selected provider, Node, and
+implementation version for the unchanged `CapabilityRunRef` before using the existing neutral
+transport.
+
 Milestone 5 adds a narrow transport receiving boundary. `CoreTransportReceiver` validates Event
 and terminal Result envelopes and stores them in `transport_inbox` using stable message IDs. This
 is delivery/deduplication metadata only: receiving a Result does not create Runs, Artifacts,
@@ -43,6 +59,10 @@ The current API is synchronous and uses short-lived SQLAlchemy units of work; da
 isolated behind this boundary so later asynchronous orchestration does not acquire ORM sessions.
 No general Event Bus table exists. The transport inbox stores received envelopes for later
 processing and acknowledgement without interpreting their assessment meaning.
+
+The Registry and Router likewise do not ingest received Results, select assessment strategy, or
+import capability implementations. Result ingestion, workflow reasoning, scheduling, and network
+transport remain deferred.
 
 ## Artifact content
 

@@ -5,7 +5,17 @@ from __future__ import annotations
 from datetime import datetime
 
 from boberagent_contracts import JsonObject, JsonValue
-from sqlalchemy import JSON, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from .types import UTCDateTime
@@ -183,3 +193,46 @@ class TransportInboxRow(Base):
     envelope_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
     received_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
     delivery_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+class CapabilityProviderRow(Base):
+    __tablename__ = "capability_providers"
+    __table_args__: tuple[UniqueConstraint, Index, Index] = (
+        UniqueConstraint("node_id", "capability_id", name="uq_capability_provider_identity"),
+        Index("ix_capability_providers_capability_id", "capability_id"),
+        Index("ix_capability_providers_node_id", "node_id"),
+    )
+
+    provider_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    node_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    capability_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    definition_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
+    implementation_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    reported_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    availability: Mapped[str] = mapped_column(String(32), nullable=False)
+    first_registered_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    node_lifecycle: Mapped[str] = mapped_column(String(32), nullable=False)
+    node_database_ready: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    node_degraded_reasons_json: Mapped[list[str]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    unavailability_reason: Mapped[str | None] = mapped_column(Text)
+
+
+class CapabilityRoutingDecisionRow(Base):
+    __tablename__ = "capability_routing_decisions"
+    __table_args__: tuple[Index, Index] = (
+        Index("ix_capability_routing_provider_id", "provider_id"),
+        Index("ix_capability_routing_node_id", "node_id"),
+    )
+
+    run_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    capability_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    operation: Mapped[str] = mapped_column(String(128), nullable=False)
+    provider_id: Mapped[str] = mapped_column(
+        ForeignKey("capability_providers.provider_id", ondelete="RESTRICT"), nullable=False
+    )
+    node_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    implementation_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    selected_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)

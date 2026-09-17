@@ -127,6 +127,7 @@ def test_end_to_end_outbox_delivery_lost_ack_and_core_restart(tmp_path: Path) ->
         assert [definition.capability_id for definition in advertisement.capabilities] == [
             "test.transport_synthetic"
         ]
+        assert advertisement.capability_statuses[0].status.value == "AVAILABLE"
 
         await client.submit_invocation(endpoint.node_id, delivery)
         await asyncio.wait_for(transport.wait_for_idle(), timeout=5)

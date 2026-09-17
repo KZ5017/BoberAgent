@@ -12,6 +12,8 @@ from boberagent_contracts import (
 )
 from boberagent_sdk import AssetSnapshot, MissionContext
 from boberagent_transport import (
+    AdvertisedCapabilityStatus,
+    CapabilityStatusAdvertisement,
     ConflictingInvocation,
     DeliveryKind,
     EventEnvelope,
@@ -55,13 +57,26 @@ class ExecutionNodeTransportEndpoint:
         if envelope.node_id != self.node_id:
             raise ProtocolError("handshake targeted a different Node", node_id=self.node_id)
         health = self._node.health()
+        providers = tuple(
+            provider
+            for provider in self._node.capabilities.providers()
+            if provider.availability.value != "DISABLED"
+        )
         response = NodeAdvertisement(
             request_message_id=envelope.message_id,
             node_id=self.node_id,
             timestamp=health.checked_at,
             lifecycle=health.lifecycle.value,
             database_ready=health.database_ready,
-            capabilities=self._node.capabilities.definitions(),
+            capabilities=tuple(provider.definition for provider in providers),
+            capability_statuses=tuple(
+                CapabilityStatusAdvertisement(
+                    capability_id=provider.definition.capability_id,
+                    status=AdvertisedCapabilityStatus(provider.availability.value),
+                    reason=provider.failure or provider.availability_reason,
+                )
+                for provider in providers
+            ),
             degraded_reasons=health.degraded_reasons,
         )
         return serialize_message(response)

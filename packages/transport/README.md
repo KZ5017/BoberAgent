@@ -4,10 +4,14 @@ This package owns transport-neutral protocol envelopes, interfaces, errors, and 
 in-memory Milestone 5 adapter. It depends only on the Contract package and Pydantic. It contains no
 Core business logic, Execution Node runtime logic, MCP types, networking, or Artifact storage.
 
-Protocol version `1.1` is independent from the Capability Contract version. Invocation, Event,
+Protocol version `1.2` is independent from the Capability Contract version. Invocation, Event,
 Result, and dedicated Artifact-transfer messages always cross a JSON serialization/validation
 boundary. Artifact bytes use bounded base64-encoded chunks with explicit offsets and per-chunk
 SHA-256; they are never embedded in Results or Events.
+
+The Node handshake composes validated `CapabilityDefinition` objects with a small per-capability
+availability projection. This is discovery metadata only: Core owns registry persistence and
+routing policy, while each Node remains authoritative for its local dependency checks.
 
 The in-memory adapter uses bounded async queues. Submission is asynchronous from execution and
 outbound delivery. When a queue is full, the operation fails explicitly with backpressure rather

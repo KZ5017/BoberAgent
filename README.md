@@ -6,6 +6,8 @@ It currently includes Contract v1, Core persistence, the Capability SDK, the loc
 transport-neutral in-memory communication, and durable Node-to-Core Artifact synchronization.
 The first production capability, `network.service_discovery`, is implemented behind the SDK and
 currently uses Nmap as its managed provider.
+Core can now discover Node-advertised providers and route explicit Capability invocations through
+the existing transport using persisted, deterministic routing decisions.
 
 The authoritative design specifications live in [`docs/`](docs/). Start with
 [`docs/00_PROJECT_CONTEXT.md`](docs/00_PROJECT_CONTEXT.md) and

@@ -105,7 +105,13 @@ def test_package_does_not_import_forbidden_dependencies(package_name: str) -> No
 
     for path in _python_files(source_root):
         for imported_module in sorted(_imports_in(path)):
-            if any(_matches_package(imported_module, dependency) for dependency in forbidden):
+            imports_capability_implementation = (
+                package_name == "boberagent_core"
+                and imported_module.startswith("boberagent_capability_")
+            )
+            if imports_capability_implementation or any(
+                _matches_package(imported_module, dependency) for dependency in forbidden
+            ):
                 relative_path = path.relative_to(REPOSITORY_ROOT)
                 violations.append(f"{relative_path}: imports {imported_module}")
 

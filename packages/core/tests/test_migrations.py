@@ -10,6 +10,8 @@ EXPECTED_TABLES = {
     "artifacts",
     "assets",
     "capability_runs",
+    "capability_providers",
+    "capability_routing_decisions",
     "goals",
     "missions",
     "observations",
@@ -25,7 +27,7 @@ def test_migration_upgrades_empty_database(database_path: Path) -> None:
         assert not database_path.exists()
         upgrade_database(database)
         assert set(inspect(database._migration_engine).get_table_names()) == EXPECTED_TABLES
-        assert current_revision(database) == "0003_artifact_content"
+        assert current_revision(database) == "0004_capability_registry"
     finally:
         database.dispose()
 
@@ -38,7 +40,7 @@ def test_migrated_database_can_be_reopened(database_path: Path) -> None:
     reopened = CoreDatabase(DatabaseConfig.sqlite(database_path))
     try:
         upgrade_database(reopened)
-        assert current_revision(reopened) == "0003_artifact_content"
+        assert current_revision(reopened) == "0004_capability_registry"
     finally:
         reopened.dispose()
 
@@ -53,8 +55,26 @@ def test_transport_inbox_migration_upgrades_milestone_2_schema(
         assert "transport_inbox" not in inspect(database._migration_engine).get_table_names()
 
         upgrade_database(database)
-        assert current_revision(database) == "0003_artifact_content"
+        assert current_revision(database) == "0004_capability_registry"
         assert "transport_inbox" in inspect(database._migration_engine).get_table_names()
+    finally:
+        database.dispose()
+
+
+def test_capability_registry_migration_upgrades_milestone_7_schema(
+    database_path: Path,
+) -> None:
+    database = CoreDatabase(DatabaseConfig.sqlite(database_path))
+    try:
+        upgrade_database(database, "0003_artifact_content")
+        assert current_revision(database) == "0003_artifact_content"
+        tables = set(inspect(database._migration_engine).get_table_names())
+        assert "capability_providers" not in tables
+
+        upgrade_database(database)
+        assert current_revision(database) == "0004_capability_registry"
+        tables = set(inspect(database._migration_engine).get_table_names())
+        assert {"capability_providers", "capability_routing_decisions"} <= tables
     finally:
         database.dispose()
 
@@ -93,7 +113,7 @@ def test_artifact_content_migration_preserves_milestone_5_metadata(
             )
 
         upgrade_database(database)
-        assert current_revision(database) == "0003_artifact_content"
+        assert current_revision(database) == "0004_capability_registry"
         columns = {
             str(column["name"])
             for column in inspect(database._migration_engine).get_columns("artifacts")

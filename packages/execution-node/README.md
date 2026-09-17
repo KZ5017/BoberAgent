@@ -35,6 +35,10 @@ class and operation input models. Metadata is validated without importing implem
 Duplicate IDs and malformed manifests are reported independently so one broken provider does not
 hide unrelated providers.
 
+The transport handshake advertises each discovered definition together with its Node-local
+`AVAILABLE`, `DEGRADED`, or `UNAVAILABLE` status and a bounded reason where applicable. The Node
+does not select among providers or implement Core routing policy.
+
 Tools are registered by logical name and resolved from an explicit executable hint or `PATH`.
 Optional version probes feed dependency checks; the Node detects missing requirements but never
 installs them. Capability code still sees only the SDK `ProcessService`, not registry paths.

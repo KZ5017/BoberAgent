@@ -236,3 +236,31 @@ class CapabilityRoutingDecisionRow(Base):
     node_id: Mapped[str] = mapped_column(String(255), nullable=False)
     implementation_version: Mapped[str] = mapped_column(String(64), nullable=False)
     selected_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+
+
+class ResultIngestionRow(Base):
+    """Durable canonical Result envelope and semantic processing state."""
+
+    __tablename__ = "result_ingestions"
+    __table_args__: tuple[Index, Index] = (
+        Index("ix_result_ingestions_status", "status"),
+        Index("ix_result_ingestions_transport_message_id", "transport_message_id"),
+    )
+
+    run_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    result_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    result_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
+    transport_message_id: Mapped[str | None] = mapped_column(String(255))
+    source_node_id: Mapped[str | None] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    received_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    processed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    processing_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    materialized_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    unsupported_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    rejected_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error: Mapped[str | None] = mapped_column(Text)
+    conflict_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_conflict_fingerprint: Mapped[str | None] = mapped_column(String(64))
+    last_conflict_at: Mapped[datetime | None] = mapped_column(UTCDateTime())

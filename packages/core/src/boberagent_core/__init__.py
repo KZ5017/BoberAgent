@@ -41,6 +41,15 @@ from .models import (
 )
 from .persistence import CoreDatabase, DatabaseConfig, PersistenceIntegrityError
 from .persistence.migrations import current_revision, upgrade_database
+from .results import (
+    ConflictingResultError,
+    ResultIngestion,
+    ResultIngestionError,
+    ResultIngestionService,
+    ResultIngestionStatus,
+    ResultProvenanceError,
+    result_fingerprint,
+)
 from .service import CorePersistence
 from .state import NetworkServiceValue, ReducerRegistry, service_ref_for_endpoint
 from .transport import CoreTransportClient, CoreTransportReceiver, TransportInboxRecord
@@ -56,6 +65,7 @@ __all__ = [
     "CapabilityRouter",
     "CapabilityRoutingError",
     "ConflictingProviderRegistration",
+    "ConflictingResultError",
     "ConflictingRoutingDecision",
     "CoreArtifactReceiver",
     "CoreArtifactService",
@@ -78,6 +88,11 @@ __all__ = [
     "ProviderId",
     "ProviderReportedStatus",
     "ReducerRegistry",
+    "ResultIngestion",
+    "ResultIngestionError",
+    "ResultIngestionService",
+    "ResultIngestionStatus",
+    "ResultProvenanceError",
     "RoutingDecision",
     "Service",
     "StoredArtifact",
@@ -89,6 +104,7 @@ __all__ = [
     "WorkflowStatus",
     "current_revision",
     "provider_id_for",
+    "result_fingerprint",
     "service_ref_for_endpoint",
     "upgrade_database",
 ]

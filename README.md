@@ -7,7 +7,9 @@ transport-neutral in-memory communication, and durable Node-to-Core Artifact syn
 The first production capability, `network.service_discovery`, is implemented behind the SDK and
 currently uses Nmap as its managed provider.
 Core can now discover Node-advertised providers and route explicit Capability invocations through
-the existing transport using persisted, deterministic routing decisions.
+the existing transport using persisted, deterministic routing decisions. Transported terminal
+Results can be durably ingested into Core's append-only Observation Store and reduced into
+materialized Service state.
 
 The authoritative design specifications live in [`docs/`](docs/). Start with
 [`docs/00_PROJECT_CONTEXT.md`](docs/00_PROJECT_CONTEXT.md) and

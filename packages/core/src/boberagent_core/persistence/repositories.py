@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime
 
 from boberagent_contracts import (
     ArtifactDescriptor,
@@ -149,6 +150,32 @@ class CapabilityRunRepository:
             ),
         )
 
+    def reconcile_terminal(
+        self,
+        run_ref: CapabilityRunRef,
+        status: CapabilityRunStatus,
+        *,
+        finished_at: datetime,
+    ) -> CapabilityRun:
+        if not status.is_terminal:
+            raise ValueError("CapabilityResult status must be terminal")
+        row = self._session.get(CapabilityRunRow, str(run_ref))
+        if row is None:
+            raise KeyError(f"unknown CapabilityRun: {run_ref}")
+        current = CapabilityRunStatus(row.status)
+        if current.is_terminal and current is not status:
+            raise PersistenceIntegrityError(
+                f"CapabilityRun terminal status conflict: {run_ref} is {current.value}, "
+                f"Result reports {status.value}"
+            )
+        row.status = status.value
+        if row.finished_at is None:
+            row.finished_at = finished_at
+        self._session.flush()
+        reconciled = self.get(run_ref)
+        assert reconciled is not None
+        return reconciled
+
 
 class ArtifactRepository:
     def __init__(self, session: Session) -> None:
@@ -179,6 +206,33 @@ class ArtifactRepository:
     def get_record(self, artifact_ref: ArtifactRef) -> StoredArtifact | None:
         row = self._session.get(ArtifactRow, str(artifact_ref))
         return None if row is None else _stored_artifact_from_row(row)
+
+    def reconcile(self, artifact: ArtifactDescriptor) -> StoredArtifact:
+        """Insert metadata or merge compatible optional fields without changing content state."""
+
+        row = self._session.get(ArtifactRow, str(artifact.artifact_id))
+        if row is None:
+            self.add(artifact)
+            created = self.get_record(artifact.artifact_id)
+            assert created is not None
+            return created
+        _validate_artifact_identity(row, artifact)
+        if row.sha256 is None:
+            row.sha256 = artifact.sha256
+        if row.size_bytes is None:
+            row.size_bytes = artifact.size_bytes
+        if row.media_type is None:
+            row.media_type = artifact.media_type
+        merged_metadata = deepcopy(row.metadata_json)
+        for key, value in artifact.metadata.items():
+            if key in merged_metadata and merged_metadata[key] != value:
+                raise PersistenceIntegrityError(
+                    f"ArtifactRef has conflicting metadata field {key!r}: {artifact.artifact_id}"
+                )
+            merged_metadata[key] = deepcopy(value)
+        row.metadata_json = merged_metadata
+        self._session.flush()
+        return _stored_artifact_from_row(row)
 
     def prepare_transfer(
         self,
@@ -297,6 +351,21 @@ class ObservationRepository:
             )
         )
         _flush_identity(self._session, observation.observation_id)
+
+    def reconcile(self, observation: Observation) -> StoredObservation:
+        """Append once, accepting exact immutable replays and rejecting identity conflicts."""
+
+        existing = self.get(observation.observation_id)
+        if existing is None:
+            self.append(observation)
+            created = self.get(observation.observation_id)
+            assert created is not None
+            return created
+        if existing.observation != observation:
+            raise PersistenceIntegrityError(
+                f"ObservationRef has conflicting immutable content: {observation.observation_id}"
+            )
+        return existing
 
     def get(self, observation_ref: ObservationRef) -> StoredObservation | None:
         row = self._session.get(ObservationRow, str(observation_ref))
@@ -451,6 +520,7 @@ class CoreUnitOfWork:
             CapabilityProviderRepository,
             RoutingDecisionRepository,
         )
+        from boberagent_core.results.repository import ResultIngestionRepository
         from boberagent_core.transport.repository import TransportInboxRepository
 
         self.missions = MissionRepository(session)
@@ -464,6 +534,7 @@ class CoreUnitOfWork:
         self.transport_inbox = TransportInboxRepository(session)
         self.capability_providers = CapabilityProviderRepository(session)
         self.routing_decisions = RoutingDecisionRepository(session)
+        self.result_ingestions = ResultIngestionRepository(session)
 
 
 def _flush_identity(session: Session, logical_ref: DomainRef) -> None:
@@ -497,6 +568,32 @@ def _artifact_descriptor_from_row(row: ArtifactRow) -> ArtifactDescriptor:
         media_type=row.media_type,
         metadata=deepcopy(row.metadata_json),
     )
+
+
+def _validate_artifact_identity(row: ArtifactRow, incoming: ArtifactDescriptor) -> None:
+    conflicts = (
+        row.artifact_type != incoming.artifact_type
+        or row.storage_ref != str(incoming.storage_ref)
+        or row.run_id != str(incoming.created_by_run)
+        or row.created_at != incoming.created_at
+        or (
+            row.sha256 is not None and incoming.sha256 is not None and row.sha256 != incoming.sha256
+        )
+        or (
+            row.size_bytes is not None
+            and incoming.size_bytes is not None
+            and row.size_bytes != incoming.size_bytes
+        )
+        or (
+            row.media_type is not None
+            and incoming.media_type is not None
+            and row.media_type != incoming.media_type
+        )
+    )
+    if conflicts:
+        raise PersistenceIntegrityError(
+            f"ArtifactRef has incompatible canonical metadata: {incoming.artifact_id}"
+        )
 
 
 def _stored_artifact_from_row(row: ArtifactRow) -> StoredArtifact:

@@ -22,6 +22,7 @@ from pydantic import TypeAdapter
 
 from boberagent_core.clock import utc_now
 from boberagent_core.persistence.database import CoreDatabase
+from boberagent_core.results import ResultIngestionService
 
 from .models import TransportInboxRecord
 
@@ -36,9 +37,13 @@ class CoreTransportReceiver:
         database: CoreDatabase,
         *,
         clock: Callable[[], datetime] = utc_now,
+        result_ingestion: ResultIngestionService | None = None,
+        process_results: bool = True,
     ) -> None:
         self._database = database
         self._clock = clock
+        self._result_ingestion = result_ingestion
+        self._process_results = process_results
 
     def accept(self, serialized: bytes) -> tuple[TransportInboxRecord, DeliveryAcknowledgement]:
         envelope = parse_outbound(serialized)
@@ -62,6 +67,15 @@ class CoreTransportReceiver:
                 envelope=envelope_json,
                 received_at=received_at,
             )
+        if isinstance(envelope, ResultEnvelope) and self._result_ingestion is not None:
+            self._result_ingestion.accept_result(
+                envelope.result,
+                transport_message_id=str(envelope.message_id),
+                source_node_id=envelope.node_id,
+                received_at=received_at,
+            )
+            if self._process_results:
+                self._result_ingestion.process_ingestion(envelope.result.run_ref)
         acknowledgement = DeliveryAcknowledgement(
             message_id=envelope.message_id,
             node_id=envelope.node_id,

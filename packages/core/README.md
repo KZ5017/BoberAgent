@@ -21,9 +21,34 @@ implementation version for the unchanged `CapabilityRunRef` before using the exi
 transport.
 
 Milestone 5 adds a narrow transport receiving boundary. `CoreTransportReceiver` validates Event
-and terminal Result envelopes and stores them in `transport_inbox` using stable message IDs. This
-is delivery/deduplication metadata only: receiving a Result does not create Runs, Artifacts,
-Observations, materialized World State, Event Bus activity, or workflow reactions.
+and terminal Result envelopes and stores them in `transport_inbox` using stable message IDs.
+Transport receipt still means only that a valid message was durably accepted. When configured
+with `ResultIngestionService`, the receiver separately records the complete terminal Result before
+semantic processing; transport acknowledgement is not a claim that World State materialization
+succeeded.
+
+## Result ingestion
+
+`ResultIngestionService` owns the Milestone 9 semantic boundary. One canonical Result is stored per
+`CapabilityRunRef`, together with a SHA-256 fingerprint of deterministic JSON and the lifecycle
+`RECEIVED → PROCESSING → PROCESSED/PARTIALLY_PROCESSED`. Unknown Runs and provenance or identity
+conflicts become `REJECTED`; unexpected Core-local processing errors become retryable `FAILED`
+records. Identical redelivery returns the existing record. A different Result for the same Run is
+never applied and increments durable conflict metadata without replacing the canonical envelope.
+
+Processing validates the persisted Run and any routing decision, reconciles terminal execution
+status without collapsing semantic outcome, merges compatible Artifact descriptors, appends
+Observations immutably, and dispatches `ReducerRegistry` by Observation type. Unsupported
+Observations are preserved as `UNSUPPORTED`; invalid known payloads are preserved as `REJECTED`.
+Valid sibling Observations still materialize, leaving the Result `PARTIALLY_PROCESSED`. Findings,
+Effects, Diagnostics, Resource descriptors, and Session descriptors remain auditable in the full
+stored Result until dedicated reconciliation exists.
+
+Artifact bytes remain independent of Result ingestion. A Result may establish metadata-only
+catalog state before synchronization, or verified content may arrive first; reconciliation keeps
+the same `ArtifactRef` and preserves content availability in both orders. `process_pending()`
+recovers `RECEIVED`, interrupted `PROCESSING`, and retryable `FAILED` records after restart without
+re-executing the capability.
 
 ## Database lifecycle
 
@@ -60,9 +85,9 @@ isolated behind this boundary so later asynchronous orchestration does not acqui
 No general Event Bus table exists. The transport inbox stores received envelopes for later
 processing and acknowledgement without interpreting their assessment meaning.
 
-The Registry and Router likewise do not ingest received Results, select assessment strategy, or
-import capability implementations. Result ingestion, workflow reasoning, scheduling, and network
-transport remain deferred.
+The Registry and Router do not ingest received Results, select assessment strategy, or import
+capability implementations. Result ingestion is a separate Core application service. Workflow
+reasoning, scheduling, automatic next-step selection, and network transport remain deferred.
 
 ## Artifact content
 
@@ -83,6 +108,15 @@ of content-addressed physical deduplication.
 contributing Observation remains in provenance, while the greatest `(observed_at, observation_id)`
 deterministically supplies current state/product/version fields. This is deliberately a small
 bootstrap conflict policy, not a generic confidence engine.
+
+The resulting provenance chain is queryable without tool-specific knowledge:
+
+```text
+Service → ObservationRef → CapabilityRunRef → evidence ArtifactRef
+```
+
+Core understands the normalized `network.service` Observation vocabulary, not Nmap output or
+capability implementation details.
 
 `GoalRef` is Core-owned for now: Contract v1 does not exchange Goal objects, so adding a new
 cross-package Contract identity would create semantics beyond this milestone.

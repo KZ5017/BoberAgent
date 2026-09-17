@@ -45,6 +45,7 @@ FORBIDDEN_IMPORTS = {
             "mcp",
         }
     ),
+    "boberagent_execution_node": frozenset({"boberagent_core", "mcp"}),
 }
 
 

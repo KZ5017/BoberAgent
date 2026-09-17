@@ -73,14 +73,22 @@ name = "boberagent-execution-node"
 version = "0.0.0"
 source = { editable = "packages/execution-node" }
 dependencies = [
+    { name = "alembic" },
     { name = "boberagent-contracts" },
     { name = "boberagent-sdk" },
+    { name = "packaging" },
+    { name = "pydantic" },
+    { name = "sqlalchemy" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "alembic", specifier = ">=1.16,<2" },
     { name = "boberagent-contracts", editable = "packages/contracts" },
     { name = "boberagent-sdk", editable = "packages/sdk" },
+    { name = "packaging", specifier = ">=24,<27" },
+    { name = "pydantic", specifier = ">=2.12,<3" },
+    { name = "sqlalchemy", specifier = ">=2.0,<3" },
 ]
 
 [[package]]

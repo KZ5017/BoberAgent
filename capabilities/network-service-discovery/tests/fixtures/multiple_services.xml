@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nmaprun scanner="nmap" args="fixture">
+  <host>
+    <status state="up" reason="user-set" />
+    <address addr="192.0.2.25" addrtype="ipv4" />
+    <ports>
+      <port protocol="tcp" portid="22">
+        <state state="open" reason="syn-ack" />
+        <service name="ssh" product="OpenSSH" version="9.6" />
+      </port>
+      <port protocol="tcp" portid="80">
+        <state state="open" reason="syn-ack" />
+        <service name="http" product="Apache httpd" version="2.4.62" />
+      </port>
+      <port protocol="tcp" portid="443">
+        <state state="open" reason="syn-ack" />
+        <service name="unknown" />
+      </port>
+      <port protocol="tcp" portid="8080">
+        <state state="filtered" reason="no-response" />
+      </port>
+      <port protocol="tcp" portid="8443">
+        <state state="closed" reason="reset" />
+      </port>
+      <port protocol="udp" portid="53">
+        <state state="open" reason="udp-response" />
+        <service name="domain" />
+      </port>
+    </ports>
+  </host>
+  <runstats><finished exit="success" /><hosts up="1" down="0" total="1" /></runstats>
+</nmaprun>

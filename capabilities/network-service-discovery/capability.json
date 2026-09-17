@@ -1,0 +1,85 @@
+{
+  "definition": {
+    "capability_id": "network.service_discovery",
+    "contract_version": "1.0",
+    "implementation_version": "0.1.0",
+    "title": "Network service discovery",
+    "description": "Discover TCP services for one authorized Asset using a managed local provider.",
+    "operations": [
+      {
+        "name": "discover",
+        "title": "Discover network services",
+        "description": "Perform bounded TCP service discovery for one authorized Asset.",
+        "input_schema": {
+          "inline": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["asset_ref"],
+            "properties": {
+              "asset_ref": {"type": "string"},
+              "profile": {
+                "type": "string",
+                "enum": ["quick", "standard", "full_tcp"],
+                "default": "standard"
+              },
+              "timeout_seconds": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 3600,
+                "default": 600
+              }
+            }
+          }
+        },
+        "result_types": ["observation", "artifact", "diagnostic"],
+        "retry_semantics": "CONDITIONAL",
+        "execution_requirements": {
+          "target_cardinality": "one_asset",
+          "transport": "tcp"
+        }
+      }
+    ],
+    "execution": {
+      "duration": "one_shot",
+      "interaction": "stateless",
+      "asynchronous": true,
+      "supports_cancellation": true,
+      "supports_checkpointing": false
+    },
+    "interaction_surfaces": {
+      "local_compute": true,
+      "target_network": true,
+      "internet_access": false,
+      "active_session": false,
+      "managed_resource": false
+    },
+    "side_effects": [
+      {
+        "category": "local_filesystem",
+        "level": "write",
+        "description": "Writes Nmap XML into a managed workspace and Artifact spool."
+      },
+      {
+        "category": "target_state",
+        "level": "read",
+        "description": "Sends TCP discovery probes without intentionally changing target state."
+      },
+      {
+        "category": "external_network",
+        "level": "read",
+        "description": "Communicates only with the authorized target address."
+      }
+    ],
+    "dependencies": [
+      {
+        "dependency_type": "tool",
+        "identifier": "nmap",
+        "required": true
+      }
+    ]
+  },
+  "implementation": "boberagent_capability_network_service_discovery:NetworkServiceDiscoveryCapability",
+  "input_models": {
+    "discover": "boberagent_capability_network_service_discovery:ServiceDiscoveryInput"
+  }
+}

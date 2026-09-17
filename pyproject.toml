@@ -17,7 +17,7 @@ dev = [
 package = false
 
 [tool.uv.workspace]
-members = ["packages/*"]
+members = ["packages/*", "capabilities/*"]
 
 [tool.pytest.ini_options]
 addopts = ["--strict-config", "--strict-markers"]
@@ -27,6 +27,7 @@ testpaths = [
     "packages/core/tests",
     "packages/execution-node/tests",
     "packages/transport/tests",
+    "capabilities/network-service-discovery/tests",
     "tests/architecture",
     "tests/integration",
     "tests/end_to_end",
@@ -49,11 +50,12 @@ line-ending = "lf"
 python_version = "3.12"
 strict = true
 warn_unused_configs = true
-files = ["packages", "tests"]
+files = ["packages", "capabilities", "tests"]
 mypy_path = [
     "packages/contracts/src",
     "packages/sdk/src",
     "packages/core/src",
     "packages/execution-node/src",
     "packages/transport/src",
+    "capabilities/network-service-discovery/src",
 ]

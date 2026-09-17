@@ -60,6 +60,21 @@ FORBIDDEN_IMPORTS = {
     ),
 }
 
+CAPABILITY_SOURCE_ROOTS = tuple(
+    sorted(path for path in (REPOSITORY_ROOT / "capabilities").glob("*/src") if path.is_dir())
+)
+CAPABILITY_FORBIDDEN_IMPORTS = frozenset(
+    {
+        "alembic",
+        "boberagent_core",
+        "boberagent_execution_node",
+        "boberagent_transport",
+        "mcp",
+        "sqlalchemy",
+        "subprocess",
+    }
+)
+
 
 def _python_files(source_root: Path) -> Iterator[Path]:
     yield from sorted(source_root.rglob("*.py"))
@@ -95,3 +110,18 @@ def test_package_does_not_import_forbidden_dependencies(package_name: str) -> No
                 violations.append(f"{relative_path}: imports {imported_module}")
 
     assert not violations, "Forbidden package imports found:\n" + "\n".join(violations)
+
+
+@pytest.mark.parametrize("source_root", CAPABILITY_SOURCE_ROOTS, ids=lambda path: path.parent.name)
+def test_capability_package_uses_only_sdk_boundary(source_root: Path) -> None:
+    violations: list[str] = []
+    for path in _python_files(source_root):
+        for imported_module in sorted(_imports_in(path)):
+            if any(
+                _matches_package(imported_module, dependency)
+                for dependency in CAPABILITY_FORBIDDEN_IMPORTS
+            ):
+                relative_path = path.relative_to(REPOSITORY_ROOT)
+                violations.append(f"{relative_path}: imports {imported_module}")
+
+    assert not violations, "Forbidden capability imports found:\n" + "\n".join(violations)

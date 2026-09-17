@@ -4,6 +4,8 @@ BoberAgent is a capability-driven orchestration platform for authorized penetrat
 security labs, and CTF environments. The project is being built in reviewed bootstrap milestones.
 It currently includes Contract v1, Core persistence, the Capability SDK, the local Execution Node,
 transport-neutral in-memory communication, and durable Node-to-Core Artifact synchronization.
+The first production capability, `network.service_discovery`, is implemented behind the SDK and
+currently uses Nmap as its managed provider.
 
 The authoritative design specifications live in [`docs/`](docs/). Start with
 [`docs/00_PROJECT_CONTEXT.md`](docs/00_PROJECT_CONTEXT.md) and
@@ -17,7 +19,7 @@ for the area being changed. [`AGENTS.md`](AGENTS.md) contains mandatory rules fo
 - `packages/core`: SQLite-backed canonical state and initial Observation materialization
 - `packages/execution-node`: local execution runtime, managed services, and durable outboxes
 - `packages/transport`: neutral protocol envelopes/interfaces and the in-memory adapter
-- `capabilities`: future capability packages
+- `capabilities`: production capability packages, beginning with network service discovery
 - `knowledge`: future procedures and curated reference material
 - `tests`: architecture, integration, and end-to-end test suites
 - `docs`: architecture, specifications, plans, and ADRs

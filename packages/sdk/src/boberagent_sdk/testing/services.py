@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import shutil
 import tempfile
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
@@ -237,6 +238,12 @@ class FakeWorkspaceService:
         self._workspaces[str(workspace_ref)] = workspace
         return workspace
 
+    @property
+    def root_path(self) -> Path:
+        """Expose the temporary managed root so tests can predict tool output paths."""
+
+        return Path(self._root.name)
+
     async def cleanup(self, workspace_ref: WorkspaceRef) -> None:
         try:
             workspace = self._workspaces.pop(str(workspace_ref))
@@ -262,6 +269,7 @@ class ToolInvocation:
 class _ToolExpectation:
     invocation: ToolInvocation
     result: ProcessResult
+    file_outputs: tuple[tuple[Path, bytes], ...] = ()
 
 
 class FakeProcessService:
@@ -277,9 +285,13 @@ class FakeProcessService:
         args: list[str] | tuple[str, ...],
         result: ProcessResult,
         timeout: float | None = None,
+        file_outputs: Mapping[Path, bytes] | None = None,
     ) -> None:
         invocation = ToolInvocation(tool=tool, args=tuple(args), timeout=timeout)
-        self._expectations.append(_ToolExpectation(invocation=invocation, result=result))
+        outputs = () if file_outputs is None else tuple(file_outputs.items())
+        self._expectations.append(
+            _ToolExpectation(invocation=invocation, result=result, file_outputs=outputs)
+        )
 
     def expect_plan(self, plan_ref: ExecutionPlanRef, *, result: ProcessResult) -> None:
         self._plan_results[str(plan_ref)] = result
@@ -299,6 +311,8 @@ class FakeProcessService:
         if actual != expected.invocation:
             raise ToolExecutionError(f"Expected {expected.invocation}, received {actual}")
         self._expectations.pop(0)
+        for path, content in expected.file_outputs:
+            path.write_bytes(content)
         return expected.result
 
     async def execute_plan(

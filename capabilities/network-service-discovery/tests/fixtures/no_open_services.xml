@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nmaprun scanner="nmap" args="fixture">
+  <host>
+    <status state="up" />
+    <ports>
+      <port protocol="tcp" portid="22"><state state="closed" /></port>
+      <port protocol="tcp" portid="80"><state state="filtered" /></port>
+    </ports>
+  </host>
+  <runstats><finished exit="success" /></runstats>
+</nmaprun>

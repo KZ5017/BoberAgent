@@ -16,11 +16,14 @@ from .persistence import CoreDatabase, DatabaseConfig, PersistenceIntegrityError
 from .persistence.migrations import current_revision, upgrade_database
 from .service import CorePersistence
 from .state import NetworkServiceValue, ReducerRegistry, service_ref_for_endpoint
+from .transport import CoreTransportClient, CoreTransportReceiver, TransportInboxRecord
 
 __all__ = [
     "Asset",
     "CoreDatabase",
     "CorePersistence",
+    "CoreTransportClient",
+    "CoreTransportReceiver",
     "DatabaseConfig",
     "Goal",
     "GoalRef",
@@ -32,6 +35,7 @@ __all__ = [
     "ReducerRegistry",
     "Service",
     "StoredObservation",
+    "TransportInboxRecord",
     "WorkflowRun",
     "WorkflowStatus",
     "current_revision",

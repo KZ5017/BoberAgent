@@ -12,6 +12,7 @@ from boberagent_contracts import (
     CapabilityRunRef,
     CapabilityRunStatus,
     Event,
+    EventRef,
     JsonObject,
     MissionRef,
     StorageRef,
@@ -67,6 +68,7 @@ class RuntimeStore:
                     workflow_run_id=(
                         None if record.workflow_run_ref is None else str(record.workflow_run_ref)
                     ),
+                    invocation_fingerprint=record.invocation_fingerprint,
                     created_at=record.created_at,
                     started_at=record.started_at,
                     finished_at=record.finished_at,
@@ -257,6 +259,7 @@ class RuntimeStore:
                     sequence=row.sequence,
                     event=Event.model_validate(row.event_json),
                     delivery_state=DeliveryState(row.delivery_state),
+                    created_at=row.created_at,
                 )
                 for row in rows
             )
@@ -266,6 +269,18 @@ class RuntimeStore:
             row = session.get(EventOutboxRow, sequence)
             if row is None:
                 raise KeyError(f"unknown Event outbox sequence: {sequence}")
+            row.delivery_state = DeliveryState.DELIVERED.value
+
+    def acknowledge_event(self, event_ref: EventRef, correlation_id: CapabilityRunRef) -> None:
+        with self._database.transaction() as session:
+            row = session.scalar(
+                select(EventOutboxRow).where(EventOutboxRow.event_id == str(event_ref))
+            )
+            if row is None:
+                raise KeyError(f"unknown Event outbox identity: {event_ref}")
+            event = Event.model_validate(row.event_json)
+            if str(event.source_ref) != str(correlation_id):
+                raise ValueError("Event acknowledgement correlation does not match")
             row.delivery_state = DeliveryState.DELIVERED.value
 
     def enqueue_result_and_finish_run(
@@ -319,6 +334,7 @@ class RuntimeStore:
                     run_ref=CapabilityRunRef(row.run_id),
                     result_json=deepcopy(row.result_json),
                     delivery_state=DeliveryState(row.delivery_state),
+                    created_at=row.created_at,
                 )
                 for row in rows
             )
@@ -328,6 +344,19 @@ class RuntimeStore:
             row = session.get(ResultOutboxRow, sequence)
             if row is None:
                 raise KeyError(f"unknown Result outbox sequence: {sequence}")
+            row.delivery_state = DeliveryState.DELIVERED.value
+
+    def acknowledge_result(
+        self, run_ref: CapabilityRunRef, correlation_id: CapabilityRunRef
+    ) -> None:
+        if run_ref != correlation_id:
+            raise ValueError("Result acknowledgement correlation does not match")
+        with self._database.transaction() as session:
+            row = session.scalar(
+                select(ResultOutboxRow).where(ResultOutboxRow.run_id == str(run_ref))
+            )
+            if row is None:
+                raise KeyError(f"unknown Result outbox identity: {run_ref}")
             row.delivery_state = DeliveryState.DELIVERED.value
 
     def recover_interrupted(self, recovered_at: datetime) -> tuple[tuple[RunRecord, ...], int]:
@@ -370,6 +399,7 @@ def _run_record(row: RunRow) -> RunRecord:
         workflow_run_ref=(
             None if row.workflow_run_id is None else WorkflowRunRef(row.workflow_run_id)
         ),
+        invocation_fingerprint=row.invocation_fingerprint,
         started_at=row.started_at,
         finished_at=row.finished_at,
         error_code=row.error_code,

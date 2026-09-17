@@ -1,9 +1,9 @@
 # BoberAgent
 
 BoberAgent is a capability-driven orchestration platform for authorized penetration testing,
-security labs, and CTF environments. The project currently has its architecture, Contract v1
-models, initial Core persistence foundation, and Capability SDK interfaces; capability runtime
-behavior is not implemented.
+security labs, and CTF environments. The project is being built in reviewed bootstrap milestones.
+It currently includes Contract v1, Core persistence, the Capability SDK, the local Execution Node,
+and a transport-neutral protocol with an in-memory development adapter.
 
 The authoritative design specifications live in [`docs/`](docs/). Start with
 [`docs/00_PROJECT_CONTEXT.md`](docs/00_PROJECT_CONTEXT.md) and
@@ -15,7 +15,8 @@ for the area being changed. [`AGENTS.md`](AGENTS.md) contains mandatory rules fo
 - `packages/contracts`: transport-independent Capability Contract v1 models
 - `packages/sdk`: capability author interfaces and in-memory testing utilities
 - `packages/core`: SQLite-backed canonical state and initial Observation materialization
-- `packages/execution-node`: execution mechanics (skeleton only)
+- `packages/execution-node`: local execution runtime, managed services, and durable outboxes
+- `packages/transport`: neutral protocol envelopes/interfaces and the in-memory adapter
 - `capabilities`: future capability packages
 - `knowledge`: future procedures and curated reference material
 - `tests`: architecture, integration, and end-to-end test suites

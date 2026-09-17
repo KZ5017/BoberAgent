@@ -20,8 +20,7 @@ The generated `NodeId` is independent of process ID and hostname and is reused o
 configured ID may be supplied on first initialization; later mismatches fail safely.
 `ExecutionNode.initialize()` migrates the Node-owned SQLite database, recovers interrupted local
 records, discovers capability manifests, inspects configured tools, and transitions from
-`STARTING` to `READY` or `DEGRADED`. `health()` is local inspection only; no endpoint or transport
-is implemented here.
+`STARTING` to `READY` or `DEGRADED`. `health()` remains local runtime state.
 
 The database is migration-driven through Alembic. Startup applies revisions rather than recreating
 tables. Tests always use temporary runtime directories. The schema records local Runs, managed
@@ -50,12 +49,14 @@ inline; output above the configured bound is moved into the Artifact spool and r
 
 Workspaces have logical IDs, persistent ownership metadata, and generated paths constrained below
 the configured root. Artifact IDs are UUID-based logical references; spool metadata includes hash,
-size, producing Run, local path, and synchronization state. New Artifacts remain `LOCAL_ONLY` in
-Milestone 4—no Core synchronization exists yet.
+size, producing Run, local path, and synchronization state. New Artifacts remain `LOCAL_ONLY`;
+Milestone 5 does not synchronize Artifact bytes or spool content to Core.
 
-Capability Events and terminal Results are persisted before future delivery. Stable Event IDs and
-the unique Run/result key make insertion idempotent, while pending/delivered state is ready for a
-later at-least-once transport. No messages are sent in this milestone.
+Capability Events and terminal Results are persisted before delivery. The Milestone 5
+`ExecutionNodeTransportEndpoint` validates serialized neutral protocol envelopes, delegates only
+to `CapabilityRuntime`, and exposes those existing outboxes. Stable Event IDs and the unique
+Run/result key make delivery idempotent; records become delivered only after acknowledgement.
+Transport disconnect does not cancel accepted Node work.
 
 ## Recovery policy
 

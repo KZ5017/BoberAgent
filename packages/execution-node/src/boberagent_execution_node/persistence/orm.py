@@ -23,6 +23,7 @@ class RunRow(Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False)
     parent_run_id: Mapped[str | None] = mapped_column(String(255))
     workflow_run_id: Mapped[str | None] = mapped_column(String(255))
+    invocation_fingerprint: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime())

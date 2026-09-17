@@ -12,6 +12,7 @@ dependencies = [
     "alembic>=1.16,<2",
     "boberagent-contracts",
     "boberagent-sdk",
+    "boberagent-transport",
     "packaging>=24,<27",
     "pydantic>=2.12,<3",
     "sqlalchemy>=2.0,<3",
@@ -20,3 +21,4 @@ dependencies = [
 [tool.uv.sources]
 boberagent-contracts = { workspace = true }
 boberagent-sdk = { workspace = true }
+boberagent-transport = { workspace = true }

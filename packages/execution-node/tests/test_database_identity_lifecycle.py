@@ -21,7 +21,7 @@ def test_empty_database_migrates_and_survives_reopen(tmp_path: Path) -> None:
     assert current_revision(database) is None
 
     upgrade_database(database)
-    assert current_revision(database) == "0001_runtime_foundation"
+    assert current_revision(database) == "0002_invocation_fingerprint"
     assert set(inspect(database.migration_engine).get_table_names()) == {
         "alembic_version",
         "artifact_spool",
@@ -35,10 +35,34 @@ def test_empty_database_migrates_and_survives_reopen(tmp_path: Path) -> None:
 
     reopened = RuntimeDatabase(database_path)
     try:
-        assert current_revision(reopened) == "0001_runtime_foundation"
+        assert current_revision(reopened) == "0002_invocation_fingerprint"
         upgrade_database(reopened)
     finally:
         reopened.close()
+
+
+def test_invocation_fingerprint_migration_upgrades_milestone_4_schema(
+    tmp_path: Path,
+) -> None:
+    database = RuntimeDatabase(tmp_path / "upgrade.sqlite3")
+    try:
+        upgrade_database(database, "0001_runtime_foundation")
+        assert current_revision(database) == "0001_runtime_foundation"
+        columns = {
+            column["name"]
+            for column in inspect(database.migration_engine).get_columns("runtime_runs")
+        }
+        assert "invocation_fingerprint" not in columns
+
+        upgrade_database(database)
+        assert current_revision(database) == "0002_invocation_fingerprint"
+        columns = {
+            column["name"]
+            for column in inspect(database.migration_engine).get_columns("runtime_runs")
+        }
+        assert "invocation_fingerprint" in columns
+    finally:
+        database.close()
 
 
 def test_node_identity_is_generated_once_and_configurable(tmp_path: Path) -> None:

@@ -17,6 +17,7 @@ PACKAGE_SOURCE_ROOTS = {
     "boberagent_execution_node": (
         REPOSITORY_ROOT / "packages/execution-node/src/boberagent_execution_node"
     ),
+    "boberagent_transport": REPOSITORY_ROOT / "packages/transport/src/boberagent_transport",
 }
 
 FORBIDDEN_IMPORTS = {
@@ -25,6 +26,7 @@ FORBIDDEN_IMPORTS = {
             "boberagent_core",
             "boberagent_sdk",
             "boberagent_execution_node",
+            "boberagent_transport",
             "mcp",
             "sqlalchemy",
         }
@@ -34,6 +36,7 @@ FORBIDDEN_IMPORTS = {
             "alembic",
             "boberagent_core",
             "boberagent_execution_node",
+            "boberagent_transport",
             "mcp",
             "sqlalchemy",
         }
@@ -46,6 +49,15 @@ FORBIDDEN_IMPORTS = {
         }
     ),
     "boberagent_execution_node": frozenset({"boberagent_core", "mcp"}),
+    "boberagent_transport": frozenset(
+        {
+            "boberagent_core",
+            "boberagent_execution_node",
+            "boberagent_sdk",
+            "mcp",
+            "sqlalchemy",
+        }
+    ),
 }
 
 

@@ -11,6 +11,7 @@ PACKAGE_ROOTS = (
     "boberagent_sdk",
     "boberagent_core",
     "boberagent_execution_node",
+    "boberagent_transport",
 )
 
 

@@ -359,6 +359,8 @@ class CoreUnitOfWork:
     """Repository collection sharing one private SQLAlchemy transaction."""
 
     def __init__(self, session: Session) -> None:
+        from boberagent_core.transport.repository import TransportInboxRepository
+
         self.missions = MissionRepository(session)
         self.assets = AssetRepository(session)
         self.runs = CapabilityRunRepository(session)
@@ -367,6 +369,7 @@ class CoreUnitOfWork:
         self.services = ServiceRepository(session)
         self.workflows = WorkflowRepository(session)
         self.goals = GoalRepository(session)
+        self.transport_inbox = TransportInboxRepository(session)
 
 
 def _flush_identity(session: Session, logical_ref: DomainRef) -> None:

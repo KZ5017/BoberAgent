@@ -58,6 +58,7 @@ class RunRecord(RuntimeModel):
     created_at: AwareDatetime
     parent_run_ref: CapabilityRunRef | None = None
     workflow_run_ref: WorkflowRunRef | None = None
+    invocation_fingerprint: str | None = None
     started_at: AwareDatetime | None = None
     finished_at: AwareDatetime | None = None
     error_code: str | None = None
@@ -95,6 +96,7 @@ class EventOutboxRecord(RuntimeModel):
     sequence: int
     event: Event
     delivery_state: DeliveryState
+    created_at: AwareDatetime
 
 
 class ResultOutboxRecord(RuntimeModel):
@@ -102,3 +104,4 @@ class ResultOutboxRecord(RuntimeModel):
     run_ref: CapabilityRunRef
     result_json: JsonObject
     delivery_state: DeliveryState
+    created_at: AwareDatetime

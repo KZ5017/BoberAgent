@@ -1,4 +1,4 @@
-"""Composition root for the local-only Milestone 4 Execution Node."""
+"""Composition root for the local Execution Node runtime."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from .tools import DependencyResolver, ToolAvailability, ToolRegistry
 
 
 class ExecutionNode:
-    """Own and coordinate one local runtime without any Core transport."""
+    """Own and coordinate one local runtime independently of transport adapters."""
 
     def __init__(self, configuration: NodeConfiguration) -> None:
         self.configuration = configuration
@@ -143,6 +143,8 @@ class ExecutionNode:
         self,
         invocation: CapabilityInvocation,
         environment: LocalInvocationEnvironment,
+        *,
+        invocation_fingerprint: str | None = None,
     ) -> CapabilityResult:
         """Execute through the local harness; this is intentionally not a transport API."""
 
@@ -153,7 +155,11 @@ class ExecutionNode:
             raise RuntimeError(f"Node does not accept local invocations: {self.lifecycle.state}")
         if self.runtime is None:
             raise RuntimeError("Node runtime was not initialized")
-        return await self.runtime.execute(invocation, environment)
+        return await self.runtime.execute(
+            invocation,
+            environment,
+            invocation_fingerprint=invocation_fingerprint,
+        )
 
     def health(self) -> NodeHealth:
         if self.identity is None or self.store is None:

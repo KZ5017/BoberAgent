@@ -158,3 +158,21 @@ class ServiceRow(Base):
         ForeignKey("observations.observation_id", ondelete="RESTRICT"), nullable=False
     )
     provenance_refs_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+
+
+class TransportInboxRow(Base):
+    __tablename__ = "transport_inbox"
+    __table_args__: tuple[Index, Index] = (
+        Index("ix_transport_inbox_correlation_id", "correlation_id"),
+        Index("ix_transport_inbox_kind", "message_kind"),
+    )
+
+    message_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    node_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    message_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    correlation_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    payload_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    outbox_sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    envelope_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
+    received_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    delivery_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)

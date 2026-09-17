@@ -4,6 +4,11 @@ Core owns BoberAgent's canonical assessment state. Milestone 2 provides a SQLite
 foundation, explicit repositories and the first deterministic `network.service` materializer. It
 does not execute capabilities or implement workflow/goal behavior.
 
+Milestone 5 adds a narrow transport receiving boundary. `CoreTransportReceiver` validates Event
+and terminal Result envelopes and stores them in `transport_inbox` using stable message IDs. This
+is delivery/deduplication metadata only: receiving a Result does not create Runs, Artifacts,
+Observations, materialized World State, Event Bus activity, or workflow reactions.
+
 ## Database lifecycle
 
 Construct `DatabaseConfig` with an explicit SQLite URL or `DatabaseConfig.sqlite(path)`, then run
@@ -36,7 +41,8 @@ status share one transaction.
 
 The current API is synchronous and uses short-lived SQLAlchemy units of work; database access is
 isolated behind this boundary so later asynchronous orchestration does not acquire ORM sessions.
-No event table is created because Milestone 2 has no event-delivery use case yet.
+No general Event Bus table exists. The transport inbox stores received envelopes for later
+processing and acknowledgement without interpreting their assessment meaning.
 
 `network.service` uses `(AssetRef, normalized transport, port)` as endpoint identity. Its public
 `ServiceRef` is a deterministic UUID5-derived logical reference. Replays add no duplicates. Every

@@ -63,6 +63,8 @@ class CapabilityRuntime:
         self,
         invocation: CapabilityInvocation,
         environment: LocalInvocationEnvironment,
+        *,
+        invocation_fingerprint: str | None = None,
     ) -> CapabilityResult:
         existing = self._store.get_run(invocation.run_id)
         if existing is not None:
@@ -85,6 +87,7 @@ class CapabilityRuntime:
                 created_at=now,
                 parent_run_ref=invocation.parent_run_ref,
                 workflow_run_ref=invocation.workflow_run_ref,
+                invocation_fingerprint=invocation_fingerprint,
             )
         )
         invocation_context = InvocationContext(

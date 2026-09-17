@@ -2,6 +2,7 @@
 
 from typing import Protocol
 
+from .artifact import ArtifactTransferRequest, ArtifactTransferResponse
 from .models import (
     DeliveryAcknowledgement,
     InvocationDelivery,
@@ -22,6 +23,19 @@ class TransportNodeEndpoint(Protocol):
     async def pending_outbound(self) -> tuple[bytes, ...]: ...
 
     async def acknowledge(self, message: bytes) -> None: ...
+
+
+class TransportArtifactReceiver(Protocol):
+    async def accept_artifact_message(self, message: bytes) -> bytes: ...
+
+
+class ArtifactTransport(Protocol):
+    @property
+    def connected(self) -> bool: ...
+
+    async def exchange_artifact(
+        self, request: ArtifactTransferRequest
+    ) -> ArtifactTransferResponse: ...
 
 
 class CapabilityTransport(Protocol):

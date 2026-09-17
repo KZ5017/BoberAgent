@@ -24,6 +24,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from boberagent_core.models import (
+    ArtifactContentState,
     Asset,
     Goal,
     GoalRef,
@@ -31,6 +32,7 @@ from boberagent_core.models import (
     MaterializationStatus,
     Mission,
     Service,
+    StoredArtifact,
     StoredObservation,
     WorkflowRun,
     WorkflowStatus,
@@ -164,25 +166,111 @@ class ArtifactRepository:
                 size_bytes=artifact.size_bytes,
                 media_type=artifact.media_type,
                 metadata_json=deepcopy(artifact.metadata),
+                content_state=ArtifactContentState.METADATA_ONLY.value,
+                received_bytes=0,
             )
         )
         _flush_identity(self._session, artifact.artifact_id)
 
     def get(self, artifact_ref: ArtifactRef) -> ArtifactDescriptor | None:
+        record = self.get_record(artifact_ref)
+        return None if record is None else record.descriptor
+
+    def get_record(self, artifact_ref: ArtifactRef) -> StoredArtifact | None:
+        row = self._session.get(ArtifactRow, str(artifact_ref))
+        return None if row is None else _stored_artifact_from_row(row)
+
+    def prepare_transfer(
+        self,
+        artifact: ArtifactDescriptor,
+        *,
+        source_node_id: str,
+        transfer_id: str,
+    ) -> StoredArtifact:
+        row = self._session.get(ArtifactRow, str(artifact.artifact_id))
+        if row is None:
+            row = ArtifactRow(
+                artifact_id=str(artifact.artifact_id),
+                artifact_type=artifact.artifact_type,
+                storage_ref=str(artifact.storage_ref),
+                run_id=str(artifact.created_by_run),
+                created_at=artifact.created_at,
+                sha256=artifact.sha256,
+                size_bytes=artifact.size_bytes,
+                media_type=artifact.media_type,
+                metadata_json=deepcopy(artifact.metadata),
+                content_state=ArtifactContentState.RECEIVING.value,
+                source_node_id=source_node_id,
+                transfer_id=transfer_id,
+                received_bytes=0,
+            )
+            self._session.add(row)
+            _flush_identity(self._session, artifact.artifact_id)
+            return _stored_artifact_from_row(row)
+
+        if _artifact_descriptor_from_row(row) != artifact:
+            raise PersistenceIntegrityError(
+                f"ArtifactRef has incompatible canonical metadata: {artifact.artifact_id}"
+            )
+        state = ArtifactContentState(row.content_state)
+        if state is ArtifactContentState.AVAILABLE:
+            return _stored_artifact_from_row(row)
+        if state is ArtifactContentState.RECEIVING and (
+            row.source_node_id != source_node_id or row.transfer_id != transfer_id
+        ):
+            raise PersistenceIntegrityError(
+                f"ArtifactRef already has a different active transfer: {artifact.artifact_id}"
+            )
+        if state in {ArtifactContentState.METADATA_ONLY, ArtifactContentState.FAILED}:
+            row.received_bytes = 0
+        row.content_state = ArtifactContentState.RECEIVING.value
+        row.source_node_id = source_node_id
+        row.transfer_id = transfer_id
+        row.sync_error = None
+        self._session.flush()
+        return _stored_artifact_from_row(row)
+
+    def set_transfer_progress(self, artifact_ref: ArtifactRef, received_bytes: int) -> None:
+        row = self._required_transfer_row(artifact_ref)
+        row.received_bytes = received_bytes
+        self._session.flush()
+
+    def complete_transfer(self, artifact_ref: ArtifactRef, content_key: str) -> StoredArtifact:
+        row = self._required_transfer_row(artifact_ref)
+        if row.size_bytes is None or row.received_bytes != row.size_bytes:
+            raise PersistenceIntegrityError("Artifact transfer cannot complete before all bytes")
+        row.content_state = ArtifactContentState.AVAILABLE.value
+        row.content_key = content_key
+        row.sync_error = None
+        self._session.flush()
+        return _stored_artifact_from_row(row)
+
+    def fail_transfer(self, artifact_ref: ArtifactRef, error: str) -> None:
         row = self._session.get(ArtifactRow, str(artifact_ref))
         if row is None:
+            raise KeyError(f"unknown Artifact: {artifact_ref}")
+        row.content_state = ArtifactContentState.FAILED.value
+        row.received_bytes = 0
+        row.sync_error = error
+        self._session.flush()
+
+    def content_key(self, artifact_ref: ArtifactRef) -> str | None:
+        row = self._session.get(ArtifactRow, str(artifact_ref))
+        return None if row is None else row.content_key
+
+    def transfer_identity(self, artifact_ref: ArtifactRef) -> tuple[str, str] | None:
+        row = self._session.get(ArtifactRow, str(artifact_ref))
+        if row is None or row.source_node_id is None or row.transfer_id is None:
             return None
-        return ArtifactDescriptor(
-            artifact_id=ArtifactRef(row.artifact_id),
-            artifact_type=row.artifact_type,
-            storage_ref=StorageRef(row.storage_ref),
-            created_by_run=CapabilityRunRef(row.run_id),
-            created_at=row.created_at,
-            sha256=row.sha256,
-            size_bytes=row.size_bytes,
-            media_type=row.media_type,
-            metadata=deepcopy(row.metadata_json),
-        )
+        return row.source_node_id, row.transfer_id
+
+    def _required_transfer_row(self, artifact_ref: ArtifactRef) -> ArtifactRow:
+        row = self._session.get(ArtifactRow, str(artifact_ref))
+        if row is None:
+            raise KeyError(f"unknown Artifact: {artifact_ref}")
+        if ArtifactContentState(row.content_state) is not ArtifactContentState.RECEIVING:
+            raise PersistenceIntegrityError(f"Artifact is not receiving content: {artifact_ref}")
+        return row
 
 
 class ObservationRepository:
@@ -388,6 +476,29 @@ def _mission_from_row(row: MissionRow) -> Mission:
         created_at=row.created_at,
         name=row.name,
         metadata=deepcopy(row.metadata_json),
+    )
+
+
+def _artifact_descriptor_from_row(row: ArtifactRow) -> ArtifactDescriptor:
+    return ArtifactDescriptor(
+        artifact_id=ArtifactRef(row.artifact_id),
+        artifact_type=row.artifact_type,
+        storage_ref=StorageRef(row.storage_ref),
+        created_by_run=CapabilityRunRef(row.run_id),
+        created_at=row.created_at,
+        sha256=row.sha256,
+        size_bytes=row.size_bytes,
+        media_type=row.media_type,
+        metadata=deepcopy(row.metadata_json),
+    )
+
+
+def _stored_artifact_from_row(row: ArtifactRow) -> StoredArtifact:
+    return StoredArtifact(
+        descriptor=_artifact_descriptor_from_row(row),
+        content_state=ArtifactContentState(row.content_state),
+        received_bytes=row.received_bytes,
+        sync_error=row.sync_error,
     )
 
 

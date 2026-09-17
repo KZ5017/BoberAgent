@@ -46,3 +46,7 @@ class ConflictingInvocation(ProtocolError):
 
 class TransportBackpressure(TransportError):
     code = "TRANSPORT_BACKPRESSURE"
+
+
+class ArtifactTransferUnavailable(TransportError):
+    code = "ARTIFACT_TRANSFER_UNAVAILABLE"

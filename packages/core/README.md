@@ -44,6 +44,20 @@ isolated behind this boundary so later asynchronous orchestration does not acqui
 No general Event Bus table exists. The transport inbox stores received envelopes for later
 processing and acknowledgement without interpreting their assessment meaning.
 
+## Artifact content
+
+Milestone 6 adds a configurable managed filesystem store beside the SQLite Artifact catalog.
+Incoming bytes are written under `incoming/` using hashed transfer identities, verified against the
+declared size and SHA-256, then atomically published under `content/sha256/<prefix>/<digest>.blob`.
+Node filenames and paths never select Core paths. Catalog state distinguishes metadata-only,
+receiving, available, and failed content; only verified `AVAILABLE` bytes are exposed through
+`CoreArtifactService`.
+
+Incomplete transfers remain unavailable and resume from their durable offset after restart. A
+published content file precedes the catalog commit, so a crash can leave only an unreferenced file,
+never metadata claiming a partial file is complete. Logical Artifact identity remains independent
+of content-addressed physical deduplication.
+
 `network.service` uses `(AssetRef, normalized transport, port)` as endpoint identity. Its public
 `ServiceRef` is a deterministic UUID5-derived logical reference. Replays add no duplicates. Every
 contributing Observation remains in provenance, while the greatest `(observed_at, observation_id)`

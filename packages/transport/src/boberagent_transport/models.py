@@ -32,7 +32,7 @@ from pydantic import (
 
 from .errors import MalformedMessage, UnsupportedProtocolVersion
 
-TRANSPORT_PROTOCOL_VERSION = "1.0"
+TRANSPORT_PROTOCOL_VERSION = "1.1"
 
 type NodeIdentifier = Annotated[
     str,
@@ -49,7 +49,13 @@ class TransportMessageId(DomainRef):
 
 
 class TransportModel(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        allow_inf_nan=False,
+        ser_json_bytes="base64",
+        val_json_bytes="base64",
+    )
 
 
 class DeliveryKind(StrEnum):

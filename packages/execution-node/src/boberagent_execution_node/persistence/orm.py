@@ -77,6 +77,9 @@ class ArtifactRow(Base):
     metadata_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
     local_path: Mapped[str] = mapped_column(Text, nullable=False)
     sync_state: Mapped[str] = mapped_column(String(32), nullable=False)
+    sync_attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_sync_attempt_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    sync_error: Mapped[str | None] = mapped_column(Text)
 
 
 class EventOutboxRow(Base):

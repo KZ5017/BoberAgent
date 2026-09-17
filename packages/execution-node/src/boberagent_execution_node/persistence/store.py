@@ -207,6 +207,9 @@ class RuntimeStore:
                     metadata_json=deepcopy(descriptor.metadata),
                     local_path=record.local_path,
                     sync_state=record.sync_state.value,
+                    sync_attempt_count=record.sync_attempt_count,
+                    last_sync_attempt_at=record.last_sync_attempt_at,
+                    sync_error=record.sync_error,
                 )
             )
 
@@ -223,6 +226,51 @@ class RuntimeStore:
                 .order_by(ArtifactRow.artifact_id)
             )
             return tuple(_artifact_record(row) for row in rows)
+
+    def list_artifacts_for_sync(self) -> tuple[SpoolArtifactRecord, ...]:
+        with self._database.transaction() as session:
+            rows = session.scalars(
+                select(ArtifactRow)
+                .where(
+                    ArtifactRow.sync_state.in_(
+                        [
+                            ArtifactSyncState.LOCAL_ONLY.value,
+                            ArtifactSyncState.SYNC_PENDING.value,
+                            ArtifactSyncState.SYNC_FAILED.value,
+                        ]
+                    )
+                )
+                .order_by(ArtifactRow.created_at, ArtifactRow.artifact_id)
+            )
+            return tuple(_artifact_record(row) for row in rows)
+
+    def begin_artifact_sync(self, artifact_ref: ArtifactRef, attempted_at: datetime) -> None:
+        with self._database.transaction() as session:
+            row = session.get(ArtifactRow, str(artifact_ref))
+            if row is None:
+                raise KeyError(f"unknown local Artifact: {artifact_ref}")
+            if ArtifactSyncState(row.sync_state) is ArtifactSyncState.SYNCED:
+                return
+            row.sync_state = ArtifactSyncState.SYNC_PENDING.value
+            row.sync_attempt_count += 1
+            row.last_sync_attempt_at = attempted_at
+            row.sync_error = None
+
+    def complete_artifact_sync(self, artifact_ref: ArtifactRef) -> None:
+        with self._database.transaction() as session:
+            row = session.get(ArtifactRow, str(artifact_ref))
+            if row is None:
+                raise KeyError(f"unknown local Artifact: {artifact_ref}")
+            row.sync_state = ArtifactSyncState.SYNCED.value
+            row.sync_error = None
+
+    def fail_artifact_sync(self, artifact_ref: ArtifactRef, error: str) -> None:
+        with self._database.transaction() as session:
+            row = session.get(ArtifactRow, str(artifact_ref))
+            if row is None:
+                raise KeyError(f"unknown local Artifact: {artifact_ref}")
+            row.sync_state = ArtifactSyncState.SYNC_FAILED.value
+            row.sync_error = error
 
     def artifact_count(self) -> int:
         with self._database.transaction() as session:
@@ -448,4 +496,7 @@ def _artifact_record(row: ArtifactRow) -> SpoolArtifactRecord:
         descriptor=descriptor,
         local_path=row.local_path,
         sync_state=ArtifactSyncState(row.sync_state),
+        sync_attempt_count=row.sync_attempt_count,
+        last_sync_attempt_at=row.last_sync_attempt_at,
+        sync_error=row.sync_error,
     )

@@ -1,16 +1,19 @@
 """Transport envelope serialization, connection, and backpressure tests."""
 
 import asyncio
+import hashlib
 from datetime import UTC, datetime
 
 import pytest
 from boberagent_contracts import (
+    ArtifactRef,
     AssetRef,
     CapabilityInvocation,
     CapabilityRunRef,
     MissionRef,
 )
 from boberagent_transport import (
+    ArtifactChunk,
     AssetProjection,
     InMemoryTransport,
     InvocationDelivery,
@@ -19,11 +22,15 @@ from boberagent_transport import (
     TransportBackpressure,
     TransportDisconnected,
     UnknownNode,
+    artifact_chunk_message_id,
+    artifact_transfer_id,
     invocation_fingerprint,
     invocation_message_id,
+    parse_artifact_request,
     parse_invocation,
     serialize_message,
 )
+from pydantic import ValidationError
 
 
 def _delivery(run_ref: str = "run-transport-unit") -> InvocationDelivery:
@@ -108,3 +115,36 @@ def test_in_memory_transport_is_bounded_and_connection_explicit() -> None:
         await transport.disconnect()
 
     asyncio.run(scenario())
+
+
+def test_binary_artifact_chunk_crosses_json_boundary() -> None:
+    artifact_ref = ArtifactRef("artifact-transport-binary")
+    transfer_id = artifact_transfer_id("node-binary", artifact_ref)
+    data = b"\x00\xff\x80binary\x00"
+    chunk = ArtifactChunk(
+        message_id=artifact_chunk_message_id(transfer_id, 7),
+        node_id="node-binary",
+        transfer_id=transfer_id,
+        artifact_ref=artifact_ref,
+        timestamp=datetime(2026, 9, 17, tzinfo=UTC),
+        offset=7,
+        data=data,
+        chunk_sha256=hashlib.sha256(data).hexdigest(),
+    )
+
+    restored = parse_artifact_request(serialize_message(chunk))
+
+    assert restored == chunk
+    assert isinstance(restored, ArtifactChunk)
+    assert restored.data == data
+    with pytest.raises(ValidationError, match="SHA-256"):
+        ArtifactChunk(
+            message_id=artifact_chunk_message_id(transfer_id, 7),
+            node_id="node-binary",
+            transfer_id=transfer_id,
+            artifact_ref=artifact_ref,
+            timestamp=datetime(2026, 9, 17, tzinfo=UTC),
+            offset=7,
+            data=data,
+            chunk_sha256="0" * 64,
+        )

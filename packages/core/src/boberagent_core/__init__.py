@@ -1,6 +1,13 @@
 """Core-owned persistence and deterministic World State materialization."""
 
+from .artifacts import (
+    ArtifactStorageConfiguration,
+    CoreArtifactReceiver,
+    CoreArtifactService,
+    FilesystemArtifactStorage,
+)
 from .models import (
+    ArtifactContentState,
     Asset,
     Goal,
     GoalRef,
@@ -8,6 +15,7 @@ from .models import (
     MaterializationStatus,
     Mission,
     Service,
+    StoredArtifact,
     StoredObservation,
     WorkflowRun,
     WorkflowStatus,
@@ -19,12 +27,17 @@ from .state import NetworkServiceValue, ReducerRegistry, service_ref_for_endpoin
 from .transport import CoreTransportClient, CoreTransportReceiver, TransportInboxRecord
 
 __all__ = [
+    "ArtifactContentState",
+    "ArtifactStorageConfiguration",
     "Asset",
+    "CoreArtifactReceiver",
+    "CoreArtifactService",
     "CoreDatabase",
     "CorePersistence",
     "CoreTransportClient",
     "CoreTransportReceiver",
     "DatabaseConfig",
+    "FilesystemArtifactStorage",
     "Goal",
     "GoalRef",
     "GoalStatus",
@@ -34,6 +47,7 @@ __all__ = [
     "PersistenceIntegrityError",
     "ReducerRegistry",
     "Service",
+    "StoredArtifact",
     "StoredObservation",
     "TransportInboxRecord",
     "WorkflowRun",

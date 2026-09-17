@@ -12,7 +12,7 @@ from boberagent_execution_node.persistence.migrations import (
     upgrade_database,
 )
 from pydantic import ValidationError
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 
 
 def test_empty_database_migrates_and_survives_reopen(tmp_path: Path) -> None:
@@ -21,7 +21,7 @@ def test_empty_database_migrates_and_survives_reopen(tmp_path: Path) -> None:
     assert current_revision(database) is None
 
     upgrade_database(database)
-    assert current_revision(database) == "0002_invocation_fingerprint"
+    assert current_revision(database) == "0003_artifact_sync_metadata"
     assert set(inspect(database.migration_engine).get_table_names()) == {
         "alembic_version",
         "artifact_spool",
@@ -35,7 +35,7 @@ def test_empty_database_migrates_and_survives_reopen(tmp_path: Path) -> None:
 
     reopened = RuntimeDatabase(database_path)
     try:
-        assert current_revision(reopened) == "0002_invocation_fingerprint"
+        assert current_revision(reopened) == "0003_artifact_sync_metadata"
         upgrade_database(reopened)
     finally:
         reopened.close()
@@ -55,12 +55,53 @@ def test_invocation_fingerprint_migration_upgrades_milestone_4_schema(
         assert "invocation_fingerprint" not in columns
 
         upgrade_database(database)
-        assert current_revision(database) == "0002_invocation_fingerprint"
+        assert current_revision(database) == "0003_artifact_sync_metadata"
         columns = {
             column["name"]
             for column in inspect(database.migration_engine).get_columns("runtime_runs")
         }
         assert "invocation_fingerprint" in columns
+    finally:
+        database.close()
+
+
+def test_artifact_sync_migration_preserves_milestone_5_spool_metadata(
+    tmp_path: Path,
+) -> None:
+    database = RuntimeDatabase(tmp_path / "artifact-upgrade.sqlite3")
+    try:
+        upgrade_database(database, "0002_invocation_fingerprint")
+        with database.migration_engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO runtime_runs "
+                    "(run_id, mission_id, capability_id, operation, status, created_at) VALUES "
+                    "('run-upgrade', 'mission-upgrade', 'test.upgrade', 'run', 'COMPLETED', "
+                    "'2026-01-01T00:00:00+00:00')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO artifact_spool "
+                    "(artifact_id, artifact_type, storage_ref, run_id, created_at, sha256, "
+                    "size_bytes, metadata_json, local_path, sync_state) VALUES "
+                    "('artifact-upgrade', 'test.raw', 'node-spool:old', 'run-upgrade', "
+                    "'2026-01-01T00:00:00+00:00', :digest, 7, '{}', '/managed/blob', "
+                    "'LOCAL_ONLY')"
+                ),
+                {"digest": "b" * 64},
+            )
+
+        upgrade_database(database)
+        assert current_revision(database) == "0003_artifact_sync_metadata"
+        with database.migration_engine.connect() as connection:
+            row = connection.execute(
+                text(
+                    "SELECT artifact_id, sync_state, sync_attempt_count FROM artifact_spool "
+                    "WHERE artifact_id = 'artifact-upgrade'"
+                )
+            ).one()
+        assert tuple(row) == ("artifact-upgrade", "LOCAL_ONLY", 0)
     finally:
         database.close()
 

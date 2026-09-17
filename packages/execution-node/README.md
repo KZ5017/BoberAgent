@@ -58,6 +58,11 @@ to `CapabilityRuntime`, and exposes those existing outboxes. Stable Event IDs an
 Run/result key make delivery idempotent; records become delivered only after acknowledgement.
 Transport disconnect does not cancel accepted Node work.
 
+`ArtifactSyncCoordinator` explicitly pumps `LOCAL_ONLY`, `SYNC_PENDING`, and retryable
+`SYNC_FAILED` spool entries over the neutral transport. It streams confined spool files in bounded
+chunks, persists attempt time/count and the latest diagnostic, and marks `SYNCED` only after Core's
+durable acknowledgement. Local bytes are retained after synchronization and across restart.
+
 ## Recovery policy
 
 Completed Runs are replayed from the Result outbox when the same `CapabilityRunRef` is submitted

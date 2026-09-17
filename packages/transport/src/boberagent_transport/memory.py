@@ -7,14 +7,21 @@ import contextlib
 from datetime import UTC, datetime
 from uuid import uuid4
 
+from .artifact import (
+    ArtifactTransferRequest,
+    ArtifactTransferResponse,
+    ArtifactTransferStart,
+    parse_artifact_response,
+)
 from .errors import (
+    ArtifactTransferUnavailable,
     ProtocolError,
     TransportBackpressure,
     TransportDisconnected,
     TransportError,
     UnknownNode,
 )
-from .interfaces import TransportNodeEndpoint
+from .interfaces import TransportArtifactReceiver, TransportNodeEndpoint
 from .models import (
     DeliveryAcknowledgement,
     HandshakeRequest,
@@ -38,6 +45,7 @@ class InMemoryTransport:
         if queue_capacity < 1 or max_in_flight < 1:
             raise ValueError("queue_capacity and max_in_flight must be positive")
         self._endpoints: dict[str, TransportNodeEndpoint] = {}
+        self._artifact_receiver: TransportArtifactReceiver | None = None
         self._inbound: asyncio.Queue[tuple[str, bytes]] = asyncio.Queue(queue_capacity)
         self._outbound: asyncio.Queue[bytes] = asyncio.Queue(queue_capacity)
         self._failures: asyncio.Queue[TransportFailure] = asyncio.Queue(queue_capacity)
@@ -56,6 +64,9 @@ class InMemoryTransport:
         if existing is not None and existing is not endpoint and not replace:
             raise ValueError(f"Node is already registered: {endpoint.node_id}")
         self._endpoints[endpoint.node_id] = endpoint
+
+    def register_artifact_receiver(self, receiver: TransportArtifactReceiver) -> None:
+        self._artifact_receiver = receiver
 
     async def connect(self) -> None:
         if self._connected:
@@ -144,6 +155,30 @@ class InMemoryTransport:
         self._require_connected()
         endpoint = self._endpoint(acknowledgement.node_id)
         await endpoint.acknowledge(serialize_message(acknowledgement))
+
+    async def exchange_artifact(self, request: ArtifactTransferRequest) -> ArtifactTransferResponse:
+        self._require_connected()
+        self._endpoint(request.node_id)
+        receiver = self._artifact_receiver
+        if receiver is None:
+            raise ArtifactTransferUnavailable("no Core Artifact receiver is registered")
+        serialized = await receiver.accept_artifact_message(serialize_message(request))
+        response = parse_artifact_response(serialized)
+        ensure_supported_protocol(response.protocol_version)
+        if (
+            response.request_message_id != request.message_id
+            or response.node_id != request.node_id
+            or response.transfer_id != request.transfer_id
+        ):
+            raise ProtocolError("Artifact transfer response does not match its request")
+        artifact_ref = (
+            request.descriptor.artifact_id
+            if isinstance(request, ArtifactTransferStart)
+            else request.artifact_ref
+        )
+        if response.artifact_ref != artifact_ref:
+            raise ProtocolError("Artifact transfer response identifies a different Artifact")
+        return response
 
     async def receive_failure(self) -> TransportFailure:
         self._require_connected()

@@ -15,8 +15,10 @@ versions, serialized envelopes, structural transport/endpoint interfaces, transp
 bounded in-memory adapter. Core owns its durable receiving inbox and client facade. Execution Node
 owns its endpoint adapter and existing durable outboxes.
 
-The package contains no Core orchestration, Node runtime behavior, networking, MCP, Artifact byte
-transfer, or domain result ingestion.
+At Milestone 5 the package contained no Artifact byte transfer. ADR 0002 subsequently extends the
+same neutral boundary with bounded Artifact transfer messages while preserving this ownership
+decision. The package still contains no Core storage, Node spool behavior, networking, MCP, or
+domain result ingestion.
 
 ## Consequences
 

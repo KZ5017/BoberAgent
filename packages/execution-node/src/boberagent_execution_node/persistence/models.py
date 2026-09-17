@@ -90,6 +90,9 @@ class SpoolArtifactRecord(RuntimeModel):
     descriptor: ArtifactDescriptor
     local_path: str
     sync_state: ArtifactSyncState
+    sync_attempt_count: int = 0
+    last_sync_attempt_at: AwareDatetime | None = None
+    sync_error: str | None = None
 
 
 class EventOutboxRecord(RuntimeModel):

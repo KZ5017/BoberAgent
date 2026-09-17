@@ -4,6 +4,7 @@ from enum import StrEnum
 from typing import Annotated
 
 from boberagent_contracts import (
+    ArtifactDescriptor,
     AssetRef,
     JsonObject,
     MissionRef,
@@ -38,6 +39,15 @@ class MaterializationStatus(StrEnum):
     PARTIALLY_MATERIALIZED = "PARTIALLY_MATERIALIZED"
     UNSUPPORTED = "UNSUPPORTED"
     REJECTED = "REJECTED"
+
+
+class ArtifactContentState(StrEnum):
+    """Core-owned availability state, separate from Contract metadata."""
+
+    METADATA_ONLY = "METADATA_ONLY"
+    RECEIVING = "RECEIVING"
+    AVAILABLE = "AVAILABLE"
+    FAILED = "FAILED"
 
 
 class WorkflowStatus(StrEnum):
@@ -91,6 +101,19 @@ class StoredObservation(CoreModel):
     observation: Observation
     materialization_status: MaterializationStatus
     materialization_error: str | None = None
+
+
+class StoredArtifact(CoreModel):
+    """Artifact metadata plus Core-owned content availability state."""
+
+    descriptor: ArtifactDescriptor
+    content_state: ArtifactContentState
+    received_bytes: int = Field(ge=0)
+    sync_error: str | None = None
+
+    @property
+    def content_available(self) -> bool:
+        return self.content_state is ArtifactContentState.AVAILABLE
 
 
 class Service(CoreModel):

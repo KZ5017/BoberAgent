@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from boberagent_core import CoreDatabase, DatabaseConfig, current_revision, upgrade_database
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 
 EXPECTED_TABLES = {
     "alembic_version",
@@ -25,7 +25,7 @@ def test_migration_upgrades_empty_database(database_path: Path) -> None:
         assert not database_path.exists()
         upgrade_database(database)
         assert set(inspect(database._migration_engine).get_table_names()) == EXPECTED_TABLES
-        assert current_revision(database) == "0002_transport_inbox"
+        assert current_revision(database) == "0003_artifact_content"
     finally:
         database.dispose()
 
@@ -38,7 +38,7 @@ def test_migrated_database_can_be_reopened(database_path: Path) -> None:
     reopened = CoreDatabase(DatabaseConfig.sqlite(database_path))
     try:
         upgrade_database(reopened)
-        assert current_revision(reopened) == "0002_transport_inbox"
+        assert current_revision(reopened) == "0003_artifact_content"
     finally:
         reopened.dispose()
 
@@ -53,8 +53,60 @@ def test_transport_inbox_migration_upgrades_milestone_2_schema(
         assert "transport_inbox" not in inspect(database._migration_engine).get_table_names()
 
         upgrade_database(database)
-        assert current_revision(database) == "0002_transport_inbox"
+        assert current_revision(database) == "0003_artifact_content"
         assert "transport_inbox" in inspect(database._migration_engine).get_table_names()
+    finally:
+        database.dispose()
+
+
+def test_artifact_content_migration_preserves_milestone_5_metadata(
+    database_path: Path,
+) -> None:
+    database = CoreDatabase(DatabaseConfig.sqlite(database_path))
+    try:
+        upgrade_database(database, "0002_transport_inbox")
+        with database._migration_engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO missions "
+                    "(mission_id, status, created_at, metadata_json) "
+                    "VALUES ('mission-upgrade', 'ACTIVE', '2026-01-01T00:00:00+00:00', '{}')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO capability_runs "
+                    "(run_id, mission_id, capability_id, operation, status, created_at) "
+                    "VALUES ('run-upgrade', 'mission-upgrade', 'test.upgrade', 'run', "
+                    "'COMPLETED', '2026-01-01T00:00:00+00:00')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO artifacts "
+                    "(artifact_id, artifact_type, storage_ref, run_id, created_at, sha256, "
+                    "size_bytes, metadata_json) VALUES "
+                    "('artifact-upgrade', 'test.raw', 'storage:old', 'run-upgrade', "
+                    "'2026-01-01T00:00:00+00:00', :digest, 7, '{}')"
+                ),
+                {"digest": "a" * 64},
+            )
+
+        upgrade_database(database)
+        assert current_revision(database) == "0003_artifact_content"
+        columns = {
+            str(column["name"])
+            for column in inspect(database._migration_engine).get_columns("artifacts")
+        }
+        assert {"content_state", "content_key", "received_bytes"} <= columns
+        with database._migration_engine.connect() as connection:
+            row = connection.execute(
+                text(
+                    "SELECT artifact_id, content_state, received_bytes FROM artifacts "
+                    "WHERE artifact_id = 'artifact-upgrade'"
+                )
+            ).one()
+        assert tuple(row) == ("artifact-upgrade", "METADATA_ONLY", 0)
     finally:
         database.dispose()
 

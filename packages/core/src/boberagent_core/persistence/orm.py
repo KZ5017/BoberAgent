@@ -98,19 +98,26 @@ class CapabilityRunRow(Base):
 
 class ArtifactRow(Base):
     __tablename__ = "artifacts"
-    __table_args__: tuple[Index] = (Index("ix_artifacts_run_id", "run_id"),)
+    __table_args__: tuple[Index, Index] = (
+        Index("ix_artifacts_run_id", "run_id"),
+        Index("ix_artifacts_sha256", "sha256"),
+    )
 
     artifact_id: Mapped[str] = mapped_column(String(255), primary_key=True)
     artifact_type: Mapped[str] = mapped_column(String(255), nullable=False)
     storage_ref: Mapped[str] = mapped_column(String(255), nullable=False)
-    run_id: Mapped[str] = mapped_column(
-        ForeignKey("capability_runs.run_id", ondelete="RESTRICT"), nullable=False
-    )
+    run_id: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
     sha256: Mapped[str | None] = mapped_column(String(64))
     size_bytes: Mapped[int | None] = mapped_column(Integer)
     media_type: Mapped[str | None] = mapped_column(String(255))
     metadata_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False, default=dict)
+    content_state: Mapped[str] = mapped_column(String(32), nullable=False, default="METADATA_ONLY")
+    content_key: Mapped[str | None] = mapped_column(String(255))
+    source_node_id: Mapped[str | None] = mapped_column(String(255))
+    transfer_id: Mapped[str | None] = mapped_column(String(255))
+    received_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    sync_error: Mapped[str | None] = mapped_column(Text)
 
 
 class ObservationRow(Base):

@@ -1,6 +1,25 @@
 """Public transport-neutral BoberAgent protocol surface."""
 
+from .artifact import (
+    MAX_PROTOCOL_CHUNK_BYTES,
+    ArtifactChunk,
+    ArtifactTransferAcknowledgement,
+    ArtifactTransferFinalize,
+    ArtifactTransferId,
+    ArtifactTransferReady,
+    ArtifactTransferRejection,
+    ArtifactTransferRequest,
+    ArtifactTransferResponse,
+    ArtifactTransferStart,
+    artifact_chunk_message_id,
+    artifact_finalize_message_id,
+    artifact_start_message_id,
+    artifact_transfer_id,
+    parse_artifact_request,
+    parse_artifact_response,
+)
 from .errors import (
+    ArtifactTransferUnavailable,
     ConflictingInvocation,
     MalformedMessage,
     ProtocolError,
@@ -10,7 +29,12 @@ from .errors import (
     UnknownNode,
     UnsupportedProtocolVersion,
 )
-from .interfaces import CapabilityTransport, TransportNodeEndpoint
+from .interfaces import (
+    ArtifactTransport,
+    CapabilityTransport,
+    TransportArtifactReceiver,
+    TransportNodeEndpoint,
+)
 from .memory import InMemoryTransport
 from .models import (
     TRANSPORT_PROTOCOL_VERSION,
@@ -41,7 +65,19 @@ from .models import (
 )
 
 __all__ = [
+    "MAX_PROTOCOL_CHUNK_BYTES",
     "TRANSPORT_PROTOCOL_VERSION",
+    "ArtifactChunk",
+    "ArtifactTransferAcknowledgement",
+    "ArtifactTransferFinalize",
+    "ArtifactTransferId",
+    "ArtifactTransferReady",
+    "ArtifactTransferRejection",
+    "ArtifactTransferRequest",
+    "ArtifactTransferResponse",
+    "ArtifactTransferStart",
+    "ArtifactTransferUnavailable",
+    "ArtifactTransport",
     "AssetProjection",
     "CapabilityTransport",
     "ConflictingInvocation",
@@ -58,6 +94,7 @@ __all__ = [
     "OutboundEnvelope",
     "ProtocolError",
     "ResultEnvelope",
+    "TransportArtifactReceiver",
     "TransportBackpressure",
     "TransportDisconnected",
     "TransportError",
@@ -66,12 +103,18 @@ __all__ = [
     "TransportNodeEndpoint",
     "UnknownNode",
     "UnsupportedProtocolVersion",
+    "artifact_chunk_message_id",
+    "artifact_finalize_message_id",
+    "artifact_start_message_id",
+    "artifact_transfer_id",
     "ensure_supported_protocol",
     "event_message_id",
     "invocation_fingerprint",
     "invocation_message_id",
     "parse_acknowledgement",
     "parse_advertisement",
+    "parse_artifact_request",
+    "parse_artifact_response",
     "parse_handshake_request",
     "parse_invocation",
     "parse_outbound",

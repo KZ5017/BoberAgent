@@ -1,5 +1,6 @@
 """Public local Execution Node foundation."""
 
+from .artifacts import ArtifactSyncCoordinator, ArtifactSyncOutcome
 from .config import NodeConfiguration, ToolConfiguration
 from .health import NodeHealth
 from .identity import NodeId, NodeIdentity
@@ -9,6 +10,8 @@ from .services import LocalInvocationEnvironment
 from .transport import ExecutionNodeTransportEndpoint
 
 __all__ = [
+    "ArtifactSyncCoordinator",
+    "ArtifactSyncOutcome",
     "ExecutionNode",
     "ExecutionNodeTransportEndpoint",
     "LocalInvocationEnvironment",

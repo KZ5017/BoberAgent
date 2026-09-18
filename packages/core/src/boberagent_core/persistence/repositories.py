@@ -85,6 +85,10 @@ class MissionRepository:
         row = self._session.get(MissionRow, str(mission_ref))
         return None if row is None else _mission_from_row(row)
 
+    def list_all(self) -> tuple[Mission, ...]:
+        rows = self._session.scalars(select(MissionRow).order_by(MissionRow.mission_id))
+        return tuple(_mission_from_row(row) for row in rows)
+
 
 class AssetRepository:
     def __init__(self, session: Session) -> None:

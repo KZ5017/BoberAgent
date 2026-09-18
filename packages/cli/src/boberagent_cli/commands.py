@@ -1,0 +1,257 @@
+"""Thin command handlers delegating behavior to public Core services."""
+
+from __future__ import annotations
+
+import json
+from argparse import Namespace
+from collections.abc import Mapping
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
+from uuid import UUID
+
+from boberagent_contracts import (
+    AssetRef,
+    CapabilityRunRef,
+    JsonObject,
+    MissionRef,
+    WorkflowRunRef,
+)
+from boberagent_core import (
+    Asset,
+    CapabilityRegistry,
+    CoreDatabase,
+    CorePersistence,
+    Mission,
+    ResultIngestionService,
+    WorkflowDefinition,
+    WorkflowService,
+    current_revision,
+    head_revision,
+    upgrade_database,
+)
+from pydantic import TypeAdapter, ValidationError
+
+from .composition import (
+    RemoteNodeConfiguration,
+    WorkflowSessionFactory,
+)
+from .errors import CliInvalidInput, CliNotFound
+from .output import OutputWriter
+
+_json_object_adapter: TypeAdapter[JsonObject] = TypeAdapter(JsonObject)
+
+
+@dataclass(slots=True)
+class CommandContext:
+    database: CoreDatabase
+    output: OutputWriter
+    environment: Mapping[str, str]
+    workflow_sessions: WorkflowSessionFactory
+
+    @property
+    def core(self) -> CorePersistence:
+        return CorePersistence(self.database)
+
+
+def core_init(database: CoreDatabase, output: OutputWriter) -> None:
+    upgrade_database(database)
+    output.emit(
+        {
+            "database_url": database.config.url,
+            "revision": current_revision(database),
+            "schema_current": current_revision(database) == head_revision(),
+        }
+    )
+
+
+def core_status(database_path: Path, output: OutputWriter) -> None:
+    resolved = database_path.resolve()
+    if not resolved.exists():
+        output.emit(
+            {
+                "database_path": str(resolved),
+                "exists": False,
+                "revision": None,
+                "expected_revision": head_revision(),
+                "schema_current": False,
+            }
+        )
+        return
+    if not resolved.is_file():
+        raise CliInvalidInput("Core database path is not a regular file")
+    from boberagent_core import DatabaseConfig
+
+    database = CoreDatabase(DatabaseConfig.sqlite(resolved))
+    try:
+        revision = current_revision(database)
+    finally:
+        database.dispose()
+    output.emit(
+        {
+            "database_path": str(resolved),
+            "exists": True,
+            "revision": revision,
+            "expected_revision": head_revision(),
+            "schema_current": revision == head_revision(),
+        }
+    )
+
+
+def mission_create(arguments: Namespace, context: CommandContext) -> None:
+    mission = Mission(
+        mission_ref=MissionRef(arguments.mission_ref),
+        status=arguments.status,
+        created_at=datetime.now(UTC),
+        name=arguments.name,
+        metadata=_json_object(arguments.metadata),
+    )
+    context.core.create_mission(mission)
+    context.output.emit(mission)
+
+
+def mission_show(arguments: Namespace, context: CommandContext) -> None:
+    mission = context.core.get_mission(MissionRef(arguments.mission_ref))
+    if mission is None:
+        raise CliNotFound(f"Mission not found: {arguments.mission_ref}")
+    context.output.emit(mission)
+
+
+def mission_list(_arguments: Namespace, context: CommandContext) -> None:
+    context.output.emit(context.core.list_missions())
+
+
+def asset_add(arguments: Namespace, context: CommandContext) -> None:
+    mission_ref = MissionRef(arguments.mission_ref)
+    if context.core.get_mission(mission_ref) is None:
+        raise CliNotFound(f"Mission not found: {mission_ref}")
+    asset = Asset(
+        asset_ref=AssetRef(arguments.asset_ref),
+        mission_ref=mission_ref,
+        kind=arguments.kind,
+        primary_address=arguments.address,
+        created_at=datetime.now(UTC),
+        metadata=_json_object(arguments.metadata),
+    )
+    context.core.create_asset(asset)
+    context.output.emit(asset)
+
+
+def asset_show(arguments: Namespace, context: CommandContext) -> None:
+    asset = context.core.get_asset(AssetRef(arguments.asset_ref))
+    if asset is None:
+        raise CliNotFound(f"Asset not found: {arguments.asset_ref}")
+    context.output.emit(asset)
+
+
+def asset_list(arguments: Namespace, context: CommandContext) -> None:
+    mission_ref = MissionRef(arguments.mission_ref)
+    if context.core.get_mission(mission_ref) is None:
+        raise CliNotFound(f"Mission not found: {mission_ref}")
+    context.output.emit(context.core.list_assets(mission_ref))
+
+
+def provider_list(arguments: Namespace, context: CommandContext) -> None:
+    registry = CapabilityRegistry(context.database, mark_persisted_stale=False)
+    if arguments.capability_id is None:
+        providers = tuple(
+            provider
+            for definition in registry.list_capabilities()
+            for provider in registry.list_providers(str(definition.capability_id))
+        )
+    else:
+        providers = registry.list_providers(arguments.capability_id)
+    context.output.emit(providers)
+
+
+def provider_show(arguments: Namespace, context: CommandContext) -> None:
+    registry = CapabilityRegistry(context.database, mark_persisted_stale=False)
+    provider = registry.get_provider(UUID(arguments.provider_id))
+    if provider is None:
+        raise CliNotFound(f"Capability provider not found: {arguments.provider_id}")
+    context.output.emit(provider)
+
+
+async def workflow_start(arguments: Namespace, context: CommandContext) -> None:
+    definition = _workflow_definition(arguments.definition)
+    remote = _remote_configuration(arguments, context.environment)
+    async with context.workflow_sessions(context.database, remote) as session:
+        execution = await session.workflows.start(
+            definition,
+            MissionRef(arguments.mission_ref),
+            workflow_run_ref=(
+                None if arguments.workflow_ref is None else WorkflowRunRef(arguments.workflow_ref)
+            ),
+        )
+    context.output.emit(execution)
+
+
+def workflow_status(arguments: Namespace, context: CommandContext) -> None:
+    execution = WorkflowService(context.database).inspect(WorkflowRunRef(arguments.workflow_ref))
+    if execution is None:
+        raise CliNotFound(f"Workflow not found: {arguments.workflow_ref}")
+    context.output.emit(execution)
+
+
+async def workflow_advance(arguments: Namespace, context: CommandContext) -> None:
+    remote = _remote_configuration(arguments, context.environment)
+    workflow_ref = WorkflowRunRef(arguments.workflow_ref)
+    async with context.workflow_sessions(context.database, remote) as session:
+        await session.receive_pending()
+        execution = await session.workflows.advance(workflow_ref)
+    context.output.emit(execution)
+
+
+def workflow_cancel(arguments: Namespace, context: CommandContext) -> None:
+    execution = WorkflowService(context.database).cancel(WorkflowRunRef(arguments.workflow_ref))
+    context.output.emit(execution)
+
+
+def run_show(arguments: Namespace, context: CommandContext) -> None:
+    run_ref = CapabilityRunRef(arguments.run_ref)
+    run = context.core.get_run(run_ref)
+    if run is None:
+        raise CliNotFound(f"CapabilityRun not found: {arguments.run_ref}")
+    ingestion = ResultIngestionService(context.database).get_ingestion(run_ref)
+    context.output.emit({"run": run, "result_ingestion": ingestion})
+
+
+def service_list(arguments: Namespace, context: CommandContext) -> None:
+    asset_ref = AssetRef(arguments.asset_ref)
+    if context.core.get_asset(asset_ref) is None:
+        raise CliNotFound(f"Asset not found: {arguments.asset_ref}")
+    context.output.emit(context.core.services_for_asset(asset_ref))
+
+
+def _json_object(value: str) -> JsonObject:
+    try:
+        parsed = json.loads(value)
+        return _json_object_adapter.validate_python(parsed)
+    except (json.JSONDecodeError, ValidationError) as error:
+        raise CliInvalidInput("metadata must be a JSON object") from error
+
+
+def _workflow_definition(path: Path) -> WorkflowDefinition:
+    try:
+        content = path.read_text(encoding="utf-8")
+    except OSError as error:
+        raise CliInvalidInput(f"could not read Workflow definition: {path}") from error
+    try:
+        return WorkflowDefinition.model_validate_json(content)
+    except ValidationError as error:
+        raise CliInvalidInput("Workflow definition failed validation") from error
+
+
+def _remote_configuration(
+    arguments: Namespace,
+    environment: Mapping[str, str],
+) -> RemoteNodeConfiguration:
+    return RemoteNodeConfiguration.from_values(
+        endpoint_url=arguments.node_url,
+        node_id=arguments.node_id,
+        bearer_token_environment=arguments.bearer_token_env,
+        environment=environment,
+        request_timeout_seconds=arguments.request_timeout,
+        verify_tls=not arguments.no_verify_tls,
+        allow_insecure_remote_transport=arguments.allow_insecure_remote_transport,
+    )

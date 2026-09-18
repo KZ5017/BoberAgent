@@ -45,7 +45,7 @@ class WorkflowService:
     def __init__(
         self,
         database: CoreDatabase,
-        router: CapabilityRouter,
+        router: CapabilityRouter | None = None,
         *,
         clock: Callable[[], datetime] = utc_now,
     ) -> None:
@@ -107,6 +107,7 @@ class WorkflowService:
         *,
         workflow_run_ref: WorkflowRunRef | None = None,
     ) -> WorkflowExecution:
+        self._require_router()
         created = self.create_run(
             definition,
             mission_ref,
@@ -142,8 +143,10 @@ class WorkflowService:
             }:
                 return self._fail_from_terminal_step(execution, current)
             if current.status is WorkflowStepStatus.PENDING:
+                self._require_router()
                 current = self._prepare_step(execution.run, current)
             if current.status is WorkflowStepStatus.PREPARED:
+                self._require_router()
                 return await self._dispatch_step(execution.run, current)
             if current.status is WorkflowStepStatus.ACTIVE:
                 reconciled = self._reconcile_active_step(execution.run, current)
@@ -240,14 +243,15 @@ class WorkflowService:
             workflow_run_ref=workflow.workflow_run_ref,
         )
         delivery = self._build_delivery(invocation)
+        router = self._require_router()
         try:
-            provider = self._router.selected_provider_for_run(invocation.run_id)
+            provider = router.selected_provider_for_run(invocation.run_id)
             if provider is None:
-                provider = self._router.select_provider(
+                provider = router.select_provider(
                     capability_id=invocation.capability_id,
                     operation=invocation.operation,
                 )
-            await self._router.dispatch(
+            await router.dispatch(
                 invocation=invocation,
                 delivery=delivery,
                 provider=provider,
@@ -400,6 +404,11 @@ class WorkflowService:
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("Workflow clock must return a timezone-aware datetime")
         return value
+
+    def _require_router(self) -> CapabilityRouter:
+        if self._router is None:
+            raise WorkflowStateError("Workflow dispatch requires a configured CapabilityRouter")
+        return self._router
 
 
 def capability_run_ref_for_step(workflow_ref: WorkflowRunRef, step_id: str) -> CapabilityRunRef:

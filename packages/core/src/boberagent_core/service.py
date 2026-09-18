@@ -6,6 +6,7 @@ from boberagent_contracts import (
     ArtifactDescriptor,
     AssetRef,
     CapabilityRun,
+    CapabilityRunRef,
     MissionRef,
     Observation,
     ObservationRef,
@@ -39,6 +40,10 @@ class CorePersistence:
         with self._database.unit_of_work() as work:
             return work.missions.get(mission_ref)
 
+    def list_missions(self) -> tuple[Mission, ...]:
+        with self._database.unit_of_work() as work:
+            return work.missions.list_all()
+
     def create_asset(self, asset: Asset) -> None:
         with self._database.unit_of_work() as work:
             work.assets.add(asset)
@@ -47,9 +52,17 @@ class CorePersistence:
         with self._database.unit_of_work() as work:
             return work.assets.get(asset_ref)
 
+    def list_assets(self, mission_ref: MissionRef) -> tuple[Asset, ...]:
+        with self._database.unit_of_work() as work:
+            return work.assets.list_for_mission(mission_ref)
+
     def record_run(self, run: CapabilityRun) -> None:
         with self._database.unit_of_work() as work:
             work.runs.add(run)
+
+    def get_run(self, run_ref: CapabilityRunRef) -> CapabilityRun | None:
+        with self._database.unit_of_work() as work:
+            return work.runs.get(run_ref)
 
     def record_artifact(self, artifact: ArtifactDescriptor) -> None:
         with self._database.unit_of_work() as work:

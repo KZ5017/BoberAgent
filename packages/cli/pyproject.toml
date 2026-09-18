@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "boberagent-cli"
+version = "0.0.0"
+description = "Thin operator CLI for BoberAgent Core"
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "boberagent-contracts",
+    "boberagent-core",
+    "boberagent-transport",
+    "boberagent-transport-mcp",
+    "pydantic>=2.12,<3",
+]
+
+[project.scripts]
+boberagent = "boberagent_cli.main:main"
+
+[tool.uv.sources]
+boberagent-contracts = { workspace = true }
+boberagent-core = { workspace = true }
+boberagent-transport = { workspace = true }
+boberagent-transport-mcp = { workspace = true }

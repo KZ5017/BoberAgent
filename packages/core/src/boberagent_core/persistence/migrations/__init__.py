@@ -9,6 +9,7 @@ from pathlib import Path
 from alembic import command
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
 from sqlalchemy import Connection
 
 from boberagent_core.persistence.database import CoreDatabase, DatabaseConfig
@@ -37,6 +38,16 @@ def current_revision(database: CoreDatabase) -> str | None:
 
     with database._migration_engine.connect() as connection:
         return _revision_from_connection(connection)
+
+
+def head_revision() -> str:
+    """Return the single expected Core schema head without opening a database."""
+
+    script = ScriptDirectory.from_config(alembic_config("sqlite+pysqlite:///:memory:"))
+    head = script.get_current_head()
+    if head is None:
+        raise RuntimeError("Core migration history has no head revision")
+    return head
 
 
 def _revision_from_connection(connection: Connection) -> str | None:

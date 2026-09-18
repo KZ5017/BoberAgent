@@ -10,6 +10,7 @@ resolution-markers = [
 [manifest]
 members = [
     "boberagent-capability-network-service-discovery",
+    "boberagent-cli",
     "boberagent-contracts",
     "boberagent-core",
     "boberagent-execution-node",
@@ -78,6 +79,27 @@ dependencies = [
 requires-dist = [
     { name = "boberagent-contracts", editable = "packages/contracts" },
     { name = "boberagent-sdk", editable = "packages/sdk" },
+    { name = "pydantic", specifier = ">=2.12,<3" },
+]
+
+[[package]]
+name = "boberagent-cli"
+version = "0.0.0"
+source = { editable = "packages/cli" }
+dependencies = [
+    { name = "boberagent-contracts" },
+    { name = "boberagent-core" },
+    { name = "boberagent-transport" },
+    { name = "boberagent-transport-mcp" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "boberagent-contracts", editable = "packages/contracts" },
+    { name = "boberagent-core", editable = "packages/core" },
+    { name = "boberagent-transport", editable = "packages/transport" },
+    { name = "boberagent-transport-mcp", editable = "packages/transport-mcp" },
     { name = "pydantic", specifier = ">=2.12,<3" },
 ]
 

@@ -25,6 +25,7 @@ from .capabilities import (
     UnsupportedOperation,
     provider_id_for,
 )
+from .capabilities.mcp import CoreMcpNodeConnection
 from .models import (
     ArtifactContentState,
     Asset,
@@ -46,7 +47,7 @@ from .models import (
     WorkflowStepSuccessPolicy,
 )
 from .persistence import CoreDatabase, DatabaseConfig, PersistenceIntegrityError
-from .persistence.migrations import current_revision, upgrade_database
+from .persistence.migrations import current_revision, head_revision, upgrade_database
 from .results import (
     ConflictingResultError,
     ResultIngestion,
@@ -84,6 +85,7 @@ __all__ = [
     "CoreArtifactReceiver",
     "CoreArtifactService",
     "CoreDatabase",
+    "CoreMcpNodeConnection",
     "CorePersistence",
     "CoreTransportClient",
     "CoreTransportReceiver",
@@ -129,6 +131,7 @@ __all__ = [
     "WorkflowStepSuccessPolicy",
     "capability_run_ref_for_step",
     "current_revision",
+    "head_revision",
     "provider_id_for",
     "result_fingerprint",
     "service_ref_for_endpoint",

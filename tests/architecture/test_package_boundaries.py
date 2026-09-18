@@ -14,6 +14,7 @@ PACKAGE_SOURCE_ROOTS = {
     "boberagent_contracts": REPOSITORY_ROOT / "packages/contracts/src/boberagent_contracts",
     "boberagent_sdk": REPOSITORY_ROOT / "packages/sdk/src/boberagent_sdk",
     "boberagent_core": REPOSITORY_ROOT / "packages/core/src/boberagent_core",
+    "boberagent_cli": REPOSITORY_ROOT / "packages/cli/src/boberagent_cli",
     "boberagent_execution_node": (
         REPOSITORY_ROOT / "packages/execution-node/src/boberagent_execution_node"
     ),
@@ -49,6 +50,13 @@ FORBIDDEN_IMPORTS = {
             "boberagent_execution_node",
             "boberagent_sdk",
             "mcp",
+        }
+    ),
+    "boberagent_cli": frozenset(
+        {
+            "alembic",
+            "boberagent_execution_node",
+            "sqlalchemy",
         }
     ),
     "boberagent_execution_node": frozenset({"boberagent_core", "mcp"}),
@@ -119,10 +127,10 @@ def test_package_does_not_import_forbidden_dependencies(package_name: str) -> No
 
     for path in _python_files(source_root):
         for imported_module in sorted(_imports_in(path)):
-            imports_capability_implementation = (
-                package_name == "boberagent_core"
-                and imported_module.startswith("boberagent_capability_")
-            )
+            imports_capability_implementation = package_name in {
+                "boberagent_cli",
+                "boberagent_core",
+            } and imported_module.startswith("boberagent_capability_")
             if imports_capability_implementation or any(
                 _matches_package(imported_module, dependency) for dependency in forbidden
             ):
@@ -165,3 +173,19 @@ def test_workflow_engine_uses_only_core_and_neutral_transport_boundaries() -> No
                 violations.append(f"{relative_path}: imports {imported_module}")
 
     assert not violations, "Workflow boundary violations found:\n" + "\n".join(violations)
+
+
+def test_cli_keeps_concrete_transport_in_composition_module() -> None:
+    source_root = PACKAGE_SOURCE_ROOTS["boberagent_cli"]
+    violations: list[str] = []
+    for path in _python_files(source_root):
+        if path.name == "composition.py":
+            continue
+        for imported_module in sorted(_imports_in(path)):
+            if _matches_package(imported_module, "boberagent_transport_mcp"):
+                relative_path = path.relative_to(REPOSITORY_ROOT)
+                violations.append(f"{relative_path}: imports {imported_module}")
+
+    assert not violations, "CLI presentation imports concrete MCP transport:\n" + "\n".join(
+        violations
+    )

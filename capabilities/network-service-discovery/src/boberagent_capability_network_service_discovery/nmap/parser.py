@@ -8,7 +8,9 @@ from dataclasses import dataclass
 
 from boberagent_contracts import JsonObject
 
-_UNSAFE_DECLARATION = re.compile(rb"<!\s*(?:DOCTYPE|ENTITY)\b", re.IGNORECASE)
+_DOCTYPE_DECLARATION = re.compile(rb"<!\s*DOCTYPE\b", re.IGNORECASE)
+_ENTITY_DECLARATION = re.compile(rb"<!\s*ENTITY\b", re.IGNORECASE)
+_SAFE_NMAP_DOCTYPE = b"<!DOCTYPE nmaprun>"
 
 
 class NmapXmlError(ValueError):
@@ -38,8 +40,7 @@ class NmapServiceRecord:
 def parse_nmap_xml(content: bytes) -> tuple[NmapServiceRecord, ...]:
     """Parse explicit TCP port records without resolving external XML resources."""
 
-    if _UNSAFE_DECLARATION.search(content) is not None:
-        raise NmapXmlError("Nmap XML contains a forbidden document or entity declaration")
+    _validate_document_declarations(content)
     try:
         root = element_tree.fromstring(content)
     except element_tree.ParseError as error:
@@ -78,6 +79,20 @@ def parse_nmap_xml(content: bytes) -> tuple[NmapServiceRecord, ...]:
             )
         )
     return tuple(sorted(records, key=lambda record: (record.port, record.state)))
+
+
+def _validate_document_declarations(content: bytes) -> None:
+    if _ENTITY_DECLARATION.search(content) is not None:
+        raise NmapXmlError("Nmap XML contains a forbidden entity declaration")
+    declarations = tuple(_DOCTYPE_DECLARATION.finditer(content))
+    if not declarations:
+        return
+    if len(declarations) != 1:
+        raise NmapXmlError("Nmap XML contains multiple document type declarations")
+    declaration = declarations[0]
+    candidate = content[declaration.start() : declaration.start() + len(_SAFE_NMAP_DOCTYPE)]
+    if candidate != _SAFE_NMAP_DOCTYPE:
+        raise NmapXmlError("Nmap XML contains an unexpected document type declaration")
 
 
 def _parse_port(raw: str | None) -> int:

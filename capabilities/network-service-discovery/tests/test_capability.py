@@ -83,6 +83,40 @@ def test_capability_discovers_open_services_and_preserves_xml() -> None:
     asyncio.run(scenario())
 
 
+def test_capability_normalizes_real_nmap_doctype_output() -> None:
+    async def scenario() -> None:
+        context, _xml_path = _configured_context("modern_nmap_7.xml")
+        async with context:
+            result = await NetworkServiceDiscoveryCapability().execute(
+                "discover",
+                context,
+                ServiceDiscoveryInput(asset_ref=ASSET_REF),
+            )
+            context.processes.assert_expectations_met()
+
+            assert result.execution_status is CapabilityRunStatus.COMPLETED
+            assert result.outcome.category is CapabilityOutcomeCategory.SUCCESS
+            assert len(result.observations) == 1
+            assert result.observations[0].type == "network.service"
+            assert result.observations[0].value == {
+                "transport": "tcp",
+                "port": 80,
+                "state": "open",
+                "service": "http",
+                "product": "SimpleHTTPServer",
+                "version": "0.6",
+            }
+            assert not any(
+                diagnostic.code == "NMAP_XML_INVALID" for diagnostic in result.diagnostics
+            )
+            assert (
+                await context.artifacts.read_bytes(result.artifacts[0].artifact_id)
+                == (FIXTURES / "modern_nmap_7.xml").read_bytes()
+            )
+
+    asyncio.run(scenario())
+
+
 def test_valid_scan_with_no_open_service_is_negative() -> None:
     async def scenario() -> None:
         context, _xml_path = _configured_context("no_open_services.xml")

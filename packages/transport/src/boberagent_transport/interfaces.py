@@ -2,6 +2,8 @@
 
 from typing import Protocol
 
+from boberagent_contracts import CapabilityRunRef, CapabilityRunStatus
+
 from .artifact import ArtifactTransferRequest, ArtifactTransferResponse
 from .models import (
     DeliveryAcknowledgement,
@@ -19,6 +21,8 @@ class TransportNodeEndpoint(Protocol):
     async def handshake(self, request: bytes) -> bytes: ...
 
     async def accept_invocation(self, message: bytes) -> None: ...
+
+    async def query_run_status(self, message: bytes) -> bytes: ...
 
     async def pending_outbound(self) -> tuple[bytes, ...]: ...
 
@@ -51,6 +55,10 @@ class CapabilityTransport(Protocol):
     async def submit_invocation(
         self, node_id: str, delivery: InvocationDelivery
     ) -> TransportMessageId: ...
+
+    async def query_run_status(
+        self, node_id: str, run_ref: CapabilityRunRef
+    ) -> CapabilityRunStatus | None: ...
 
     async def flush_outboxes(self, node_id: str) -> int: ...
 

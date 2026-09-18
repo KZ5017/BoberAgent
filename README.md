@@ -10,6 +10,9 @@ Core can now discover Node-advertised providers and route explicit Capability in
 the existing transport using persisted, deterministic routing decisions. Transported terminal
 Results can be durably ingested into Core's append-only Observation Store and reduced into
 materialized Service state.
+The same transport-neutral protocol now has a bearer-authenticated MCP Streamable HTTP carrier for
+real Core-to-Execution-Node network deployments; the in-memory adapter remains available for fast
+local tests.
 
 The authoritative design specifications live in [`docs/`](docs/). Start with
 [`docs/00_PROJECT_CONTEXT.md`](docs/00_PROJECT_CONTEXT.md) and
@@ -23,6 +26,7 @@ for the area being changed. [`AGENTS.md`](AGENTS.md) contains mandatory rules fo
 - `packages/core`: SQLite-backed canonical state and initial Observation materialization
 - `packages/execution-node`: local execution runtime, managed services, and durable outboxes
 - `packages/transport`: neutral protocol envelopes/interfaces and the in-memory adapter
+- `packages/transport-mcp`: real MCP Streamable HTTP transport adapter
 - `capabilities`: production capability packages, beginning with network service discovery
 - `knowledge`: future procedures and curated reference material
 - `tests`: architecture, integration, and end-to-end test suites

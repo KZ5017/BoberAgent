@@ -7,6 +7,8 @@ import contextlib
 from datetime import UTC, datetime
 from uuid import uuid4
 
+from boberagent_contracts import CapabilityRunRef, CapabilityRunStatus
+
 from .artifact import (
     ArtifactTransferRequest,
     ArtifactTransferResponse,
@@ -28,12 +30,14 @@ from .models import (
     InvocationDelivery,
     InvocationEnvelope,
     NodeAdvertisement,
+    RunStatusRequest,
     TransportFailure,
     TransportMessageId,
     ensure_supported_protocol,
     invocation_message_id,
     parse_advertisement,
     parse_outbound,
+    parse_run_status_response,
     serialize_message,
 )
 
@@ -118,6 +122,28 @@ class InMemoryTransport:
             self._inbound.put_nowait((node_id, bytes(message)))
         except asyncio.QueueFull as error:
             raise TransportBackpressure("inbound transport queue is full") from error
+
+    async def query_run_status(
+        self, node_id: str, run_ref: CapabilityRunRef
+    ) -> CapabilityRunStatus | None:
+        self._require_connected()
+        endpoint = self._endpoint(node_id)
+        request = RunStatusRequest(
+            message_id=TransportMessageId(f"transport-run-status:{uuid4()}"),
+            node_id=node_id,
+            correlation_id=run_ref,
+            timestamp=datetime.now(UTC),
+        )
+        response = parse_run_status_response(
+            await endpoint.query_run_status(serialize_message(request))
+        )
+        if (
+            response.request_message_id != request.message_id
+            or response.node_id != node_id
+            or response.correlation_id != run_ref
+        ):
+            raise ProtocolError("Run status response does not match its request")
+        return response.status
 
     async def flush_outboxes(self, node_id: str) -> int:
         self._require_connected()

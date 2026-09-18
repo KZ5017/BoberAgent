@@ -8,7 +8,12 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
-from boberagent_contracts import CapabilityInvocation, CapabilityRunRef, MissionRef
+from boberagent_contracts import (
+    CapabilityInvocation,
+    CapabilityRunRef,
+    CapabilityRunStatus,
+    MissionRef,
+)
 from boberagent_core import (
     CapabilityRegistry,
     CapabilityRouter,
@@ -65,6 +70,12 @@ class RecordingTransport(CapabilityTransport):
     async def flush_outboxes(self, node_id: str) -> int:
         del node_id
         return 0
+
+    async def query_run_status(
+        self, node_id: str, run_ref: CapabilityRunRef
+    ) -> CapabilityRunStatus | None:
+        del node_id, run_ref
+        return None
 
     async def receive(self) -> bytes:
         raise RuntimeError("RecordingTransport has no outbound messages")

@@ -54,9 +54,10 @@ inline; output above the configured bound is moved into the Artifact spool and r
 Workspaces have logical IDs, persistent ownership metadata, and generated paths constrained below
 the configured root. Artifact IDs are UUID-based logical references; spool metadata includes hash,
 size, producing Run, local path, and synchronization state. New Artifacts remain `LOCAL_ONLY`;
-Milestone 5 does not synchronize Artifact bytes or spool content to Core.
+the explicit synchronization coordinator or MCP pull adapter advances them only after Core's
+durable integrity-checked acknowledgement.
 
-Capability Events and terminal Results are persisted before delivery. The Milestone 5
+Capability Events and terminal Results are persisted before delivery. The transport-neutral
 `ExecutionNodeTransportEndpoint` validates serialized neutral protocol envelopes, delegates only
 to `CapabilityRuntime`, and exposes those existing outboxes. Stable Event IDs and the unique
 Run/result key make delivery idempotent; records become delivered only after acknowledgement.
@@ -79,3 +80,12 @@ Scope/entity data for the local test harness must be supplied explicitly. Servic
 (Secrets and Interactions) and providers deferred to later milestones (Resources and Sessions)
 fail closed. `ExecutionPlan` execution is deliberately unavailable. Capability implementations
 must use `boberagent_sdk` and must not import this package's persistence or manager internals.
+
+## MCP listener
+
+`boberagent-node-mcp` starts the real Streamable HTTP carrier around an initialized Node. It binds
+to loopback by default, reads its bearer credential from `BOBERAGENT_MCP_TOKEN` (or an explicitly
+named environment variable), and accepts explicit capability paths and logical tool mappings.
+Non-loopback plaintext binding is rejected unless the development override is deliberately set;
+TLS certificate and key paths are supported. Stopping or reconnecting a client does not clear the
+Node database, Artifact spool, or pending outboxes.

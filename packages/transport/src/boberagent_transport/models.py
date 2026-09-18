@@ -14,6 +14,7 @@ from boberagent_contracts import (
     CapabilityInvocation,
     CapabilityResult,
     CapabilityRunRef,
+    CapabilityRunStatus,
     DomainRef,
     Event,
     EventRef,
@@ -218,6 +219,24 @@ class NodeAdvertisement(TransportModel):
         return self
 
 
+class RunStatusRequest(TransportModel):
+    protocol_version: str = TRANSPORT_PROTOCOL_VERSION
+    message_type: Literal["capability.run.status.request"] = "capability.run.status.request"
+    message_id: TransportMessageId
+    node_id: NodeIdentifier
+    correlation_id: CapabilityRunRef
+    timestamp: AwareDatetime
+
+
+class RunStatusResponse(TransportModel):
+    protocol_version: str = TRANSPORT_PROTOCOL_VERSION
+    message_type: Literal["capability.run.status.response"] = "capability.run.status.response"
+    request_message_id: TransportMessageId
+    node_id: NodeIdentifier
+    correlation_id: CapabilityRunRef
+    status: CapabilityRunStatus | None
+
+
 class TransportFailure(TransportModel):
     code: str
     message: str
@@ -264,6 +283,14 @@ def parse_handshake_request(data: bytes) -> HandshakeRequest:
 
 def parse_advertisement(data: bytes) -> NodeAdvertisement:
     return _parse(NodeAdvertisement, data)
+
+
+def parse_run_status_request(data: bytes) -> RunStatusRequest:
+    return _parse(RunStatusRequest, data)
+
+
+def parse_run_status_response(data: bytes) -> RunStatusResponse:
+    return _parse(RunStatusResponse, data)
 
 
 def parse_outbound(data: bytes) -> OutboundEnvelope:

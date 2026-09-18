@@ -27,3 +27,7 @@ Artifact synchronization is a separate request/response stream: start, ordered c
 then durable acknowledgement or structured rejection. The adapter moves serialized messages only;
 the Node owns source bytes and retry state, while Core owns temporary files, integrity verification,
 and canonical storage.
+
+The optional `query_run_status` exchange reports persisted Contract lifecycle state for one
+`CapabilityRunRef`; it does not create a second runtime state model. Network carrier details remain
+in the separate `boberagent-transport-mcp` adapter package.

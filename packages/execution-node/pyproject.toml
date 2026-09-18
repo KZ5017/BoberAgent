@@ -13,6 +13,7 @@ dependencies = [
     "boberagent-contracts",
     "boberagent-sdk",
     "boberagent-transport",
+    "boberagent-transport-mcp",
     "packaging>=24,<27",
     "pydantic>=2.12,<3",
     "sqlalchemy>=2.0,<3",
@@ -22,3 +23,7 @@ dependencies = [
 boberagent-contracts = { workspace = true }
 boberagent-sdk = { workspace = true }
 boberagent-transport = { workspace = true }
+boberagent-transport-mcp = { workspace = true }
+
+[project.scripts]
+boberagent-node-mcp = "boberagent_execution_node.mcp_cli:main"

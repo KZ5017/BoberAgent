@@ -29,8 +29,25 @@ from boberagent_contracts import (
 from boberagent_sdk import Capability, ExecutionContext
 from pydantic import BaseModel, ConfigDict
 
-execution_started = asyncio.Event()
-allow_completion = asyncio.Event()
+
+class ResettableEvent:
+    """Test event that can be safely reused across separate asyncio.run() loops."""
+
+    def __init__(self) -> None:
+        self._event = asyncio.Event()
+
+    def set(self) -> None:
+        self._event.set()
+
+    def clear(self) -> None:
+        self._event = asyncio.Event()
+
+    async def wait(self) -> bool:
+        return await self._event.wait()
+
+
+execution_started = ResettableEvent()
+allow_completion = ResettableEvent()
 
 
 def reset_control() -> None:

@@ -27,6 +27,7 @@ testpaths = [
     "packages/core/tests",
     "packages/execution-node/tests",
     "packages/transport/tests",
+    "packages/transport-mcp/tests",
     "capabilities/network-service-discovery/tests",
     "tests/architecture",
     "tests/integration",
@@ -57,5 +58,6 @@ mypy_path = [
     "packages/core/src",
     "packages/execution-node/src",
     "packages/transport/src",
+    "packages/transport-mcp/src",
     "capabilities/network-service-discovery/src",
 ]

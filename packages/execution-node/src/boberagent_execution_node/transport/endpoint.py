@@ -20,12 +20,14 @@ from boberagent_transport import (
     NodeAdvertisement,
     ProtocolError,
     ResultEnvelope,
+    RunStatusResponse,
     ensure_supported_protocol,
     event_message_id,
     invocation_fingerprint,
     parse_acknowledgement,
     parse_handshake_request,
     parse_invocation,
+    parse_run_status_request,
     result_message_id,
     serialize_message,
 )
@@ -157,6 +159,21 @@ class ExecutionNodeTransportEndpoint:
                 )
             )
         return tuple(messages)
+
+    async def query_run_status(self, message: bytes) -> bytes:
+        request = parse_run_status_request(message)
+        ensure_supported_protocol(request.protocol_version)
+        if request.node_id != self.node_id:
+            raise ProtocolError("Run status request targeted a different Node")
+        record = self._require_store().get_run(request.correlation_id)
+        return serialize_message(
+            RunStatusResponse(
+                request_message_id=request.message_id,
+                node_id=self.node_id,
+                correlation_id=request.correlation_id,
+                status=None if record is None else record.status,
+            )
+        )
 
     async def acknowledge(self, message: bytes) -> None:
         acknowledgement = parse_acknowledgement(message)

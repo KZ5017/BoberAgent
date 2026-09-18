@@ -87,6 +87,10 @@ class BlockingEndpoint:
     async def pending_outbound(self) -> tuple[bytes, ...]:
         return ()
 
+    async def query_run_status(self, message: bytes) -> bytes:
+        del message
+        return b""
+
     async def acknowledge(self, message: bytes) -> None:
         del message
 

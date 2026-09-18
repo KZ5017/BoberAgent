@@ -12,6 +12,7 @@ PACKAGE_ROOTS = (
     "boberagent_core",
     "boberagent_execution_node",
     "boberagent_transport",
+    "boberagent_transport_mcp",
     "boberagent_capability_network_service_discovery",
 )
 

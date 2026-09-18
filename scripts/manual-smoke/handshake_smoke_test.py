@@ -2,8 +2,6 @@ import asyncio
 import os
 from pathlib import Path
 
-from pydantic import SecretStr
-
 from boberagent_core import (
     CapabilityRegistry,
     CoreDatabase,
@@ -12,7 +10,7 @@ from boberagent_core import (
 )
 from boberagent_core.capabilities.mcp import CoreMcpNodeConnection
 from boberagent_transport_mcp import McpClientConfiguration
-
+from pydantic import SecretStr
 
 NODE_ID = "node-8724d998-53b2-4fbe-88de-30085a896b46"
 ENDPOINT = "http://192.168.0.11:53177/mcp"
@@ -22,9 +20,7 @@ token = os.environ["BOBERAGENT_MCP_TOKEN"]
 runtime = Path("/tmp/boberagent-real-mcp-smoke")
 runtime.mkdir(parents=True, exist_ok=True)
 
-database = CoreDatabase(
-    DatabaseConfig.sqlite(runtime / "core.sqlite3")
-)
+database = CoreDatabase(DatabaseConfig.sqlite(runtime / "core.sqlite3"))
 upgrade_database(database)
 
 registry = CapabilityRegistry(database)

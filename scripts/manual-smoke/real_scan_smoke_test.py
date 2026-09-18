@@ -6,8 +6,6 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
-from pydantic import SecretStr
-
 from boberagent_contracts import (
     AssetRef,
     CapabilityInvocation,
@@ -16,7 +14,6 @@ from boberagent_contracts import (
     CapabilityRunStatus,
     MissionRef,
 )
-
 from boberagent_core import (
     ArtifactStorageConfiguration,
     Asset,
@@ -34,18 +31,16 @@ from boberagent_core import (
     ResultIngestionService,
     upgrade_database,
 )
-
 from boberagent_transport import (
     AssetProjection,
     InvocationDelivery,
     MissionProjection,
 )
-
 from boberagent_transport_mcp import (
     McpClientConfiguration,
     McpTransport,
 )
-
+from pydantic import SecretStr
 
 NODE_ID = os.getenv(
     "BOBERAGENT_NODE_ID",
@@ -72,9 +67,7 @@ EXPECTED_PORT = int(
 MISSION_REF = MissionRef("mission-real-kali-smoke")
 ASSET_REF = AssetRef("asset-real-kali-smoke")
 
-RUN_REF = CapabilityRunRef(
-    f"run-real-kali-smoke-{uuid.uuid4().hex}"
-)
+RUN_REF = CapabilityRunRef(f"run-real-kali-smoke-{uuid.uuid4().hex}")
 
 NOW = datetime.now(UTC)
 
@@ -149,14 +142,9 @@ async def main() -> None:
     token = os.environ.get("BOBERAGENT_MCP_TOKEN")
 
     if not token:
-        raise RuntimeError(
-            "BOBERAGENT_MCP_TOKEN is not set in this WSL shell."
-        )
+        raise RuntimeError("BOBERAGENT_MCP_TOKEN is not set in this WSL shell.")
 
-    run_directory = (
-        Path("/tmp")
-        / f"boberagent-real-scan-{RUN_REF}"
-    )
+    run_directory = Path("/tmp") / f"boberagent-real-scan-{RUN_REF}"
     run_directory.mkdir(parents=True, exist_ok=True)
 
     database_path = run_directory / "core.sqlite3"
@@ -170,19 +158,13 @@ async def main() -> None:
     print(f"Core data:  {run_directory}")
     print()
 
-    database = CoreDatabase(
-        DatabaseConfig.sqlite(database_path)
-    )
+    database = CoreDatabase(DatabaseConfig.sqlite(database_path))
     upgrade_database(database)
 
     delivery = build_delivery()
     create_core_state(database, delivery)
 
-    storage = FilesystemArtifactStorage(
-        ArtifactStorageConfiguration(
-            root=artifact_root
-        )
-    )
+    storage = FilesystemArtifactStorage(ArtifactStorageConfiguration(root=artifact_root))
 
     artifacts = CoreArtifactService(
         database,
@@ -236,30 +218,20 @@ async def main() -> None:
 
         await transport.connect()
 
-        advertisement, providers = (
-            await registration.refresh_node(NODE_ID)
-        )
+        advertisement, providers = await registration.refresh_node(NODE_ID)
 
-        print(
-            f"    Connected: {advertisement.node_id}"
-            f" / {advertisement.lifecycle}"
-        )
+        print(f"    Connected: {advertisement.node_id} / {advertisement.lifecycle}")
 
         matching = [
             provider
             for provider in providers
-            if provider.capability_id
-            == "network.service_discovery"
+            if provider.capability_id == "network.service_discovery"
         ]
 
         if not matching:
-            raise RuntimeError(
-                "network.service_discovery was not advertised."
-            )
+            raise RuntimeError("network.service_discovery was not advertised.")
 
-        print(
-            "    network.service_discovery: AVAILABLE"
-        )
+        print("    network.service_discovery: AVAILABLE")
 
         # -------------------------------------------------
         # 2. CORE ROUTING
@@ -273,9 +245,7 @@ async def main() -> None:
             node_id=NODE_ID,
         )
 
-        print(
-            f"    Provider: {provider.provider_id}"
-        )
+        print(f"    Provider: {provider.provider_id}")
 
         # -------------------------------------------------
         # 3. DISPATCH
@@ -314,18 +284,12 @@ async def main() -> None:
             await asyncio.sleep(0.5)
 
         if final_status is None:
-            raise RuntimeError(
-                "The Node never reported a Run status."
-            )
+            raise RuntimeError("The Node never reported a Run status.")
 
         if not final_status.is_terminal:
-            raise TimeoutError(
-                f"Run did not become terminal: {final_status}"
-            )
+            raise TimeoutError(f"Run did not become terminal: {final_status}")
 
-        print(
-            f"    Remote Run status: {final_status}"
-        )
+        print(f"    Remote Run status: {final_status}")
 
         # -------------------------------------------------
         # 5. ARTIFACT SYNCHRONIZATION
@@ -333,17 +297,12 @@ async def main() -> None:
 
         print("[5] Synchronizing Artifacts...")
 
-        sync_summary = (
-            await transport.synchronize_artifacts(
-                artifact_receiver,
-                chunk_size=64 * 1024,
-            )
+        sync_summary = await transport.synchronize_artifacts(
+            artifact_receiver,
+            chunk_size=64 * 1024,
         )
 
-        print(
-            f"    Synchronized: "
-            f"{sync_summary.synchronized}"
-        )
+        print(f"    Synchronized: {sync_summary.synchronized}")
 
         # -------------------------------------------------
         # 6. EVENT + RESULT DELIVERY
@@ -351,9 +310,7 @@ async def main() -> None:
 
         print("[6] Pulling Event/Result outboxes...")
 
-        count = await transport_client.flush_node(
-            NODE_ID
-        )
+        count = await transport_client.flush_node(NODE_ID)
 
         print(f"    Messages available: {count}")
 
@@ -364,14 +321,10 @@ async def main() -> None:
         # 7. RESULT INGESTION
         # -------------------------------------------------
 
-        result_envelope = receiver.result_for_run(
-            delivery.invocation.run_id
-        )
+        result_envelope = receiver.result_for_run(delivery.invocation.run_id)
 
         if result_envelope is None:
-            raise RuntimeError(
-                "No terminal CapabilityResult reached Core."
-            )
+            raise RuntimeError("No terminal CapabilityResult reached Core.")
 
         result = result_envelope.result
 
@@ -379,26 +332,16 @@ async def main() -> None:
         print("=== CapabilityResult ===")
         print(f"Execution:    {result.execution_status}")
         print(f"Outcome:      {result.outcome}")
-        print(
-            f"Observations: {len(result.observations)}"
-        )
-        print(
-            f"Artifacts:    {len(result.artifacts)}"
-        )
-        print(
-            f"Diagnostics:  {len(result.diagnostics)}"
-        )
+        print(f"Observations: {len(result.observations)}")
+        print(f"Artifacts:    {len(result.artifacts)}")
+        print(f"Diagnostics:  {len(result.diagnostics)}")
 
         # -------------------------------------------------
         # 8. WORLD STATE
         # -------------------------------------------------
 
         with database.unit_of_work() as work:
-            services = tuple(
-                work.services.list_for_asset(
-                    ASSET_REF
-                )
-            )
+            services = tuple(work.services.list_for_asset(ASSET_REF))
 
         print()
         print("=== Materialized World State ===")
@@ -432,32 +375,20 @@ async def main() -> None:
         for descriptor in result.artifacts:
             artifact_ref = descriptor.artifact_id
 
-            available = artifacts.content_available(
-                artifact_ref
-            )
+            available = artifacts.content_available(artifact_ref)
 
-            print(
-                f"{artifact_ref}: "
-                f"content_available={available}"
-            )
+            print(f"{artifact_ref}: content_available={available}")
 
             if available:
-                content = artifacts.read_bytes(
-                    artifact_ref
-                )
+                content = artifacts.read_bytes(artifact_ref)
 
-                print(
-                    f"    bytes={len(content)}"
-                )
+                print(f"    bytes={len(content)}")
 
         # -------------------------------------------------
         # 10. EXPECTED REAL SERVICE
         # -------------------------------------------------
 
-        ports = {
-            service.port
-            for service in services
-        }
+        ports = {service.port for service in services}
 
         print()
 
@@ -468,15 +399,9 @@ async def main() -> None:
                 f"Observed ports: {sorted(ports)}"
             )
 
-        print(
-            "SUCCESS: real cross-machine vertical "
-            "slice completed."
-        )
+        print("SUCCESS: real cross-machine vertical slice completed.")
 
-        print(
-            f"SUCCESS: TCP/{EXPECTED_PORT} was "
-            "discovered and materialized."
-        )
+        print(f"SUCCESS: TCP/{EXPECTED_PORT} was discovered and materialized.")
 
     finally:
         await transport.disconnect()

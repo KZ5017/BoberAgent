@@ -145,3 +145,23 @@ def test_capability_package_uses_only_sdk_boundary(source_root: Path) -> None:
                 violations.append(f"{relative_path}: imports {imported_module}")
 
     assert not violations, "Forbidden capability imports found:\n" + "\n".join(violations)
+
+
+def test_workflow_engine_uses_only_core_and_neutral_transport_boundaries() -> None:
+    source_root = PACKAGE_SOURCE_ROOTS["boberagent_core"] / "workflows"
+    forbidden = frozenset(
+        {
+            "boberagent_capability_",
+            "boberagent_execution_node",
+            "boberagent_transport_mcp",
+            "mcp",
+        }
+    )
+    violations: list[str] = []
+    for path in _python_files(source_root):
+        for imported_module in sorted(_imports_in(path)):
+            if any(imported_module.startswith(dependency) for dependency in forbidden):
+                relative_path = path.relative_to(REPOSITORY_ROOT)
+                violations.append(f"{relative_path}: imports {imported_module}")
+
+    assert not violations, "Workflow boundary violations found:\n" + "\n".join(violations)

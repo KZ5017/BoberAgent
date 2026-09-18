@@ -36,8 +36,14 @@ from .models import (
     Service,
     StoredArtifact,
     StoredObservation,
+    WorkflowDefinition,
+    WorkflowExecution,
     WorkflowRun,
     WorkflowStatus,
+    WorkflowStepDefinition,
+    WorkflowStepRun,
+    WorkflowStepStatus,
+    WorkflowStepSuccessPolicy,
 )
 from .persistence import CoreDatabase, DatabaseConfig, PersistenceIntegrityError
 from .persistence.migrations import current_revision, upgrade_database
@@ -53,6 +59,14 @@ from .results import (
 from .service import CorePersistence
 from .state import NetworkServiceValue, ReducerRegistry, service_ref_for_endpoint
 from .transport import CoreTransportClient, CoreTransportReceiver, TransportInboxRecord
+from .workflows import (
+    WorkflowDefinitionConflict,
+    WorkflowError,
+    WorkflowNotFound,
+    WorkflowService,
+    WorkflowStateError,
+    capability_run_ref_for_step,
+)
 
 __all__ = [
     "ArtifactContentState",
@@ -100,8 +114,20 @@ __all__ = [
     "TransportInboxRecord",
     "UnknownCapability",
     "UnsupportedOperation",
+    "WorkflowDefinition",
+    "WorkflowDefinitionConflict",
+    "WorkflowError",
+    "WorkflowExecution",
+    "WorkflowNotFound",
     "WorkflowRun",
+    "WorkflowService",
+    "WorkflowStateError",
     "WorkflowStatus",
+    "WorkflowStepDefinition",
+    "WorkflowStepRun",
+    "WorkflowStepStatus",
+    "WorkflowStepSuccessPolicy",
+    "capability_run_ref_for_step",
     "current_revision",
     "provider_id_for",
     "result_fingerprint",

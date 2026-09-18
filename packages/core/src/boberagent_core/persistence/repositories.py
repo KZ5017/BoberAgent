@@ -11,6 +11,7 @@ from boberagent_contracts import (
     AssetRef,
     CapabilityRun,
     CapabilityRunRef,
+    JsonObject,
     MissionRef,
     Observation,
     ObservationRef,
@@ -20,6 +21,7 @@ from boberagent_contracts import (
 )
 from boberagent_contracts.enums import CapabilityRunStatus
 from boberagent_contracts.refs import DomainRef
+from pydantic import TypeAdapter
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -35,8 +37,13 @@ from boberagent_core.models import (
     Service,
     StoredArtifact,
     StoredObservation,
+    WorkflowDefinition,
     WorkflowRun,
     WorkflowStatus,
+    WorkflowStepDefinition,
+    WorkflowStepRun,
+    WorkflowStepStatus,
+    WorkflowStepSuccessPolicy,
 )
 
 from .orm import (
@@ -48,7 +55,10 @@ from .orm import (
     ObservationRow,
     ServiceRow,
     WorkflowRunRow,
+    WorkflowStepRunRow,
 )
+
+_json_object_adapter: TypeAdapter[JsonObject] = TypeAdapter(JsonObject)
 
 
 class PersistenceIntegrityError(ValueError):
@@ -454,6 +464,11 @@ class WorkflowRepository:
         self._session = session
 
     def add(self, workflow: WorkflowRun) -> None:
+        definition_json = (
+            None
+            if workflow.definition is None
+            else _json_object_adapter.validate_python(workflow.definition.model_dump(mode="json"))
+        )
         self._session.add(
             WorkflowRunRow(
                 workflow_run_id=str(workflow.workflow_run_ref),
@@ -462,6 +477,8 @@ class WorkflowRepository:
                 status=workflow.status.value,
                 created_at=workflow.created_at,
                 updated_at=workflow.updated_at,
+                definition_json=deepcopy(definition_json),
+                failure_reason=workflow.failure_reason,
             )
         )
         _flush_identity(self._session, workflow.workflow_run_ref)
@@ -477,7 +494,174 @@ class WorkflowRepository:
             status=WorkflowStatus(row.status),
             created_at=row.created_at,
             updated_at=row.updated_at,
+            definition=(
+                None
+                if row.definition_json is None
+                else WorkflowDefinition.model_validate(deepcopy(row.definition_json))
+            ),
+            failure_reason=row.failure_reason,
         )
+
+    def set_status(
+        self,
+        workflow_ref: WorkflowRunRef,
+        status: WorkflowStatus,
+        *,
+        updated_at: datetime,
+        failure_reason: str | None = None,
+    ) -> WorkflowRun:
+        row = self._session.get(WorkflowRunRow, str(workflow_ref))
+        if row is None:
+            raise KeyError(f"unknown WorkflowRun: {workflow_ref}")
+        current = WorkflowStatus(row.status)
+        if current.is_terminal and current is not status:
+            raise PersistenceIntegrityError(
+                f"terminal WorkflowRun cannot transition from {current.value} to {status.value}"
+            )
+        row.status = status.value
+        row.updated_at = updated_at
+        row.failure_reason = failure_reason
+        self._session.flush()
+        updated = self.get(workflow_ref)
+        assert updated is not None
+        return updated
+
+
+class WorkflowStepRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def add(self, step: WorkflowStepRun) -> None:
+        self._session.add(
+            WorkflowStepRunRow(
+                workflow_run_id=str(step.workflow_run_ref),
+                step_id=step.step_id,
+                position=step.position,
+                capability_id=step.definition.capability_id,
+                operation=step.definition.operation,
+                inputs_json=deepcopy(step.definition.inputs),
+                success_policy=step.definition.success_policy.value,
+                status=step.status.value,
+                capability_run_id=(
+                    None if step.capability_run_ref is None else str(step.capability_run_ref)
+                ),
+                created_at=step.created_at,
+                updated_at=step.updated_at,
+                completed_at=step.completed_at,
+                failure_reason=step.failure_reason,
+            )
+        )
+        self._session.flush()
+
+    def get(self, workflow_ref: WorkflowRunRef, step_id: str) -> WorkflowStepRun | None:
+        row = self._session.get(WorkflowStepRunRow, (str(workflow_ref), step_id))
+        return None if row is None else _workflow_step_from_row(row)
+
+    def list_for_workflow(self, workflow_ref: WorkflowRunRef) -> tuple[WorkflowStepRun, ...]:
+        rows = self._session.scalars(
+            select(WorkflowStepRunRow)
+            .where(WorkflowStepRunRow.workflow_run_id == str(workflow_ref))
+            .order_by(WorkflowStepRunRow.position)
+        )
+        return tuple(_workflow_step_from_row(row) for row in rows)
+
+    def prepare(
+        self,
+        workflow_ref: WorkflowRunRef,
+        step_id: str,
+        run_ref: CapabilityRunRef,
+        *,
+        updated_at: datetime,
+    ) -> WorkflowStepRun:
+        row = self._required(workflow_ref, step_id)
+        status = WorkflowStepStatus(row.status)
+        if status is WorkflowStepStatus.PENDING:
+            row.status = WorkflowStepStatus.PREPARED.value
+            row.capability_run_id = str(run_ref)
+            row.updated_at = updated_at
+        elif status is not WorkflowStepStatus.PREPARED or row.capability_run_id != str(run_ref):
+            raise PersistenceIntegrityError(
+                f"Workflow step cannot be prepared from {status.value}: {workflow_ref}/{step_id}"
+            )
+        self._session.flush()
+        return _workflow_step_from_row(row)
+
+    def mark_active(
+        self,
+        workflow_ref: WorkflowRunRef,
+        step_id: str,
+        *,
+        updated_at: datetime,
+    ) -> WorkflowStepRun:
+        row = self._required(workflow_ref, step_id)
+        status = WorkflowStepStatus(row.status)
+        if status is WorkflowStepStatus.PREPARED:
+            row.status = WorkflowStepStatus.ACTIVE.value
+            row.updated_at = updated_at
+        elif status is not WorkflowStepStatus.ACTIVE:
+            raise PersistenceIntegrityError(
+                f"Workflow step cannot become active from {status.value}: {workflow_ref}/{step_id}"
+            )
+        self._session.flush()
+        return _workflow_step_from_row(row)
+
+    def finish(
+        self,
+        workflow_ref: WorkflowRunRef,
+        step_id: str,
+        status: WorkflowStepStatus,
+        *,
+        updated_at: datetime,
+        failure_reason: str | None = None,
+    ) -> WorkflowStepRun:
+        if status not in {
+            WorkflowStepStatus.COMPLETED,
+            WorkflowStepStatus.FAILED,
+            WorkflowStepStatus.CANCELLED,
+        }:
+            raise ValueError("Workflow step finish status must be terminal")
+        row = self._required(workflow_ref, step_id)
+        current = WorkflowStepStatus(row.status)
+        if current.is_terminal:
+            if current is not status:
+                raise PersistenceIntegrityError(
+                    f"terminal Workflow step cannot transition from {current.value} "
+                    f"to {status.value}"
+                )
+            return _workflow_step_from_row(row)
+        row.status = status.value
+        row.updated_at = updated_at
+        row.completed_at = updated_at
+        row.failure_reason = failure_reason
+        self._session.flush()
+        return _workflow_step_from_row(row)
+
+    def cancel_nonterminal(
+        self, workflow_ref: WorkflowRunRef, *, updated_at: datetime
+    ) -> tuple[WorkflowStepRun, ...]:
+        rows = tuple(
+            self._session.scalars(
+                select(WorkflowStepRunRow).where(
+                    WorkflowStepRunRow.workflow_run_id == str(workflow_ref)
+                )
+            )
+        )
+        for row in rows:
+            if not WorkflowStepStatus(row.status).is_terminal:
+                row.status = WorkflowStepStatus.CANCELLED.value
+                row.updated_at = updated_at
+                row.completed_at = updated_at
+                row.failure_reason = "Workflow was cancelled"
+        self._session.flush()
+        return tuple(
+            _workflow_step_from_row(row) for row in sorted(rows, key=lambda item: item.position)
+        )
+
+    def _required(self, workflow_ref: WorkflowRunRef, step_id: str) -> WorkflowStepRunRow:
+        row = self._session.get(WorkflowStepRunRow, (str(workflow_ref), step_id))
+        if row is None:
+            raise KeyError(f"unknown Workflow step: {workflow_ref}/{step_id}")
+        return row
 
 
 class GoalRepository:
@@ -530,6 +714,7 @@ class CoreUnitOfWork:
         self.observations = ObservationRepository(session)
         self.services = ServiceRepository(session)
         self.workflows = WorkflowRepository(session)
+        self.workflow_steps = WorkflowStepRepository(session)
         self.goals = GoalRepository(session)
         self.transport_inbox = TransportInboxRepository(session)
         self.capability_providers = CapabilityProviderRepository(session)
@@ -663,4 +848,27 @@ def _goal_from_row(row: GoalRow) -> Goal:
         status=GoalStatus(row.status),
         created_at=row.created_at,
         updated_at=row.updated_at,
+    )
+
+
+def _workflow_step_from_row(row: WorkflowStepRunRow) -> WorkflowStepRun:
+    return WorkflowStepRun(
+        workflow_run_ref=WorkflowRunRef(row.workflow_run_id),
+        step_id=row.step_id,
+        position=row.position,
+        definition=WorkflowStepDefinition(
+            step_id=row.step_id,
+            capability_id=row.capability_id,
+            operation=row.operation,
+            inputs=deepcopy(row.inputs_json),
+            success_policy=WorkflowStepSuccessPolicy(row.success_policy),
+        ),
+        status=WorkflowStepStatus(row.status),
+        capability_run_ref=(
+            None if row.capability_run_id is None else CapabilityRunRef(row.capability_run_id)
+        ),
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+        completed_at=row.completed_at,
+        failure_reason=row.failure_reason,
     )

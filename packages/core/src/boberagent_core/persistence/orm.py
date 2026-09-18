@@ -61,6 +61,35 @@ class WorkflowRunRow(Base):
     status: Mapped[str] = mapped_column(String(64), nullable=False)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    definition_json: Mapped[JsonObject | None] = mapped_column(JSON)
+    failure_reason: Mapped[str | None] = mapped_column(Text)
+
+
+class WorkflowStepRunRow(Base):
+    __tablename__ = "workflow_step_runs"
+    __table_args__: tuple[UniqueConstraint, Index, Index] = (
+        UniqueConstraint("workflow_run_id", "position", name="uq_workflow_step_position"),
+        Index("ix_workflow_step_runs_status", "status"),
+        Index("ix_workflow_step_runs_capability_run_id", "capability_run_id"),
+    )
+
+    workflow_run_id: Mapped[str] = mapped_column(
+        ForeignKey("workflow_runs.workflow_run_id", ondelete="CASCADE"), primary_key=True
+    )
+    step_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    capability_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    operation: Mapped[str] = mapped_column(String(128), nullable=False)
+    inputs_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False, default=dict)
+    success_policy: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    capability_run_id: Mapped[str | None] = mapped_column(
+        ForeignKey("capability_runs.run_id", ondelete="RESTRICT"), unique=True
+    )
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    failure_reason: Mapped[str | None] = mapped_column(Text)
 
 
 class GoalRow(Base):

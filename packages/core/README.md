@@ -87,7 +87,34 @@ processing and acknowledgement without interpreting their assessment meaning.
 
 The Registry and Router do not ingest received Results, select assessment strategy, or import
 capability implementations. Result ingestion is a separate Core application service. Workflow
-reasoning, scheduling, automatic next-step selection, and network transport remain deferred.
+reasoning, background scheduling, and network transport remain separate concerns.
+
+## Minimal Workflow Engine
+
+Milestone 11 adds a Core-owned, explicitly pumped sequential Workflow state machine. A
+`WorkflowDefinition` is immutable versioned intent containing ordered `WorkflowStepDefinition`
+records. A `WorkflowRun` is one execution of that definition; each durable `WorkflowStepRun`
+records its own lifecycle and its one-to-one `CapabilityRunRef`. The engine identifies capabilities
+only by capability ID and operation, and dispatches exclusively through `CapabilityRouter`.
+
+Step state progresses through `PENDING → PREPARED → ACTIVE → COMPLETED/FAILED`. Core persists the
+CapabilityRun and `PREPARED` mapping before transport submission. A successfully submitted step is
+`ACTIVE`; repeated `advance()` calls then wait for canonical Result Ingestion without dispatching
+again. CapabilityRun identity is a deterministic UUID5 of `(WorkflowRunRef, step_id)`, so recovery
+of the narrow pre-dispatch crash window may redeliver the same idempotent transport invocation but
+cannot create a second logical Run. No failed capability is retried automatically.
+
+The default `SUCCESS_ONLY` policy advances only for `COMPLETED + SUCCESS`.
+`SUCCESS_OR_NEGATIVE` additionally accepts a definitive negative assessment, which is appropriate
+for service discovery where zero open services is still a completed assessment. `PARTIAL`,
+`UNKNOWN`, execution `FAILED`, `TIMED_OUT`, and `CANCELLED` fail the M11 sequential workflow. The
+execution status and semantic outcome remain separately persisted in the canonical
+`CapabilityResult`.
+
+Mission and Asset records produce the same bounded mission/scope/entity projections used by direct
+routed invocation. The Workflow Engine has no MCP, Node, tool, or capability-implementation
+imports. M11 deliberately has no expression language, dynamic input binding, branching, loops,
+parallel scheduling, background scheduler, remote cancellation protocol, Goal evaluator, or LLM.
 
 ## Artifact content
 

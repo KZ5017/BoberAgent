@@ -1,20 +1,31 @@
 """Core-owned domain snapshots kept separate from persistence ORM rows."""
 
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, Self
 
 from boberagent_contracts import (
     ArtifactDescriptor,
     AssetRef,
+    CapabilityId,
+    CapabilityOutcomeCategory,
+    CapabilityRunRef,
     JsonObject,
     MissionRef,
     Observation,
     ObservationRef,
+    OperationName,
     ServiceRef,
     WorkflowRunRef,
 )
 from boberagent_contracts.refs import DomainRef
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    model_validator,
+)
 
 type ExtensibleStatus = Annotated[str, StringConstraints(min_length=1, max_length=64)]
 type AssetKind = Annotated[str, StringConstraints(min_length=1, max_length=64)]
@@ -54,6 +65,7 @@ class WorkflowStatus(StrEnum):
     """Minimal persisted Workflow lifecycle from the workflow specification."""
 
     CREATED = "CREATED"
+    RUNNING = "RUNNING"
     ACTIVE = "ACTIVE"
     WAITING = "WAITING"
     BLOCKED = "BLOCKED"
@@ -61,6 +73,78 @@ class WorkflowStatus(StrEnum):
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
     EXHAUSTED = "EXHAUSTED"
+
+    @property
+    def is_terminal(self) -> bool:
+        return self in {
+            WorkflowStatus.COMPLETED,
+            WorkflowStatus.FAILED,
+            WorkflowStatus.CANCELLED,
+            WorkflowStatus.EXHAUSTED,
+        }
+
+
+class WorkflowStepStatus(StrEnum):
+    """Durable state of one deterministic sequential Workflow step."""
+
+    PENDING = "PENDING"
+    PREPARED = "PREPARED"
+    ACTIVE = "ACTIVE"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
+
+    @property
+    def is_terminal(self) -> bool:
+        return self in {
+            WorkflowStepStatus.COMPLETED,
+            WorkflowStepStatus.FAILED,
+            WorkflowStepStatus.CANCELLED,
+        }
+
+
+class WorkflowStepSuccessPolicy(StrEnum):
+    """Explicit M11 semantic outcomes that permit sequential progression."""
+
+    SUCCESS_ONLY = "SUCCESS_ONLY"
+    SUCCESS_OR_NEGATIVE = "SUCCESS_OR_NEGATIVE"
+
+    def accepts(self, outcome: CapabilityOutcomeCategory) -> bool:
+        if outcome is CapabilityOutcomeCategory.SUCCESS:
+            return True
+        return (
+            self is WorkflowStepSuccessPolicy.SUCCESS_OR_NEGATIVE
+            and outcome is CapabilityOutcomeCategory.NEGATIVE
+        )
+
+
+class WorkflowStepDefinition(CoreModel):
+    """Immutable static intent for one ordered Capability invocation."""
+
+    step_id: str = Field(pattern=r"^[A-Za-z][A-Za-z0-9._-]{0,127}$")
+    capability_id: CapabilityId
+    operation: OperationName
+    inputs: JsonObject = Field(default_factory=dict)
+    success_policy: WorkflowStepSuccessPolicy = WorkflowStepSuccessPolicy.SUCCESS_ONLY
+
+
+class WorkflowDefinition(CoreModel):
+    """Immutable, versioned, sequential execution intent."""
+
+    definition_id: str = Field(pattern=r"^[A-Za-z][A-Za-z0-9._-]{0,254}$")
+    version: str = Field(min_length=1, max_length=64)
+    steps: tuple[WorkflowStepDefinition, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_unique_step_ids(self) -> Self:
+        step_ids = [step.step_id for step in self.steps]
+        if len(step_ids) != len(set(step_ids)):
+            raise ValueError("Workflow step identifiers must be unique")
+        return self
+
+    @property
+    def procedure_ref(self) -> str:
+        return f"{self.definition_id}@{self.version}"
 
 
 class GoalStatus(StrEnum):
@@ -134,7 +218,7 @@ class Service(CoreModel):
 
 
 class WorkflowRun(CoreModel):
-    """Persisted Workflow identity and lifecycle metadata only."""
+    """One durable execution of an immutable Workflow definition."""
 
     workflow_run_ref: WorkflowRunRef
     mission_ref: MissionRef
@@ -142,6 +226,30 @@ class WorkflowRun(CoreModel):
     status: WorkflowStatus
     created_at: AwareDatetime
     updated_at: AwareDatetime
+    definition: WorkflowDefinition | None = None
+    failure_reason: str | None = Field(default=None, min_length=1, max_length=2048)
+
+
+class WorkflowStepRun(CoreModel):
+    """Durable execution state and CapabilityRun mapping for one Workflow step."""
+
+    workflow_run_ref: WorkflowRunRef
+    step_id: str = Field(pattern=r"^[A-Za-z][A-Za-z0-9._-]{0,127}$")
+    position: int = Field(ge=0)
+    definition: WorkflowStepDefinition
+    status: WorkflowStepStatus
+    capability_run_ref: CapabilityRunRef | None = None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    completed_at: AwareDatetime | None = None
+    failure_reason: str | None = Field(default=None, min_length=1, max_length=2048)
+
+
+class WorkflowExecution(CoreModel):
+    """Read model combining a Workflow Run and its ordered Step Runs."""
+
+    run: WorkflowRun
+    steps: tuple[WorkflowStepRun, ...]
 
 
 class Goal(CoreModel):

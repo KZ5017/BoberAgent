@@ -6,7 +6,7 @@ from collections.abc import Callable
 from datetime import datetime
 from uuid import UUID
 
-from boberagent_contracts import CapabilityInvocation
+from boberagent_contracts import CapabilityInvocation, CapabilityRunRef
 from boberagent_transport import (
     CapabilityTransport,
     InvocationDelivery,
@@ -95,6 +95,27 @@ class CapabilityRouter:
                 )
             raise NoEligibleProvider(f"No eligible provider is available for {capability_id}")
         return min(eligible, key=lambda provider: str(provider.provider_id))
+
+    def selected_provider_for_run(self, run_ref: CapabilityRunRef) -> CapabilityProvider | None:
+        """Resolve an earlier durable routing decision for restart reconciliation."""
+
+        decision = self._registry.routing_decision_for_run(run_ref)
+        if decision is None:
+            return None
+        provider = self._registry.get_provider(decision.provider_id)
+        if provider is None:
+            raise ExplicitProviderUnavailable(
+                "the provider recorded for this CapabilityRun no longer exists"
+            )
+        if provider.availability is not ProviderAvailability.AVAILABLE:
+            raise ExplicitProviderUnavailable(
+                "the provider recorded for this CapabilityRun is not currently available"
+            )
+        if provider.node_id != decision.node_id:
+            raise ExplicitProviderUnavailable(
+                "the provider recorded for this CapabilityRun changed Node identity"
+            )
+        return provider
 
     async def dispatch(
         self,

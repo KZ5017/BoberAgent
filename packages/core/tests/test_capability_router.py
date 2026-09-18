@@ -213,6 +213,7 @@ def test_dispatch_preserves_run_identity_and_persists_decision_across_restart(
     assert decision.run_ref == delivery.invocation.run_id
     assert decision.provider_id == provider.provider_id
     assert decision.implementation_version == provider.implementation_version
+    assert router.selected_provider_for_run(delivery.invocation.run_id) == provider
     database.dispose()
 
     reopened = CoreDatabase(DatabaseConfig.sqlite(database_path))

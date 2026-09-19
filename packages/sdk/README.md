@@ -36,6 +36,13 @@ Entity lookup returns small frozen SDK snapshots, not Core models. `AssetSnapsho
 address needed by target-facing capabilities; `EntitySnapshot.attributes` is the deliberate
 extension point rather than a copy of the future World State ontology.
 
+Resources and Sessions remain different SDK concepts. A Resource is managed runtime
+infrastructure; a Session is a stateful semantic driver backed by one or more Resource refs.
+`SessionService.create()` and `close()` operate on stable logical descriptors, while leases provide
+exclusive or shared access without exposing provider objects. `BrowserSession` is the first
+semantic driver: it supports scoped navigation and bounded HTML inspection without exposing
+Playwright, arbitrary JavaScript, or a generic browser automation escape hatch.
+
 ## Unit testing
 
 Use the separately namespaced fake environment:

@@ -9,6 +9,8 @@ from boberagent_contracts import (
     Event,
     JsonObject,
     MissionRef,
+    ResourceDescriptor,
+    SessionDescriptor,
     WorkflowRunRef,
 )
 from boberagent_sdk import WorkspaceIsolation, WorkspaceRef
@@ -47,6 +49,24 @@ class ArtifactSyncState(StrEnum):
 class DeliveryState(StrEnum):
     PENDING = "PENDING"
     DELIVERED = "DELIVERED"
+
+
+class ResourceRuntimeState(StrEnum):
+    CREATING = "CREATING"
+    READY = "READY"
+    FAILED = "FAILED"
+    CLOSING = "CLOSING"
+    CLOSED = "CLOSED"
+    LOST = "LOST"
+
+
+class SessionRuntimeState(StrEnum):
+    CREATING = "CREATING"
+    ACTIVE = "ACTIVE"
+    FAILED = "FAILED"
+    CLOSING = "CLOSING"
+    CLOSED = "CLOSED"
+    LOST = "LOST"
 
 
 class RunRecord(RuntimeModel):
@@ -108,3 +128,15 @@ class ResultOutboxRecord(RuntimeModel):
     result_json: JsonObject
     delivery_state: DeliveryState
     created_at: AwareDatetime
+
+
+class ResourceRuntimeRecord(RuntimeModel):
+    descriptor: ResourceDescriptor
+    updated_at: AwareDatetime
+    last_activity_at: AwareDatetime
+
+
+class SessionRuntimeRecord(RuntimeModel):
+    descriptor: SessionDescriptor
+    updated_at: AwareDatetime
+    last_activity_at: AwareDatetime

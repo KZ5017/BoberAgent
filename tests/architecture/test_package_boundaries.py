@@ -32,6 +32,7 @@ FORBIDDEN_IMPORTS = {
             "boberagent_execution_node",
             "boberagent_transport",
             "mcp",
+            "playwright",
             "sqlalchemy",
         }
     ),
@@ -42,6 +43,7 @@ FORBIDDEN_IMPORTS = {
             "boberagent_execution_node",
             "boberagent_transport",
             "mcp",
+            "playwright",
             "sqlalchemy",
         }
     ),
@@ -50,12 +52,14 @@ FORBIDDEN_IMPORTS = {
             "boberagent_execution_node",
             "boberagent_sdk",
             "mcp",
+            "playwright",
         }
     ),
     "boberagent_cli": frozenset(
         {
             "alembic",
             "boberagent_execution_node",
+            "playwright",
             "sqlalchemy",
         }
     ),
@@ -66,6 +70,7 @@ FORBIDDEN_IMPORTS = {
             "boberagent_execution_node",
             "boberagent_sdk",
             "mcp",
+            "playwright",
             "httpx2",
             "sqlalchemy",
             "uvicorn",
@@ -77,6 +82,7 @@ FORBIDDEN_IMPORTS = {
             "boberagent_core",
             "boberagent_execution_node",
             "boberagent_sdk",
+            "playwright",
             "sqlalchemy",
         }
     ),
@@ -92,6 +98,7 @@ CAPABILITY_FORBIDDEN_IMPORTS = frozenset(
         "boberagent_execution_node",
         "boberagent_transport",
         "mcp",
+        "playwright",
         "sqlalchemy",
         "subprocess",
     }

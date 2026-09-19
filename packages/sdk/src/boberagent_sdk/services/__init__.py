@@ -13,18 +13,28 @@ from .resources import ResourceLease, ResourceService
 from .scope import ScopeService
 from .secrets import SecretService, SensitiveValue
 from .sessions import (
+    BrowserInspection,
+    BrowserPageState,
+    BrowserSession,
+    BrowserUrl,
     CommandResult,
     CommandSession,
     SessionDriver,
     SessionHandle,
     SessionLease,
     SessionService,
+    normalize_browser_host,
+    parse_browser_url,
 )
 from .workspace import Workspace, WorkspaceIsolation, WorkspaceRef, WorkspaceService
 
 __all__ = [
     "ArtifactService",
     "AssetSnapshot",
+    "BrowserInspection",
+    "BrowserPageState",
+    "BrowserSession",
+    "BrowserUrl",
     "CancellationService",
     "CapabilityLogger",
     "CheckpointService",
@@ -51,4 +61,6 @@ __all__ = [
     "WorkspaceIsolation",
     "WorkspaceRef",
     "WorkspaceService",
+    "normalize_browser_host",
+    "parse_browser_url",
 ]

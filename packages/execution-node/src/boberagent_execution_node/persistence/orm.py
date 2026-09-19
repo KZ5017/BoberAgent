@@ -102,3 +102,50 @@ class ResultOutboxRow(Base):
     result_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
     delivery_state: Mapped[str] = mapped_column(String(32), nullable=False)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+
+
+class RuntimeResourceRow(Base):
+    __tablename__ = "runtime_resources"
+    __table_args__: tuple[Index] = (Index("ix_runtime_resources_owner_ref", "owner_ref"),)
+
+    resource_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    resource_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider: Mapped[str] = mapped_column(String(255), nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    owner_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_by_run: Mapped[str] = mapped_column(
+        ForeignKey("runtime_runs.run_id", ondelete="RESTRICT"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    last_activity_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    access_modes_json: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    lifecycle_metadata_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
+
+
+class RuntimeSessionRow(Base):
+    __tablename__ = "runtime_sessions"
+    __table_args__: tuple[Index, Index] = (
+        Index("ix_runtime_sessions_owner_ref", "owner_ref"),
+        Index("ix_runtime_sessions_target_ref", "target_ref"),
+    )
+
+    session_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    session_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider: Mapped[str] = mapped_column(String(255), nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    owner_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_by_run: Mapped[str] = mapped_column(
+        ForeignKey("runtime_runs.run_id", ondelete="RESTRICT"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    last_activity_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    target_ref: Mapped[str | None] = mapped_column(String(255))
+    identity_ref: Mapped[str | None] = mapped_column(String(255))
+    access_context_ref: Mapped[str | None] = mapped_column(String(255))
+    resource_refs_json: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    supported_operations_json: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    access_modes_json: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    lifecycle_metadata_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)

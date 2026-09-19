@@ -6,15 +6,23 @@ from copy import deepcopy
 from datetime import datetime
 
 from boberagent_contracts import (
+    AccessContextRef,
+    AccessMode,
     ArtifactDescriptor,
     ArtifactRef,
     CapabilityResult,
     CapabilityRunRef,
     CapabilityRunStatus,
+    DomainRef,
     Event,
     EventRef,
+    IdentityRef,
     JsonObject,
     MissionRef,
+    ResourceDescriptor,
+    ResourceRef,
+    SessionDescriptor,
+    SessionRef,
     StorageRef,
     WorkflowRunRef,
 )
@@ -29,8 +37,12 @@ from .models import (
     EventOutboxRecord,
     ProcessRecord,
     ProcessState,
+    ResourceRuntimeRecord,
+    ResourceRuntimeState,
     ResultOutboxRecord,
     RunRecord,
+    SessionRuntimeRecord,
+    SessionRuntimeState,
     SpoolArtifactRecord,
     WorkspaceRecord,
     WorkspaceState,
@@ -41,6 +53,8 @@ from .orm import (
     ProcessRow,
     ResultOutboxRow,
     RunRow,
+    RuntimeResourceRow,
+    RuntimeSessionRow,
     WorkspaceRow,
 )
 
@@ -188,6 +202,183 @@ class RuntimeStore:
             if row is None:
                 raise KeyError(f"unknown Workspace: {workspace_ref}")
             row.state = state.value
+
+    def add_resource(self, record: ResourceRuntimeRecord) -> None:
+        descriptor = record.descriptor
+        with self._database.transaction() as session:
+            session.add(
+                RuntimeResourceRow(
+                    resource_id=str(descriptor.resource_id),
+                    resource_type=descriptor.resource_type,
+                    provider=descriptor.provider,
+                    state=descriptor.state,
+                    owner_ref=str(descriptor.owner_ref),
+                    created_by_run=str(descriptor.created_by_run),
+                    created_at=descriptor.created_at,
+                    updated_at=record.updated_at,
+                    last_activity_at=record.last_activity_at,
+                    access_modes_json=[mode.value for mode in descriptor.access_modes],
+                    expires_at=descriptor.expires_at,
+                    lifecycle_metadata_json=deepcopy(descriptor.lifecycle_metadata),
+                )
+            )
+
+    def get_resource(self, resource_ref: ResourceRef) -> ResourceRuntimeRecord | None:
+        with self._database.transaction() as session:
+            row = session.get(RuntimeResourceRow, str(resource_ref))
+            return None if row is None else _resource_record(row)
+
+    def list_resources(self) -> tuple[ResourceRuntimeRecord, ...]:
+        with self._database.transaction() as session:
+            rows = session.scalars(
+                select(RuntimeResourceRow).order_by(RuntimeResourceRow.resource_id)
+            )
+            return tuple(_resource_record(row) for row in rows)
+
+    def update_resource_state(
+        self,
+        resource_ref: ResourceRef,
+        state: ResourceRuntimeState,
+        occurred_at: datetime,
+    ) -> None:
+        with self._database.transaction() as session:
+            row = session.get(RuntimeResourceRow, str(resource_ref))
+            if row is None:
+                raise KeyError(f"unknown Resource: {resource_ref}")
+            row.state = state.value
+            row.updated_at = occurred_at
+            row.last_activity_at = occurred_at
+
+    def touch_resource(self, resource_ref: ResourceRef, occurred_at: datetime) -> None:
+        with self._database.transaction() as session:
+            row = session.get(RuntimeResourceRow, str(resource_ref))
+            if row is None:
+                raise KeyError(f"unknown Resource: {resource_ref}")
+            row.updated_at = occurred_at
+            row.last_activity_at = occurred_at
+
+    def add_session(self, record: SessionRuntimeRecord) -> None:
+        descriptor = record.descriptor
+        with self._database.transaction() as session:
+            session.add(
+                RuntimeSessionRow(
+                    session_id=str(descriptor.session_id),
+                    session_type=descriptor.session_type,
+                    provider=descriptor.provider,
+                    state=descriptor.state,
+                    owner_ref=str(descriptor.owner_ref),
+                    created_by_run=str(descriptor.created_by_run),
+                    created_at=descriptor.created_at,
+                    updated_at=record.updated_at,
+                    last_activity_at=record.last_activity_at,
+                    target_ref=(
+                        None if descriptor.target_ref is None else str(descriptor.target_ref)
+                    ),
+                    identity_ref=(
+                        None if descriptor.identity_ref is None else str(descriptor.identity_ref)
+                    ),
+                    access_context_ref=(
+                        None
+                        if descriptor.access_context_ref is None
+                        else str(descriptor.access_context_ref)
+                    ),
+                    resource_refs_json=[str(ref) for ref in descriptor.resource_refs],
+                    supported_operations_json=list(descriptor.supported_operations),
+                    access_modes_json=[mode.value for mode in descriptor.access_modes],
+                    lifecycle_metadata_json=deepcopy(descriptor.lifecycle_metadata),
+                )
+            )
+
+    def get_session(self, session_ref: SessionRef) -> SessionRuntimeRecord | None:
+        with self._database.transaction() as session:
+            row = session.get(RuntimeSessionRow, str(session_ref))
+            return None if row is None else _session_record(row)
+
+    def list_sessions(self) -> tuple[SessionRuntimeRecord, ...]:
+        with self._database.transaction() as session:
+            rows = session.scalars(select(RuntimeSessionRow).order_by(RuntimeSessionRow.session_id))
+            return tuple(_session_record(row) for row in rows)
+
+    def list_sessions_for_resource(
+        self, resource_ref: ResourceRef
+    ) -> tuple[SessionRuntimeRecord, ...]:
+        return tuple(
+            record
+            for record in self.list_sessions()
+            if resource_ref in record.descriptor.resource_refs
+        )
+
+    def update_session_state(
+        self,
+        session_ref: SessionRef,
+        state: SessionRuntimeState,
+        occurred_at: datetime,
+    ) -> None:
+        with self._database.transaction() as session:
+            row = session.get(RuntimeSessionRow, str(session_ref))
+            if row is None:
+                raise KeyError(f"unknown Session: {session_ref}")
+            row.state = state.value
+            row.updated_at = occurred_at
+            row.last_activity_at = occurred_at
+
+    def touch_session(self, session_ref: SessionRef, occurred_at: datetime) -> None:
+        with self._database.transaction() as session:
+            row = session.get(RuntimeSessionRow, str(session_ref))
+            if row is None:
+                raise KeyError(f"unknown Session: {session_ref}")
+            row.updated_at = occurred_at
+            row.last_activity_at = occurred_at
+
+    def runtime_resource_count(self) -> int:
+        with self._database.transaction() as session:
+            return int(session.scalar(select(func.count()).select_from(RuntimeResourceRow)) or 0)
+
+    def runtime_session_count(self) -> int:
+        with self._database.transaction() as session:
+            return int(session.scalar(select(func.count()).select_from(RuntimeSessionRow)) or 0)
+
+    def recover_non_restorable_browser_state(self, recovered_at: datetime) -> tuple[int, int]:
+        """Mark live browser metadata LOST; live Playwright objects cannot survive restart."""
+
+        resources_lost = 0
+        sessions_lost = 0
+        with self._database.transaction() as session:
+            resources = session.scalars(
+                select(RuntimeResourceRow).where(
+                    RuntimeResourceRow.resource_type == "browser_process",
+                    RuntimeResourceRow.state.in_(
+                        [
+                            ResourceRuntimeState.CREATING.value,
+                            ResourceRuntimeState.READY.value,
+                            ResourceRuntimeState.CLOSING.value,
+                        ]
+                    ),
+                )
+            )
+            for resource_row in resources:
+                resource_row.state = ResourceRuntimeState.LOST.value
+                resource_row.updated_at = recovered_at
+                resource_row.last_activity_at = recovered_at
+                resources_lost += 1
+            sessions = session.scalars(
+                select(RuntimeSessionRow).where(
+                    RuntimeSessionRow.session_type == "browser",
+                    RuntimeSessionRow.state.in_(
+                        [
+                            SessionRuntimeState.CREATING.value,
+                            SessionRuntimeState.ACTIVE.value,
+                            SessionRuntimeState.CLOSING.value,
+                        ]
+                    ),
+                )
+            )
+            for session_row in sessions:
+                session_row.state = SessionRuntimeState.LOST.value
+                session_row.updated_at = recovered_at
+                session_row.last_activity_at = recovered_at
+                sessions_lost += 1
+        return resources_lost, sessions_lost
 
     def add_artifact(self, record: SpoolArtifactRecord) -> None:
         descriptor = record.descriptor
@@ -499,4 +690,50 @@ def _artifact_record(row: ArtifactRow) -> SpoolArtifactRecord:
         sync_attempt_count=row.sync_attempt_count,
         last_sync_attempt_at=row.last_sync_attempt_at,
         sync_error=row.sync_error,
+    )
+
+
+def _resource_record(row: RuntimeResourceRow) -> ResourceRuntimeRecord:
+    descriptor = ResourceDescriptor(
+        resource_id=ResourceRef(row.resource_id),
+        resource_type=row.resource_type,
+        provider=row.provider,
+        state=row.state,
+        owner_ref=DomainRef(row.owner_ref),
+        created_by_run=CapabilityRunRef(row.created_by_run),
+        created_at=row.created_at,
+        access_modes=tuple(AccessMode(mode) for mode in row.access_modes_json),
+        expires_at=row.expires_at,
+        lifecycle_metadata=deepcopy(row.lifecycle_metadata_json),
+    )
+    return ResourceRuntimeRecord(
+        descriptor=descriptor,
+        updated_at=row.updated_at,
+        last_activity_at=row.last_activity_at,
+    )
+
+
+def _session_record(row: RuntimeSessionRow) -> SessionRuntimeRecord:
+    descriptor = SessionDescriptor(
+        session_id=SessionRef(row.session_id),
+        session_type=row.session_type,
+        state=row.state,
+        provider=row.provider,
+        owner_ref=DomainRef(row.owner_ref),
+        created_by_run=CapabilityRunRef(row.created_by_run),
+        created_at=row.created_at,
+        target_ref=None if row.target_ref is None else DomainRef(row.target_ref),
+        identity_ref=None if row.identity_ref is None else IdentityRef(row.identity_ref),
+        access_context_ref=(
+            None if row.access_context_ref is None else AccessContextRef(row.access_context_ref)
+        ),
+        resource_refs=tuple(ResourceRef(ref) for ref in row.resource_refs_json),
+        supported_operations=tuple(row.supported_operations_json),
+        access_modes=tuple(AccessMode(mode) for mode in row.access_modes_json),
+        lifecycle_metadata=deepcopy(row.lifecycle_metadata_json),
+    )
+    return SessionRuntimeRecord(
+        descriptor=descriptor,
+        updated_at=row.updated_at,
+        last_activity_at=row.last_activity_at,
     )

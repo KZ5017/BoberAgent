@@ -21,21 +21,23 @@ def test_empty_database_migrates_and_survives_reopen(tmp_path: Path) -> None:
     assert current_revision(database) is None
 
     upgrade_database(database)
-    assert current_revision(database) == "0003_artifact_sync_metadata"
+    assert current_revision(database) == "0004_resource_session_runtime"
     assert set(inspect(database.migration_engine).get_table_names()) == {
         "alembic_version",
         "artifact_spool",
         "event_outbox",
         "managed_processes",
         "result_outbox",
+        "runtime_resources",
         "runtime_runs",
+        "runtime_sessions",
         "workspaces",
     }
     database.close()
 
     reopened = RuntimeDatabase(database_path)
     try:
-        assert current_revision(reopened) == "0003_artifact_sync_metadata"
+        assert current_revision(reopened) == "0004_resource_session_runtime"
         upgrade_database(reopened)
     finally:
         reopened.close()
@@ -55,7 +57,7 @@ def test_invocation_fingerprint_migration_upgrades_milestone_4_schema(
         assert "invocation_fingerprint" not in columns
 
         upgrade_database(database)
-        assert current_revision(database) == "0003_artifact_sync_metadata"
+        assert current_revision(database) == "0004_resource_session_runtime"
         columns = {
             column["name"]
             for column in inspect(database.migration_engine).get_columns("runtime_runs")
@@ -93,7 +95,7 @@ def test_artifact_sync_migration_preserves_milestone_5_spool_metadata(
             )
 
         upgrade_database(database)
-        assert current_revision(database) == "0003_artifact_sync_metadata"
+        assert current_revision(database) == "0004_resource_session_runtime"
         with database.migration_engine.connect() as connection:
             row = connection.execute(
                 text(
@@ -102,6 +104,37 @@ def test_artifact_sync_migration_preserves_milestone_5_spool_metadata(
                 )
             ).one()
         assert tuple(row) == ("artifact-upgrade", "LOCAL_ONLY", 0)
+    finally:
+        database.close()
+
+
+def test_resource_session_migration_upgrades_previous_node_schema(tmp_path: Path) -> None:
+    database = RuntimeDatabase(tmp_path / "resource-session-upgrade.sqlite3")
+    try:
+        upgrade_database(database, "0003_artifact_sync_metadata")
+        assert current_revision(database) == "0003_artifact_sync_metadata"
+        assert "runtime_resources" not in inspect(database.migration_engine).get_table_names()
+        with database.migration_engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO runtime_runs "
+                    "(run_id, mission_id, capability_id, operation, status, created_at) VALUES "
+                    "('run-before-browser', 'mission-upgrade', 'test.existing', 'run', "
+                    "'COMPLETED', '2026-01-01T00:00:00+00:00')"
+                )
+            )
+
+        upgrade_database(database)
+        assert current_revision(database) == "0004_resource_session_runtime"
+        tables = set(inspect(database.migration_engine).get_table_names())
+        assert {"runtime_resources", "runtime_sessions"} <= tables
+        with database.migration_engine.connect() as connection:
+            assert (
+                connection.execute(
+                    text("SELECT run_id FROM runtime_runs WHERE run_id = 'run-before-browser'")
+                ).scalar_one()
+                == "run-before-browser"
+            )
     finally:
         database.close()
 

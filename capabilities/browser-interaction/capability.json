@@ -1,0 +1,128 @@
+{
+  "definition": {
+    "capability_id": "browser.interaction",
+    "contract_version": "1.0",
+    "implementation_version": "0.1.0",
+    "title": "Stateful browser interaction",
+    "description": "Create and operate one managed, scope-constrained browser Session.",
+    "operations": [
+      {
+        "name": "open",
+        "title": "Open browser Session",
+        "description": "Create a headless browser Resource and one stateful Session for an authorized Asset.",
+        "input_schema": {
+          "inline": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["asset_ref"],
+            "properties": {"asset_ref": {"type": "string"}}
+          }
+        },
+        "result_types": ["resource", "session", "diagnostic"],
+        "retry_semantics": "CONDITIONAL"
+      },
+      {
+        "name": "navigate",
+        "title": "Navigate browser Session",
+        "description": "Navigate an existing stateful browser Session to an authorized HTTP(S) URL.",
+        "input_schema": {
+          "inline": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["asset_ref", "session_ref", "url"],
+            "properties": {
+              "asset_ref": {"type": "string"},
+              "session_ref": {"type": "string"},
+              "url": {"type": "string", "minLength": 1, "maxLength": 4096},
+              "timeout_seconds": {"type": "number", "exclusiveMinimum": 0, "maximum": 120, "default": 30}
+            }
+          }
+        },
+        "result_types": ["diagnostic"],
+        "retry_semantics": "CONDITIONAL"
+      },
+      {
+        "name": "inspect",
+        "title": "Inspect browser Session",
+        "description": "Inspect current page metadata and preserve a bounded HTML evidence Artifact.",
+        "input_schema": {
+          "inline": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["asset_ref", "session_ref"],
+            "properties": {
+              "asset_ref": {"type": "string"},
+              "session_ref": {"type": "string"},
+              "max_html_bytes": {"type": "integer", "minimum": 1, "maximum": 2097152, "default": 1048576}
+            }
+          }
+        },
+        "result_types": ["artifact", "diagnostic"],
+        "retry_semantics": "SAFE"
+      },
+      {
+        "name": "close",
+        "title": "Close browser Session",
+        "description": "Idempotently close the Session and its dedicated browser Resource.",
+        "input_schema": {
+          "inline": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["asset_ref", "session_ref"],
+            "properties": {
+              "asset_ref": {"type": "string"},
+              "session_ref": {"type": "string"}
+            }
+          }
+        },
+        "result_types": ["diagnostic"],
+        "retry_semantics": "SAFE"
+      }
+    ],
+    "execution": {
+      "duration": "one_shot",
+      "interaction": "stateful",
+      "asynchronous": true,
+      "supports_cancellation": true,
+      "supports_checkpointing": false
+    },
+    "interaction_surfaces": {
+      "local_compute": true,
+      "target_network": true,
+      "internet_access": false,
+      "active_session": true,
+      "managed_resource": true
+    },
+    "side_effects": [
+      {
+        "category": "local_code_execution",
+        "level": "expected",
+        "description": "Runs an explicitly provisioned headless Chromium runtime managed by the Execution Node."
+      },
+      {
+        "category": "external_network",
+        "level": "read",
+        "description": "Navigates only to hosts authorized by the invocation scope projection."
+      },
+      {
+        "category": "local_filesystem",
+        "level": "write",
+        "description": "May preserve bounded HTML evidence through the standard Artifact spool."
+      }
+    ],
+    "dependencies": [
+      {
+        "dependency_type": "tool",
+        "identifier": "chromium",
+        "required": true
+      }
+    ]
+  },
+  "implementation": "boberagent_capability_browser_interaction:BrowserInteractionCapability",
+  "input_models": {
+    "open": "boberagent_capability_browser_interaction:OpenBrowserInput",
+    "navigate": "boberagent_capability_browser_interaction:NavigateBrowserInput",
+    "inspect": "boberagent_capability_browser_interaction:InspectBrowserInput",
+    "close": "boberagent_capability_browser_interaction:CloseBrowserInput"
+  }
+}

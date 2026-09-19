@@ -6,7 +6,6 @@ import logging
 from dataclasses import dataclass
 
 from boberagent_contracts import (
-    AccessMode,
     AssetRef,
     Checkpoint,
     CheckpointRef,
@@ -15,10 +14,7 @@ from boberagent_contracts import (
     InteractionResponse,
     JsonObject,
     JsonValue,
-    ResourceDescriptor,
-    ResourceRef,
     SecretRef,
-    SessionRef,
 )
 from boberagent_sdk import (
     AssetSnapshot,
@@ -27,18 +23,14 @@ from boberagent_sdk import (
     InteractionUnavailable,
     InvocationContext,
     MissionContext,
-    ResourceLease,
-    ResourceUnavailable,
     ScopeViolation,
     SecretService,
     SensitiveValue,
-    SessionHandle,
-    SessionLease,
-    SessionUnavailable,
     UtcClock,
 )
 
 from boberagent_execution_node.artifacts import LocalArtifactSpool
+from boberagent_execution_node.browser import BrowserRuntimeManager
 from boberagent_execution_node.config import NodeConfiguration
 from boberagent_execution_node.events import EventOutbox, NodeEventService
 from boberagent_execution_node.identity import NodeId
@@ -121,58 +113,6 @@ class UnavailableCheckpointService:
         raise DependencyError("durable continuation is not implemented in Milestone 4")
 
 
-class UnavailableResourceService:
-    async def create(
-        self,
-        *,
-        resource_type: str,
-        configuration: JsonObject,
-        owner_ref: DomainRef | None = None,
-    ) -> ResourceDescriptor:
-        del resource_type, configuration, owner_ref
-        raise ResourceUnavailable("Resource providers are not implemented in Milestone 4")
-
-    async def get(self, resource_ref: ResourceRef) -> ResourceDescriptor:
-        del resource_ref
-        raise ResourceUnavailable("Resource providers are not implemented in Milestone 4")
-
-    def acquire(
-        self,
-        resource_ref: ResourceRef,
-        *,
-        mode: AccessMode = AccessMode.EXCLUSIVE,
-    ) -> ResourceLease:
-        del resource_ref, mode
-        raise ResourceUnavailable("Resource providers are not implemented in Milestone 4")
-
-    async def release(self, lease: ResourceLease) -> None:
-        del lease
-        raise ResourceUnavailable("Resource providers are not implemented in Milestone 4")
-
-    async def close(self, resource_ref: ResourceRef) -> None:
-        del resource_ref
-        raise ResourceUnavailable("Resource providers are not implemented in Milestone 4")
-
-
-class UnavailableSessionService:
-    async def get(self, session_ref: SessionRef) -> SessionHandle:
-        del session_ref
-        raise SessionUnavailable("Session drivers are not implemented in Milestone 4")
-
-    def acquire(
-        self,
-        session_ref: SessionRef,
-        *,
-        mode: AccessMode = AccessMode.EXCLUSIVE,
-    ) -> SessionLease:
-        del session_ref, mode
-        raise SessionUnavailable("Session drivers are not implemented in Milestone 4")
-
-    async def release(self, lease: SessionLease) -> None:
-        del lease
-        raise SessionUnavailable("Session drivers are not implemented in Milestone 4")
-
-
 class NodeCapabilityLogger:
     def __init__(
         self, *, node_id: NodeId, invocation: InvocationContext, logger: logging.Logger
@@ -213,6 +153,7 @@ class NodeExecutionContext:
         entities: LocalEntityReader,
         processes: ManagedProcessService,
         workspace: ManagedWorkspaceService,
+        browser_runtime: BrowserRuntimeManager,
         artifacts: LocalArtifactSpool,
         events: NodeEventService,
         logger: NodeCapabilityLogger,
@@ -224,8 +165,8 @@ class NodeExecutionContext:
         self.entities = entities
         self.processes = processes
         self.workspace = workspace
-        self.resources = UnavailableResourceService()
-        self.sessions = UnavailableSessionService()
+        self.resources = browser_runtime.resource_service(invocation.run_id)
+        self.sessions = browser_runtime.session_service(invocation.run_id)
         self.artifacts = artifacts
         self.secrets: SecretService = UnavailableSecretService()
         self.interactions = UnavailableInteractionService()
@@ -260,12 +201,14 @@ class ExecutionContextFactory:
         store: RuntimeStore,
         tools: ToolRegistry,
         event_outbox: EventOutbox,
+        browser_runtime: BrowserRuntimeManager,
     ) -> None:
         self._configuration = configuration
         self._node_id = node_id
         self._store = store
         self._tools = tools
         self._event_outbox = event_outbox
+        self._browser_runtime = browser_runtime
 
     def create(
         self,
@@ -317,6 +260,7 @@ class ExecutionContextFactory:
                 max_inline_output_bytes=(self._configuration.max_inline_process_output_bytes),
             ),
             workspace=workspace,
+            browser_runtime=self._browser_runtime,
             artifacts=artifacts,
             events=events,
             logger=NodeCapabilityLogger(

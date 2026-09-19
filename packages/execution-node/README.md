@@ -24,8 +24,9 @@ records, discovers capability manifests, inspects configured tools, and transiti
 
 The database is migration-driven through Alembic. Startup applies revisions rather than recreating
 tables. Tests always use temporary runtime directories. The schema records local Runs, managed
-processes and workspaces, Artifact spool metadata, and pending Event/Result outboxes; it is not a
-World State database.
+processes and workspaces, Artifact spool metadata, pending Event/Result outboxes, and safe logical
+Resource/Session metadata; it is not a World State database. Browser cookies, local storage,
+credentials, Playwright objects, and other live browser state are never written to this database.
 
 ## Capabilities and tools
 
@@ -68,6 +69,28 @@ Transport disconnect does not cancel accepted Node work.
 chunks, persists attempt time/count and the latest diagnostic, and marks `SYNCED` only after Core's
 durable acknowledgement. Local bytes are retained after synchronization and across restart.
 
+## Browser Resources and Sessions
+
+The first concrete Resource/Session provider is an explicitly provisioned headless Chromium
+runtime behind Playwright. `browser.interaction` asks the SDK to create a `browser_process`
+Resource and a distinct `browser` Session. The Node resolves the logical `chromium` dependency
+through its Tool Registry; it never downloads a browser during invocation. Capability code sees
+only the SDK's semantic `BrowserSession` driver, not Playwright objects.
+
+M13 deliberately uses one browser Resource per Session. The Resource owns the browser process;
+the Session owns its context/page, cookies, local storage, and navigation state. Both receive
+stable logical references and durable lifecycle records. Access is exclusive, navigation is
+limited to normalized HTTP(S) hosts authorized by the invocation projection, and Playwright route
+interception blocks redirects and subrequests that leave that host policy. HTML inspection is
+bounded and leaves the Node through the ordinary Artifact spool.
+
+Resource states are `CREATING`, `READY`, `FAILED`, `CLOSING`, `CLOSED`, and `LOST`; Session states
+are `CREATING`, `ACTIVE`, `FAILED`, `CLOSING`, `CLOSED`, and `LOST`. Closing a Session or Resource
+is idempotent, and Resource close first closes dependent Sessions. Graceful Node shutdown closes
+live browser runtimes. After an unclean restart, non-terminal browser Resources and Sessions are
+marked `LOST`: durable identity survives, but sensitive in-memory browser state is never fabricated
+or silently restored.
+
 ## Recovery policy
 
 Completed Runs are replayed from the Result outbox when the same `CapabilityRunRef` is submitted
@@ -77,9 +100,10 @@ re-executes potentially state-changing work. Artifacts, workspaces, and pending 
 retained.
 
 Scope/entity data for the local test harness must be supplied explicitly. Services requiring Core
-(Secrets and Interactions) and providers deferred to later milestones (Resources and Sessions)
-fail closed. `ExecutionPlan` execution is deliberately unavailable. Capability implementations
-must use `boberagent_sdk` and must not import this package's persistence or manager internals.
+(Secrets and Interactions) fail closed. The browser provider is the only production
+Resource/Session implementation in this milestone; unsupported types fail explicitly.
+`ExecutionPlan` execution is deliberately unavailable. Capability implementations must use
+`boberagent_sdk` and must not import this package's persistence or manager internals.
 
 ## MCP listener
 

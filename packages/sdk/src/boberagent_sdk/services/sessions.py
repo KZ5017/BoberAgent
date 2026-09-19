@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
+import ipaddress
 from types import TracebackType
-from typing import Protocol
+from typing import Protocol, runtime_checkable
+from urllib.parse import urlsplit
 
-from boberagent_contracts import AccessMode, SessionDescriptor, SessionRef
-from pydantic import BaseModel, ConfigDict
+from boberagent_contracts import (
+    AccessMode,
+    DomainRef,
+    JsonObject,
+    ResourceRef,
+    SessionDescriptor,
+    SessionRef,
+)
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CommandResult(BaseModel):
@@ -28,6 +37,87 @@ class SessionDriver(Protocol):
 
 class CommandSession(SessionDriver, Protocol):
     async def execute(self, command: str, *, timeout: float | None = None) -> CommandResult: ...
+
+
+class BrowserUrl(BaseModel):
+    """Validated HTTP(S) target used by browser scope enforcement."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    url: str
+    scheme: str
+    host: str
+    port: int | None = Field(default=None, ge=1, le=65535)
+
+
+class BrowserPageState(BaseModel):
+    """Provider-neutral current page metadata."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    final_url: str
+    title: str
+    status_code: int | None = Field(default=None, ge=100, le=599)
+
+
+class BrowserInspection(BaseModel):
+    """Bounded browser inspection data suitable for Artifact creation."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    page: BrowserPageState
+    html: bytes
+
+
+@runtime_checkable
+class BrowserSession(SessionDriver, Protocol):
+    """Semantic browser driver; no Playwright objects cross this boundary."""
+
+    async def navigate(
+        self,
+        url: str,
+        *,
+        allowed_hosts: tuple[str, ...],
+        timeout: float | None = None,
+    ) -> BrowserPageState: ...
+
+    async def inspect(self, *, max_html_bytes: int) -> BrowserInspection: ...
+
+
+def parse_browser_url(url: str) -> BrowserUrl:
+    """Normalize an HTTP(S) URL for deterministic host-based scope checks."""
+
+    if not url or len(url) > 4096:
+        raise ValueError("browser URL must contain between 1 and 4096 characters")
+    try:
+        parsed = urlsplit(url)
+        port = parsed.port
+    except ValueError as error:
+        raise ValueError("browser URL contains an invalid port or authority") from error
+    scheme = parsed.scheme.lower()
+    if scheme not in {"http", "https"}:
+        raise ValueError("browser navigation supports only http and https URLs")
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError("browser URLs must not contain user information")
+    if parsed.hostname is None:
+        raise ValueError("browser URL must contain a hostname or IP address")
+    host = normalize_browser_host(parsed.hostname)
+    return BrowserUrl(url=url, scheme=scheme, host=host, port=port)
+
+
+def normalize_browser_host(value: str) -> str:
+    """Canonicalize a hostname, IPv4 address, or IPv6 address."""
+
+    candidate = value.rstrip(".").lower()
+    if not candidate:
+        raise ValueError("browser URL host must not be empty")
+    try:
+        return ipaddress.ip_address(candidate).compressed
+    except ValueError:
+        try:
+            return candidate.encode("idna").decode("ascii")
+        except UnicodeError as error:
+            raise ValueError("browser URL contains an invalid hostname") from error
 
 
 class SessionHandle:
@@ -68,6 +158,16 @@ class SessionLease(Protocol):
 
 
 class SessionService(Protocol):
+    async def create(
+        self,
+        *,
+        session_type: str,
+        resource_refs: tuple[ResourceRef, ...],
+        configuration: JsonObject,
+        owner_ref: DomainRef | None = None,
+        target_ref: DomainRef | None = None,
+    ) -> SessionHandle: ...
+
     async def get(self, session_ref: SessionRef) -> SessionHandle: ...
 
     def acquire(
@@ -78,3 +178,5 @@ class SessionService(Protocol):
     ) -> SessionLease: ...
 
     async def release(self, lease: SessionLease) -> None: ...
+
+    async def close(self, session_ref: SessionRef) -> None: ...

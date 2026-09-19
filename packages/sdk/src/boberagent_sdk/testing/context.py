@@ -60,7 +60,7 @@ class FakeExecutionContext:
         self._processes = FakeProcessService()
         self._workspace = FakeWorkspaceService(selected_invocation.run_id)
         self._resources = FakeResourceService(selected_invocation.run_id, self._clock)
-        self._sessions = FakeSessionService()
+        self._sessions = FakeSessionService(selected_invocation.run_id, self._clock)
         self._artifacts = FakeArtifactService(selected_invocation.run_id, self._clock)
         self._secrets = FakeSecretService()
         self._interactions = FakeInteractionService()

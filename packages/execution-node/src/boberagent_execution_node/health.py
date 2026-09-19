@@ -20,4 +20,6 @@ class NodeHealth(BaseModel):
     local_artifacts: int = Field(ge=0)
     pending_events: int = Field(ge=0)
     pending_results: int = Field(ge=0)
+    runtime_resources: int = Field(ge=0)
+    runtime_sessions: int = Field(ge=0)
     degraded_reasons: tuple[str, ...] = ()

@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import shutil
 import tempfile
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
@@ -631,14 +631,57 @@ class _FakeResourceLease:
 
 
 class FakeSessionService:
-    def __init__(self) -> None:
+    def __init__(self, run_ref: CapabilityRunRef, clock: FakeClock) -> None:
+        self._run_ref = run_ref
+        self._clock = clock
+        self._counter = 0
         self._sessions: dict[str, SessionHandle] = {}
         self._active_modes: dict[str, list[AccessMode]] = {}
+        self._factories: dict[str, Callable[[JsonObject], SessionDriver]] = {}
+
+    def register_factory(
+        self,
+        session_type: str,
+        factory: Callable[[JsonObject], SessionDriver],
+    ) -> None:
+        self._factories[session_type] = factory
 
     def register(self, descriptor: SessionDescriptor, driver: SessionDriver) -> None:
         self._sessions[str(descriptor.session_id)] = SessionHandle(
             descriptor.model_copy(deep=True), driver
         )
+
+    async def create(
+        self,
+        *,
+        session_type: str,
+        resource_refs: tuple[ResourceRef, ...],
+        configuration: JsonObject,
+        owner_ref: DomainRef | None = None,
+        target_ref: DomainRef | None = None,
+    ) -> SessionHandle:
+        try:
+            factory = self._factories[session_type]
+        except KeyError as error:
+            raise SessionUnavailable(f"Unknown Session type: {session_type}") from error
+        self._counter += 1
+        driver = factory(configuration)
+        descriptor = SessionDescriptor(
+            session_id=SessionRef(f"session-{self._counter:04d}"),
+            session_type=session_type,
+            state="ACTIVE",
+            provider="fake",
+            owner_ref=owner_ref or self._run_ref,
+            created_by_run=self._run_ref,
+            created_at=self._clock.now(),
+            target_ref=target_ref,
+            resource_refs=resource_refs,
+            supported_operations=driver.supported_operations,
+            access_modes=(AccessMode.EXCLUSIVE,),
+            lifecycle_metadata={"last_activity_at": self._clock.now().isoformat()},
+        )
+        self.register(descriptor, driver)
+        return self._handle(descriptor.session_id)
 
     async def get(self, session_ref: SessionRef) -> SessionHandle:
         return self._handle(session_ref)
@@ -657,14 +700,26 @@ class FakeSessionService:
     async def release(self, lease: SessionLease) -> None:
         await lease.release()
 
+    async def close(self, session_ref: SessionRef) -> None:
+        handle = self._stored_handle(session_ref)
+        if self._active_modes.get(str(session_ref)):
+            raise SessionUnavailable(f"Session is leased: {session_ref}")
+        handle.descriptor.state = "CLOSED"
+
     def _handle(self, session_ref: SessionRef) -> SessionHandle:
-        try:
-            handle = self._sessions[str(session_ref)]
-        except KeyError as error:
-            raise SessionUnavailable(f"Unknown Session: {session_ref}") from error
+        handle = self._stored_handle(session_ref)
         return SessionHandle(handle.descriptor.model_copy(deep=True), handle.driver)
 
+    def _stored_handle(self, session_ref: SessionRef) -> SessionHandle:
+        try:
+            return self._sessions[str(session_ref)]
+        except KeyError as error:
+            raise SessionUnavailable(f"Unknown Session: {session_ref}") from error
+
     def _begin_lease(self, session_ref: SessionRef, mode: AccessMode) -> None:
+        handle = self._handle(session_ref)
+        if handle.descriptor.state.upper() != "ACTIVE":
+            raise SessionUnavailable(f"Session is not active: {session_ref}")
         active = self._active_modes.setdefault(str(session_ref), [])
         conflict = mode is AccessMode.EXCLUSIVE and bool(active)
         conflict = conflict or (mode is AccessMode.SHARED and AccessMode.EXCLUSIVE in active)

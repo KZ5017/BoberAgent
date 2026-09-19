@@ -7,6 +7,7 @@ import os
 from boberagent_contracts import CapabilityInvocation, CapabilityResult, JsonObject
 from boberagent_sdk import UtcClock
 
+from .browser import BrowserBackend, BrowserRuntimeManager, PlaywrightBrowserBackend
 from .capabilities import (
     CapabilityAvailability,
     CapabilityLoader,
@@ -29,7 +30,12 @@ from .tools import DependencyResolver, ToolAvailability, ToolRegistry
 class ExecutionNode:
     """Own and coordinate one local runtime independently of transport adapters."""
 
-    def __init__(self, configuration: NodeConfiguration) -> None:
+    def __init__(
+        self,
+        configuration: NodeConfiguration,
+        *,
+        browser_backend: BrowserBackend | None = None,
+    ) -> None:
         self.configuration = configuration
         self.lifecycle = NodeLifecycle()
         self.identity: NodeIdentity | None = None
@@ -40,6 +46,8 @@ class ExecutionNode:
         self.events: EventOutbox | None = None
         self.results: ResultOutbox | None = None
         self.runtime: CapabilityRuntime | None = None
+        self.browser_runtime: BrowserRuntimeManager | None = None
+        self._browser_backend = browser_backend
         self._clock = UtcClock()
         self._degraded_reasons: list[str] = []
         self._database_ready = False
@@ -64,6 +72,9 @@ class ExecutionNode:
             self.results = ResultOutbox(self.store)
 
             recovered_runs, recovered_processes = self.store.recover_interrupted(self._clock.now())
+            recovered_resources, recovered_sessions = (
+                self.store.recover_non_restorable_browser_state(self._clock.now())
+            )
             for record in recovered_runs:
                 result = interrupted_result(record, self._clock.now())
                 self.results.persist_terminal(
@@ -75,11 +86,21 @@ class ExecutionNode:
                 self._degraded_reasons.append(
                     "recovered interrupted local execution state conservatively"
                 )
+            if recovered_resources or recovered_sessions:
+                self._degraded_reasons.append(
+                    "non-restorable browser Resources/Sessions were marked LOST"
+                )
 
             CapabilityLoader().discover(self.configuration.capability_paths, self.capabilities)
             for name, configuration in sorted(self.configuration.tools.items()):
                 self.tools.register(name, configuration)
             await self.tools.refresh()
+            self.browser_runtime = BrowserRuntimeManager(
+                store=self.store,
+                tools=self.tools,
+                backend=self._browser_backend or PlaywrightBrowserBackend(),
+                clock=self._clock.now,
+            )
 
             if self.capabilities.failures:
                 self._degraded_reasons.append("one or more capability manifests failed")
@@ -119,6 +140,7 @@ class ExecutionNode:
                 store=self.store,
                 tools=self.tools,
                 event_outbox=self.events,
+                browser_runtime=self.browser_runtime,
             )
             self.runtime = CapabilityRuntime(
                 registry=self.capabilities,
@@ -194,6 +216,8 @@ class ExecutionNode:
             local_artifacts=artifacts,
             pending_events=pending_events,
             pending_results=pending_results,
+            runtime_resources=self.store.runtime_resource_count(),
+            runtime_sessions=self.store.runtime_session_count(),
             degraded_reasons=tuple(self._degraded_reasons),
         )
 
@@ -203,6 +227,8 @@ class ExecutionNode:
             NodeLifecycleState.DEGRADED,
         }:
             self.lifecycle.transition(NodeLifecycleState.DRAINING)
+        if self.browser_runtime is not None:
+            await self.browser_runtime.shutdown()
         if self.database is not None:
             self.database.close()
         self._database_ready = False

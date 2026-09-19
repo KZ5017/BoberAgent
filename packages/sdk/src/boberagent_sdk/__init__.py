@@ -42,6 +42,10 @@ from .exceptions import (
 from .services import (
     ArtifactService,
     AssetSnapshot,
+    BrowserInspection,
+    BrowserPageState,
+    BrowserSession,
+    BrowserUrl,
     CancellationService,
     CapabilityLogger,
     CheckpointService,
@@ -68,6 +72,8 @@ from .services import (
     WorkspaceIsolation,
     WorkspaceRef,
     WorkspaceService,
+    normalize_browser_host,
+    parse_browser_url,
 )
 
 __all__ = [
@@ -77,6 +83,10 @@ __all__ = [
     "ArtifactService",
     "AssetRef",
     "AssetSnapshot",
+    "BrowserInspection",
+    "BrowserPageState",
+    "BrowserSession",
+    "BrowserUrl",
     "CancellationService",
     "Capability",
     "CapabilityError",
@@ -135,4 +145,6 @@ __all__ = [
     "WorkspaceIsolation",
     "WorkspaceRef",
     "WorkspaceService",
+    "normalize_browser_host",
+    "parse_browser_url",
 ]

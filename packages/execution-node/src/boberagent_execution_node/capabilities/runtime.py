@@ -22,8 +22,10 @@ from boberagent_sdk import (
     InputError,
     InvocationContext,
     PolicyDenied,
+    ResourceUnavailable,
     ResultValidationError,
     ScopeViolation,
+    SessionUnavailable,
     ToolExecutionError,
     UtcClock,
 )
@@ -214,6 +216,14 @@ def _failure_result(
         status = CapabilityRunStatus.FAILED
         code = "DEPENDENCY_UNAVAILABLE"
         message = "A required local dependency was unavailable."
+    elif isinstance(error, ResourceUnavailable):
+        status = CapabilityRunStatus.FAILED
+        code = "RESOURCE_UNAVAILABLE"
+        message = "A required managed Resource was unavailable."
+    elif isinstance(error, SessionUnavailable):
+        status = CapabilityRunStatus.FAILED
+        code = "SESSION_UNAVAILABLE"
+        message = "A required stateful Session was unavailable."
     elif isinstance(error, ScopeViolation):
         status = CapabilityRunStatus.FAILED
         code = "SCOPE_VIOLATION"

@@ -46,3 +46,51 @@ For an isolated plaintext lab only, replace `--ca-file` with
 navigate(check) → close`, verifies `cookie-preserved`, and confirms a post-close navigation fails.
 It never prints the bearer token. This is manual validation only; deterministic automated tests use
 a controlled loopback server and do not require Kali or network access.
+
+## Incoming TCP Session smoke test
+
+This procedure proves asynchronous Session creation across real MCP without shell or payload
+semantics. Choose an uncommon high port, bind the Kali interface explicitly, and authorize only
+the controlled client's source IP. Ensure the lab firewall permits that single TCP path; these
+scripts never change firewall configuration.
+
+On Kali, start the Node with the production listener capability:
+
+```shell
+export BOBERAGENT_MCP_TOKEN='<dedicated-test-token>'
+uv run boberagent-node-mcp \
+  --runtime-directory /var/lib/boberagent-listener-smoke \
+  --bind-host 0.0.0.0 --port 8443 \
+  --tls-certificate /etc/boberagent/node.crt \
+  --tls-private-key /etc/boberagent/node.key \
+  --capability-path capabilities/network-listener
+```
+
+From Core/WSL, start the orchestration script. `--allowed-peer-address` must be the source address
+Kali will actually observe for the controlled client:
+
+```shell
+export BOBERAGENT_MCP_TOKEN='<dedicated-test-token>'
+uv run python scripts/manual-smoke/listener_session_smoke_test.py \
+  --endpoint https://<kali-host>:8443/mcp \
+  --node-id <node-id> \
+  --core-runtime-directory /tmp/boberagent-listener-core \
+  --bind-address <kali-interface-address> \
+  --allowed-peer-address <controlled-client-source-address> \
+  --port 45873 \
+  --ca-file /path/to/lab-ca.pem
+```
+
+When it reports that the Listener is ready, run the bounded fixture client from the authorized
+machine:
+
+```shell
+uv run python scripts/manual-smoke/listener_test_client.py \
+  --host <kali-interface-address> --port 45873
+```
+
+The client sends only `hello-boberagent` and expects `pong-boberagent`. Core waits for the normal
+`session.created` Event, performs separate `receive`, `send`, `close_session`, and `close_listener`
+Capability Runs, then exits. No command interpreter, PTY, payload generation, or received-byte
+execution is involved. For an isolated plaintext lab only, the Core script also accepts
+`--allow-insecure-remote-transport` instead of `--ca-file`.

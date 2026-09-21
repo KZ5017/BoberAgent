@@ -43,6 +43,12 @@ exclusive or shared access without exposing provider objects. `BrowserSession` i
 semantic driver: it supports scoped navigation and bounded HTML inspection without exposing
 Playwright, arbitrary JavaScript, or a generic browser automation escape hatch.
 
+`ByteStreamSession` is the generic incoming-stream driver. It exposes only timeout-bounded
+`receive(max_bytes=...)` and `send(bytes)` operations plus EOF state. Socket objects, file
+descriptors, listener tasks, framing assumptions, command interpretation, and provider-specific
+handles remain outside the SDK. Capabilities that need JSON-safe results must explicitly encode
+bounded bytes (the production listener capability uses canonical base64).
+
 ## Unit testing
 
 Use the separately namespaced fake environment:

@@ -1,0 +1,150 @@
+{
+  "definition": {
+    "capability_id": "network.listener",
+    "contract_version": "1.0",
+    "implementation_version": "0.1.0",
+    "title": "Managed incoming TCP byte stream",
+    "description": "Create a scoped TCP Listener Resource and exchange bounded opaque bytes with asynchronously accepted Sessions.",
+    "operations": [
+      {
+        "name": "open",
+        "title": "Open TCP listener",
+        "description": "Create a managed TCP Listener Resource for explicitly authorized peers.",
+        "input_schema": {
+          "inline": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["bind_address", "allowed_remote_addresses"],
+            "properties": {
+              "bind_address": {"type": "string"},
+              "port": {"type": "integer", "minimum": 0, "maximum": 65535, "default": 0},
+              "allowed_remote_addresses": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 64,
+                "items": {"type": "string"}
+              },
+              "max_sessions": {"type": "integer", "minimum": 1, "maximum": 32, "default": 8}
+            }
+          }
+        },
+        "result_types": ["resource", "diagnostic"],
+        "retry_semantics": "CONDITIONAL"
+      },
+      {
+        "name": "inspect",
+        "title": "Inspect listener",
+        "description": "Read safe lifecycle and bound-endpoint metadata for a managed Listener Resource.",
+        "input_schema": {
+          "inline": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["resource_ref"],
+            "properties": {"resource_ref": {"type": "string"}}
+          }
+        },
+        "result_types": ["diagnostic"],
+        "retry_semantics": "SAFE"
+      },
+      {
+        "name": "receive",
+        "title": "Receive bounded bytes",
+        "description": "Read a bounded opaque byte sequence from an ACTIVE incoming Session.",
+        "input_schema": {
+          "inline": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["session_ref"],
+            "properties": {
+              "session_ref": {"type": "string"},
+              "max_bytes": {"type": "integer", "minimum": 1, "maximum": 65536, "default": 4096},
+              "timeout_seconds": {"type": "number", "exclusiveMinimum": 0, "maximum": 30, "default": 5}
+            }
+          }
+        },
+        "result_types": ["diagnostic"],
+        "retry_semantics": "UNSAFE"
+      },
+      {
+        "name": "send",
+        "title": "Send bounded bytes",
+        "description": "Write a bounded base64-encoded opaque byte sequence to an ACTIVE incoming Session.",
+        "input_schema": {
+          "inline": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["session_ref", "payload_base64"],
+            "properties": {
+              "session_ref": {"type": "string"},
+              "payload_base64": {"type": "string", "minLength": 4, "maxLength": 87384},
+              "timeout_seconds": {"type": "number", "exclusiveMinimum": 0, "maximum": 30, "default": 5}
+            }
+          }
+        },
+        "result_types": ["diagnostic"],
+        "retry_semantics": "UNSAFE"
+      },
+      {
+        "name": "close_session",
+        "title": "Close incoming Session",
+        "description": "Idempotently close one managed incoming TCP Session.",
+        "input_schema": {
+          "inline": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["session_ref"],
+            "properties": {"session_ref": {"type": "string"}}
+          }
+        },
+        "result_types": ["diagnostic"],
+        "retry_semantics": "SAFE"
+      },
+      {
+        "name": "close_listener",
+        "title": "Close listener",
+        "description": "Idempotently stop accepting and close all dependent live Sessions.",
+        "input_schema": {
+          "inline": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["resource_ref"],
+            "properties": {"resource_ref": {"type": "string"}}
+          }
+        },
+        "result_types": ["diagnostic"],
+        "retry_semantics": "SAFE"
+      }
+    ],
+    "execution": {
+      "duration": "one_shot",
+      "interaction": "stateful",
+      "asynchronous": true,
+      "supports_cancellation": true,
+      "supports_checkpointing": false
+    },
+    "interaction_surfaces": {
+      "local_compute": true,
+      "target_network": true,
+      "internet_access": false,
+      "active_session": true,
+      "managed_resource": true
+    },
+    "side_effects": [
+      {
+        "category": "external_network",
+        "level": "modify",
+        "description": "Binds an explicit local TCP endpoint and exchanges bounded opaque bytes only with authorized peers."
+      }
+    ],
+    "dependencies": []
+  },
+  "implementation": "boberagent_capability_network_listener:NetworkListenerCapability",
+  "input_models": {
+    "open": "boberagent_capability_network_listener:OpenListenerInput",
+    "inspect": "boberagent_capability_network_listener:InspectListenerInput",
+    "receive": "boberagent_capability_network_listener:ReceiveInput",
+    "send": "boberagent_capability_network_listener:SendInput",
+    "close_session": "boberagent_capability_network_listener:CloseSessionInput",
+    "close_listener": "boberagent_capability_network_listener:CloseListenerInput"
+  }
+}

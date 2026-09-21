@@ -240,6 +240,8 @@ class RuntimeStore:
         resource_ref: ResourceRef,
         state: ResourceRuntimeState,
         occurred_at: datetime,
+        *,
+        lifecycle_metadata: JsonObject | None = None,
     ) -> None:
         with self._database.transaction() as session:
             row = session.get(RuntimeResourceRow, str(resource_ref))
@@ -248,6 +250,8 @@ class RuntimeStore:
             row.state = state.value
             row.updated_at = occurred_at
             row.last_activity_at = occurred_at
+            if lifecycle_metadata is not None:
+                row.lifecycle_metadata_json = deepcopy(lifecycle_metadata)
 
     def touch_resource(self, resource_ref: ResourceRef, occurred_at: datetime) -> None:
         with self._database.transaction() as session:
@@ -341,12 +345,34 @@ class RuntimeStore:
     def recover_non_restorable_browser_state(self, recovered_at: datetime) -> tuple[int, int]:
         """Mark live browser metadata LOST; live Playwright objects cannot survive restart."""
 
+        return self._recover_non_restorable_state(
+            resource_types=("browser_process",),
+            session_types=("browser",),
+            recovered_at=recovered_at,
+        )
+
+    def recover_non_restorable_listener_state(self, recovered_at: datetime) -> tuple[int, int]:
+        """Mark raw TCP listener and stream metadata LOST after process restart."""
+
+        return self._recover_non_restorable_state(
+            resource_types=("tcp_listener",),
+            session_types=("tcp_stream",),
+            recovered_at=recovered_at,
+        )
+
+    def _recover_non_restorable_state(
+        self,
+        *,
+        resource_types: tuple[str, ...],
+        session_types: tuple[str, ...],
+        recovered_at: datetime,
+    ) -> tuple[int, int]:
         resources_lost = 0
         sessions_lost = 0
         with self._database.transaction() as session:
             resources = session.scalars(
                 select(RuntimeResourceRow).where(
-                    RuntimeResourceRow.resource_type == "browser_process",
+                    RuntimeResourceRow.resource_type.in_(resource_types),
                     RuntimeResourceRow.state.in_(
                         [
                             ResourceRuntimeState.CREATING.value,
@@ -363,7 +389,7 @@ class RuntimeStore:
                 resources_lost += 1
             sessions = session.scalars(
                 select(RuntimeSessionRow).where(
-                    RuntimeSessionRow.session_type == "browser",
+                    RuntimeSessionRow.session_type.in_(session_types),
                     RuntimeSessionRow.state.in_(
                         [
                             SessionRuntimeState.CREATING.value,

@@ -94,12 +94,14 @@ CAPABILITY_SOURCE_ROOTS = tuple(
 CAPABILITY_FORBIDDEN_IMPORTS = frozenset(
     {
         "alembic",
+        "asyncio",
         "boberagent_core",
         "boberagent_execution_node",
         "boberagent_transport",
         "mcp",
         "playwright",
         "sqlalchemy",
+        "socket",
         "subprocess",
     }
 )

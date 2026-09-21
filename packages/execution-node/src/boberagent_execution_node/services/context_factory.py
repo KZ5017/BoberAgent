@@ -34,10 +34,13 @@ from boberagent_execution_node.browser import BrowserRuntimeManager
 from boberagent_execution_node.config import NodeConfiguration
 from boberagent_execution_node.events import EventOutbox, NodeEventService
 from boberagent_execution_node.identity import NodeId
+from boberagent_execution_node.listener import ListenerRuntimeManager
 from boberagent_execution_node.persistence import RuntimeStore
 from boberagent_execution_node.processes import ManagedProcessService, NodeCancellationService
 from boberagent_execution_node.tools import ToolRegistry
 from boberagent_execution_node.workspace import ManagedWorkspaceService
+
+from .resource_sessions import NodeResourceService, NodeSessionService
 
 
 class LocalScopeService:
@@ -153,7 +156,8 @@ class NodeExecutionContext:
         entities: LocalEntityReader,
         processes: ManagedProcessService,
         workspace: ManagedWorkspaceService,
-        browser_runtime: BrowserRuntimeManager,
+        resources: NodeResourceService,
+        sessions: NodeSessionService,
         artifacts: LocalArtifactSpool,
         events: NodeEventService,
         logger: NodeCapabilityLogger,
@@ -165,8 +169,8 @@ class NodeExecutionContext:
         self.entities = entities
         self.processes = processes
         self.workspace = workspace
-        self.resources = browser_runtime.resource_service(invocation.run_id)
-        self.sessions = browser_runtime.session_service(invocation.run_id)
+        self.resources = resources
+        self.sessions = sessions
         self.artifacts = artifacts
         self.secrets: SecretService = UnavailableSecretService()
         self.interactions = UnavailableInteractionService()
@@ -202,6 +206,7 @@ class ExecutionContextFactory:
         tools: ToolRegistry,
         event_outbox: EventOutbox,
         browser_runtime: BrowserRuntimeManager,
+        listener_runtime: ListenerRuntimeManager,
     ) -> None:
         self._configuration = configuration
         self._node_id = node_id
@@ -209,6 +214,7 @@ class ExecutionContextFactory:
         self._tools = tools
         self._event_outbox = event_outbox
         self._browser_runtime = browser_runtime
+        self._listener_runtime = listener_runtime
 
     def create(
         self,
@@ -241,6 +247,18 @@ class ExecutionContextFactory:
             run_ref=invocation.run_id,
             clock=clock.now,
         )
+        resources = NodeResourceService(
+            run_ref=invocation.run_id,
+            store=self._store,
+            browser=self._browser_runtime,
+            listener=self._listener_runtime,
+        )
+        sessions = NodeSessionService(
+            run_ref=invocation.run_id,
+            store=self._store,
+            browser=self._browser_runtime,
+            listener=self._listener_runtime,
+        )
         context = NodeExecutionContext(
             invocation=invocation,
             mission=environment.mission,
@@ -260,7 +278,8 @@ class ExecutionContextFactory:
                 max_inline_output_bytes=(self._configuration.max_inline_process_output_bytes),
             ),
             workspace=workspace,
-            browser_runtime=self._browser_runtime,
+            resources=resources,
+            sessions=sessions,
             artifacts=artifacts,
             events=events,
             logger=NodeCapabilityLogger(

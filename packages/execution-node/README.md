@@ -91,6 +91,28 @@ live browser runtimes. After an unclean restart, non-terminal browser Resources 
 marked `LOST`: durable identity survives, but sensitive in-memory browser state is never fabricated
 or silently restored.
 
+## TCP Listener Resources and incoming Sessions
+
+`network.listener` creates a Node-owned `tcp_listener` Resource. The capability returns as soon as
+the explicitly scoped address/port is bound; it does not hold a Capability Run open while waiting
+for a peer. Native asyncio accept handling remains in the Execution Node. Each authorized incoming
+connection creates a durable `tcp_stream` Session with a stable `SessionRef`, then emits a
+`session.created` Event through the existing persistent Event outbox. No listener-specific
+transport or MCP operation exists.
+
+The bind address and every allowed peer address must be explicit IP literals present in the
+invocation scope. Wildcard binds are rejected. Each listener has a bounded simultaneous-Session
+capacity (maximum 32); excess or unauthorized connections are closed and produce metadata-only
+`session.rejected` Events. The semantic SDK driver permits exclusive, timeout-bounded reads and
+writes of at most 64 KiB. Stream bytes are never logged, persisted in runtime tables, emitted as
+Events, or automatically stored as Artifacts.
+
+One Listener can own multiple distinct incoming Sessions. Closing one Session leaves its Listener
+ready. Closing the Listener stops acceptance, closes all dependent live Sessions, and waits for
+its Node-owned tasks and sockets. Listener and stream handles are not restart-restorable, so Node
+startup marks surviving non-terminal `tcp_listener` and `tcp_stream` records `LOST`; it never
+silently rebinds an endpoint.
+
 ## Recovery policy
 
 Completed Runs are replayed from the Result outbox when the same `CapabilityRunRef` is submitted
@@ -100,8 +122,8 @@ re-executes potentially state-changing work. Artifacts, workspaces, and pending 
 retained.
 
 Scope/entity data for the local test harness must be supplied explicitly. Services requiring Core
-(Secrets and Interactions) fail closed. The browser provider is the only production
-Resource/Session implementation in this milestone; unsupported types fail explicitly.
+(Secrets and Interactions) fail closed. Browser and TCP listener providers are selected behind the
+generic SDK Resource/Session interfaces; unsupported types fail explicitly.
 `ExecutionPlan` execution is deliberately unavailable. Capability implementations must use
 `boberagent_sdk` and must not import this package's persistence or manager internals.
 

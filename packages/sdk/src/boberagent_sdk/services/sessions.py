@@ -39,6 +39,24 @@ class CommandSession(SessionDriver, Protocol):
     async def execute(self, command: str, *, timeout: float | None = None) -> CommandResult: ...
 
 
+class ByteStreamRead(BaseModel):
+    """Bounded bytes read from a semantic byte-stream Session."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    data: bytes
+    eof: bool = False
+
+
+@runtime_checkable
+class ByteStreamSession(SessionDriver, Protocol):
+    """Semantic bounded byte stream without exposing sockets or file descriptors."""
+
+    async def receive(self, *, max_bytes: int, timeout: float) -> ByteStreamRead: ...
+
+    async def send(self, data: bytes, *, timeout: float) -> int: ...
+
+
 class BrowserUrl(BaseModel):
     """Validated HTTP(S) target used by browser scope enforcement."""
 

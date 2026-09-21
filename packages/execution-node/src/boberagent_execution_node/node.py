@@ -20,6 +20,7 @@ from .events import EventOutbox
 from .health import NodeHealth
 from .identity import NodeId, NodeIdentity, load_or_create_identity
 from .lifecycle import NodeLifecycle, NodeLifecycleState
+from .listener import ListenerRuntimeManager
 from .persistence import RuntimeDatabase, RuntimeStore
 from .persistence.migrations import upgrade_database
 from .results import ResultOutbox
@@ -47,6 +48,7 @@ class ExecutionNode:
         self.results: ResultOutbox | None = None
         self.runtime: CapabilityRuntime | None = None
         self.browser_runtime: BrowserRuntimeManager | None = None
+        self.listener_runtime: ListenerRuntimeManager | None = None
         self._browser_backend = browser_backend
         self._clock = UtcClock()
         self._degraded_reasons: list[str] = []
@@ -75,6 +77,9 @@ class ExecutionNode:
             recovered_resources, recovered_sessions = (
                 self.store.recover_non_restorable_browser_state(self._clock.now())
             )
+            recovered_listeners, recovered_streams = (
+                self.store.recover_non_restorable_listener_state(self._clock.now())
+            )
             for record in recovered_runs:
                 result = interrupted_result(record, self._clock.now())
                 self.results.persist_terminal(
@@ -90,6 +95,10 @@ class ExecutionNode:
                 self._degraded_reasons.append(
                     "non-restorable browser Resources/Sessions were marked LOST"
                 )
+            if recovered_listeners or recovered_streams:
+                self._degraded_reasons.append(
+                    "non-restorable TCP Listener Resources/Sessions were marked LOST"
+                )
 
             CapabilityLoader().discover(self.configuration.capability_paths, self.capabilities)
             for name, configuration in sorted(self.configuration.tools.items()):
@@ -99,6 +108,11 @@ class ExecutionNode:
                 store=self.store,
                 tools=self.tools,
                 backend=self._browser_backend or PlaywrightBrowserBackend(),
+                clock=self._clock.now,
+            )
+            self.listener_runtime = ListenerRuntimeManager(
+                store=self.store,
+                event_outbox=self.events,
                 clock=self._clock.now,
             )
 
@@ -141,6 +155,7 @@ class ExecutionNode:
                 tools=self.tools,
                 event_outbox=self.events,
                 browser_runtime=self.browser_runtime,
+                listener_runtime=self.listener_runtime,
             )
             self.runtime = CapabilityRuntime(
                 registry=self.capabilities,
@@ -229,6 +244,8 @@ class ExecutionNode:
             self.lifecycle.transition(NodeLifecycleState.DRAINING)
         if self.browser_runtime is not None:
             await self.browser_runtime.shutdown()
+        if self.listener_runtime is not None:
+            await self.listener_runtime.shutdown()
         if self.database is not None:
             self.database.close()
         self._database_ready = False

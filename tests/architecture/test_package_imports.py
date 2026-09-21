@@ -14,6 +14,7 @@ PACKAGE_ROOTS = (
     "boberagent_transport",
     "boberagent_transport_mcp",
     "boberagent_capability_browser_interaction",
+    "boberagent_capability_network_listener",
     "boberagent_capability_network_service_discovery",
 )
 

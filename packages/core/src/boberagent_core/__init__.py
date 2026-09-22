@@ -26,6 +26,13 @@ from .capabilities import (
     provider_id_for,
 )
 from .capabilities.mcp import CoreMcpNodeConnection
+from .interactions import (
+    CoreInteraction,
+    CoreInteractionService,
+    InteractionConflict,
+    InteractionNotFound,
+    InteractionStateError,
+)
 from .models import (
     ArtifactContentState,
     Asset,
@@ -85,6 +92,8 @@ __all__ = [
     "CoreArtifactReceiver",
     "CoreArtifactService",
     "CoreDatabase",
+    "CoreInteraction",
+    "CoreInteractionService",
     "CoreMcpNodeConnection",
     "CorePersistence",
     "CoreTransportClient",
@@ -95,6 +104,9 @@ __all__ = [
     "Goal",
     "GoalRef",
     "GoalStatus",
+    "InteractionConflict",
+    "InteractionNotFound",
+    "InteractionStateError",
     "MaterializationStatus",
     "Mission",
     "NetworkServiceValue",

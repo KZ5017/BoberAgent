@@ -17,6 +17,10 @@ from boberagent_contracts import (
     Event,
     EventRef,
     IdentityRef,
+    InteractionLifecycle,
+    InteractionRef,
+    InteractionRequest,
+    InteractionResponse,
     JsonObject,
     MissionRef,
     ResourceDescriptor,
@@ -25,6 +29,7 @@ from boberagent_contracts import (
     SessionRef,
     StorageRef,
     WorkflowRunRef,
+    validate_interaction_response,
 )
 from boberagent_sdk import WorkspaceIsolation, WorkspaceRef
 from pydantic import TypeAdapter
@@ -35,6 +40,7 @@ from .models import (
     ArtifactSyncState,
     DeliveryState,
     EventOutboxRecord,
+    InteractionRuntimeRecord,
     ProcessRecord,
     ProcessState,
     ResourceRuntimeRecord,
@@ -53,6 +59,7 @@ from .orm import (
     ProcessRow,
     ResultOutboxRow,
     RunRow,
+    RuntimeInteractionRow,
     RuntimeResourceRow,
     RuntimeSessionRow,
     WorkspaceRow,
@@ -114,6 +121,118 @@ class RuntimeStore:
             if finished_at is not None:
                 row.finished_at = finished_at
             row.error_code = error_code
+
+    def begin_interaction(self, request: InteractionRequest) -> InteractionRuntimeRecord:
+        """Persist a request before atomically moving its Run to WAITING_INPUT."""
+
+        request_json = _json_object_adapter.validate_python(request.model_dump(mode="json"))
+        with self._database.transaction() as session:
+            run = session.get(RunRow, str(request.run_ref))
+            if run is None:
+                raise KeyError(f"unknown local CapabilityRun: {request.run_ref}")
+            if run.mission_id != str(request.mission_ref):
+                raise ValueError("Interaction Mission does not match its CapabilityRun")
+            if run.workflow_run_id != (
+                None if request.workflow_run_ref is None else str(request.workflow_run_ref)
+            ):
+                raise ValueError("Interaction Workflow does not match its CapabilityRun")
+            existing = session.get(RuntimeInteractionRow, str(request.interaction_id))
+            if existing is not None:
+                if existing.request_json != request_json:
+                    raise ValueError(f"Interaction identity collision: {request.interaction_id}")
+                return _interaction_record(existing)
+            if CapabilityRunStatus(run.status) is not CapabilityRunStatus.RUNNING:
+                raise ValueError("Interaction can only be requested by a RUNNING CapabilityRun")
+            row = RuntimeInteractionRow(
+                interaction_id=str(request.interaction_id),
+                run_id=str(request.run_ref),
+                mission_id=str(request.mission_ref),
+                workflow_run_id=(
+                    None if request.workflow_run_ref is None else str(request.workflow_run_ref)
+                ),
+                state=InteractionLifecycle.REQUESTED.value,
+                request_json=request_json,
+                response_json=None,
+                requested_at=request.requested_at,
+                responded_at=None,
+                cancelled_at=None,
+                cancellation_reason=None,
+            )
+            session.add(row)
+            session.flush()
+            run.status = CapabilityRunStatus.WAITING_INPUT.value
+            return _interaction_record(row)
+
+    def get_interaction(self, interaction_ref: InteractionRef) -> InteractionRuntimeRecord | None:
+        with self._database.transaction() as session:
+            row = session.get(RuntimeInteractionRow, str(interaction_ref))
+            return None if row is None else _interaction_record(row)
+
+    def list_interactions_for_run(
+        self, run_ref: CapabilityRunRef
+    ) -> tuple[InteractionRuntimeRecord, ...]:
+        with self._database.transaction() as session:
+            rows = session.scalars(
+                select(RuntimeInteractionRow)
+                .where(RuntimeInteractionRow.run_id == str(run_ref))
+                .order_by(RuntimeInteractionRow.requested_at, RuntimeInteractionRow.interaction_id)
+            )
+            return tuple(_interaction_record(row) for row in rows)
+
+    def accept_interaction_response(
+        self, response: InteractionResponse
+    ) -> tuple[InteractionRuntimeRecord, bool]:
+        """Durably accept once and restore RUNNING; return whether this was a duplicate."""
+
+        response_json = _json_object_adapter.validate_python(response.model_dump(mode="json"))
+        with self._database.transaction() as session:
+            row = session.get(RuntimeInteractionRow, str(response.interaction_ref))
+            if row is None:
+                raise KeyError(f"unknown Interaction: {response.interaction_ref}")
+            request = InteractionRequest.model_validate(row.request_json)
+            validate_interaction_response(request, response)
+            state = InteractionLifecycle(row.state)
+            if state is InteractionLifecycle.ANSWERED:
+                if row.response_json != response_json:
+                    raise ValueError("Interaction already has a different immutable response")
+                return _interaction_record(row), True
+            if state is not InteractionLifecycle.REQUESTED:
+                raise ValueError(f"Interaction is no longer answerable: {state.value}")
+            run = session.get(RunRow, row.run_id)
+            if (
+                run is None
+                or CapabilityRunStatus(run.status) is not CapabilityRunStatus.WAITING_INPUT
+            ):
+                raise ValueError("Interaction CapabilityRun is no longer waiting for input")
+            row.response_json = response_json
+            row.responded_at = response.responded_at
+            row.state = InteractionLifecycle.ANSWERED.value
+            run.status = CapabilityRunStatus.RUNNING.value
+            session.flush()
+            return _interaction_record(row), False
+
+    def cancel_interactions_for_run(
+        self,
+        run_ref: CapabilityRunRef,
+        *,
+        cancelled_at: datetime,
+        reason: str,
+    ) -> tuple[InteractionRuntimeRecord, ...]:
+        with self._database.transaction() as session:
+            rows = tuple(
+                session.scalars(
+                    select(RuntimeInteractionRow).where(
+                        RuntimeInteractionRow.run_id == str(run_ref),
+                        RuntimeInteractionRow.state == InteractionLifecycle.REQUESTED.value,
+                    )
+                )
+            )
+            for row in rows:
+                row.state = InteractionLifecycle.CANCELLED.value
+                row.cancelled_at = cancelled_at
+                row.cancellation_reason = reason
+            session.flush()
+            return tuple(_interaction_record(row) for row in rows)
 
     def add_process(self, record: ProcessRecord) -> None:
         with self._database.transaction() as session:
@@ -633,7 +752,11 @@ class RuntimeStore:
             runs = session.scalars(
                 select(RunRow).where(
                     RunRow.status.in_(
-                        [CapabilityRunStatus.RUNNING.value, CapabilityRunStatus.QUEUED.value]
+                        [
+                            CapabilityRunStatus.RUNNING.value,
+                            CapabilityRunStatus.QUEUED.value,
+                            CapabilityRunStatus.WAITING_INPUT.value,
+                        ]
                     )
                 )
             )
@@ -642,6 +765,18 @@ class RuntimeStore:
                 run.finished_at = recovered_at
                 run.error_code = "INTERRUPTED_EXECUTION_STATE_UNKNOWN"
                 recovered_runs.append(_run_record(run))
+                interactions = session.scalars(
+                    select(RuntimeInteractionRow).where(
+                        RuntimeInteractionRow.run_id == run.run_id,
+                        RuntimeInteractionRow.state == InteractionLifecycle.REQUESTED.value,
+                    )
+                )
+                for interaction in interactions:
+                    interaction.state = InteractionLifecycle.CANCELLED.value
+                    interaction.cancelled_at = recovered_at
+                    interaction.cancellation_reason = (
+                        "Execution Node restarted; suspended capability state was not restorable"
+                    )
             processes = session.scalars(
                 select(ProcessRow).where(ProcessRow.state == ProcessState.RUNNING.value)
             )
@@ -668,6 +803,20 @@ def _run_record(row: RunRow) -> RunRecord:
         started_at=row.started_at,
         finished_at=row.finished_at,
         error_code=row.error_code,
+    )
+
+
+def _interaction_record(row: RuntimeInteractionRow) -> InteractionRuntimeRecord:
+    return InteractionRuntimeRecord(
+        request=InteractionRequest.model_validate(deepcopy(row.request_json)),
+        state=InteractionLifecycle(row.state),
+        response=(
+            None
+            if row.response_json is None
+            else InteractionResponse.model_validate(deepcopy(row.response_json))
+        ),
+        cancelled_at=row.cancelled_at,
+        cancellation_reason=row.cancellation_reason,
     )
 
 

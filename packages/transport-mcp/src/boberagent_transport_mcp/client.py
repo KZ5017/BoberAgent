@@ -17,6 +17,7 @@ from boberagent_contracts import (
     ArtifactDescriptor,
     CapabilityRunRef,
     CapabilityRunStatus,
+    InteractionResponse,
 )
 from boberagent_transport import (
     MAX_PROTOCOL_CHUNK_BYTES,
@@ -28,6 +29,8 @@ from boberagent_transport import (
     ArtifactTransferStart,
     DeliveryAcknowledgement,
     HandshakeRequest,
+    InteractionResponseAcknowledgement,
+    InteractionResponseEnvelope,
     InvocationDelivery,
     InvocationEnvelope,
     NodeAdvertisement,
@@ -44,9 +47,11 @@ from boberagent_transport import (
     artifact_start_message_id,
     artifact_transfer_id,
     ensure_supported_protocol,
+    interaction_response_message_id,
     invocation_message_id,
     parse_advertisement,
     parse_artifact_response,
+    parse_interaction_acknowledgement,
     parse_outbound,
     parse_run_status_response,
     serialize_message,
@@ -236,6 +241,31 @@ class McpTransport:
         ):
             raise ProtocolError("MCP Run status response does not match its request")
         return response.status
+
+    async def submit_interaction_response(
+        self, node_id: str, response: InteractionResponse
+    ) -> InteractionResponseAcknowledgement:
+        self._validate_target(node_id)
+        envelope = InteractionResponseEnvelope(
+            message_id=interaction_response_message_id(response.interaction_ref),
+            node_id=node_id,
+            correlation_id=response.run_ref,
+            timestamp=datetime.now(UTC),
+            response=response,
+        )
+        raw = await self._call_text(
+            "boberagent.interaction.respond",
+            {"payload": serialize_message(envelope).decode("utf-8")},
+        )
+        acknowledgement = parse_interaction_acknowledgement(raw.encode("utf-8"))
+        if (
+            acknowledgement.request_message_id != envelope.message_id
+            or acknowledgement.node_id != node_id
+            or acknowledgement.correlation_id != response.run_ref
+            or acknowledgement.interaction_ref != response.interaction_ref
+        ):
+            raise ProtocolError("MCP Interaction acknowledgement does not match its response")
+        return acknowledgement
 
     async def receive(self) -> bytes:
         self._require_client()

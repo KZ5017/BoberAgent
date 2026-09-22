@@ -1200,10 +1200,43 @@
       "title": "Finding",
       "type": "object"
     },
+    "InteractionOption": {
+      "additionalProperties": false,
+      "description": "One safe, stable operator choice; values are data, never executable input.",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NonEmptyStr"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "label": {
+          "$ref": "#/$defs/ShortStr"
+        },
+        "option_id": {
+          "$ref": "#/$defs/SymbolicName"
+        }
+      },
+      "required": [
+        "option_id",
+        "label"
+      ],
+      "title": "InteractionOption",
+      "type": "object"
+    },
     "InteractionRequest": {
       "additionalProperties": false,
       "description": "Structured assistance request owned by an active CapabilityRun.",
       "properties": {
+        "default_value": {
+          "$ref": "#/$defs/JsonValue",
+          "default": null
+        },
         "description": {
           "$ref": "#/$defs/NonEmptyStr"
         },
@@ -1219,6 +1252,22 @@
         },
         "interaction_type": {
           "$ref": "#/$defs/InteractionType"
+        },
+        "mission_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Mission Ref",
+          "type": "string"
+        },
+        "options": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/InteractionOption"
+          },
+          "maxItems": 32,
+          "title": "Options",
+          "type": "array"
         },
         "requested_at": {
           "format": "date-time",
@@ -1237,11 +1286,38 @@
         },
         "title": {
           "$ref": "#/$defs/ShortStr"
+        },
+        "workflow_run_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workflow Run Ref"
+        },
+        "workflow_step_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolicName"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
         "interaction_id",
         "run_ref",
+        "mission_ref",
         "interaction_type",
         "title",
         "description",
@@ -1357,6 +1433,8 @@
       "description": "Supported human/external interaction request classes.",
       "enum": [
         "confirmation",
+        "single_choice",
+        "text",
         "choice",
         "text_input",
         "structured_form",

@@ -1,0 +1,12 @@
+{
+  "definition_id": "procedure.test.manual_human_interaction",
+  "version": "1",
+  "steps": [
+    {
+      "step_id": "ask-operator",
+      "capability_id": "test.manual_human_interaction",
+      "operation": "run",
+      "inputs": {}
+    }
+  ]
+}

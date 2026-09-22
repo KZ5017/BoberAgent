@@ -2,11 +2,12 @@
 
 from typing import Protocol
 
-from boberagent_contracts import CapabilityRunRef, CapabilityRunStatus
+from boberagent_contracts import CapabilityRunRef, CapabilityRunStatus, InteractionResponse
 
 from .artifact import ArtifactTransferRequest, ArtifactTransferResponse
 from .models import (
     DeliveryAcknowledgement,
+    InteractionResponseAcknowledgement,
     InvocationDelivery,
     NodeAdvertisement,
     TransportFailure,
@@ -33,6 +34,10 @@ class TransportArtifactReceiver(Protocol):
     async def accept_artifact_message(self, message: bytes) -> bytes: ...
 
 
+class TransportInteractionEndpoint(Protocol):
+    async def accept_interaction_response(self, message: bytes) -> bytes: ...
+
+
 class ArtifactTransport(Protocol):
     @property
     def connected(self) -> bool: ...
@@ -40,6 +45,12 @@ class ArtifactTransport(Protocol):
     async def exchange_artifact(
         self, request: ArtifactTransferRequest
     ) -> ArtifactTransferResponse: ...
+
+
+class InteractionTransport(Protocol):
+    async def submit_interaction_response(
+        self, node_id: str, response: InteractionResponse
+    ) -> InteractionResponseAcknowledgement: ...
 
 
 class CapabilityTransport(Protocol):

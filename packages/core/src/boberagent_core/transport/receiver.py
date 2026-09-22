@@ -21,6 +21,7 @@ from boberagent_transport import (
 from pydantic import TypeAdapter
 
 from boberagent_core.clock import utc_now
+from boberagent_core.interactions import CoreInteractionService
 from boberagent_core.persistence.database import CoreDatabase
 from boberagent_core.results import ResultIngestionService
 
@@ -76,6 +77,8 @@ class CoreTransportReceiver:
             )
             if self._process_results:
                 self._result_ingestion.process_ingestion(envelope.result.run_ref)
+        if isinstance(envelope, EventEnvelope):
+            CoreInteractionService(self._database).observe_event(envelope.node_id, envelope.event)
         acknowledgement = DeliveryAcknowledgement(
             message_id=envelope.message_id,
             node_id=envelope.node_id,

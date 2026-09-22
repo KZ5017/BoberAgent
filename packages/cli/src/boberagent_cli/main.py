@@ -14,6 +14,9 @@ from boberagent_core import (
     CapabilityRoutingError,
     CoreDatabase,
     DatabaseConfig,
+    InteractionConflict,
+    InteractionNotFound,
+    InteractionStateError,
     PersistenceIntegrityError,
     WorkflowDefinitionConflict,
     WorkflowNotFound,
@@ -132,6 +135,20 @@ def build_parser() -> argparse.ArgumentParser:
     service_actions = service.add_subparsers(dest="action", required=True)
     service_list = service_actions.add_parser("list", help="list Services for an Asset")
     service_list.add_argument("--asset", dest="asset_ref", required=True)
+
+    interaction = groups.add_parser("interaction", help="durable human interactions")
+    interaction_actions = interaction.add_subparsers(dest="action", required=True)
+    interaction_list = interaction_actions.add_parser("list", help="list pending interactions")
+    interaction_list.add_argument("--all", action="store_true", help="include terminal records")
+    interaction_show = interaction_actions.add_parser("show", help="show an interaction")
+    interaction_show.add_argument("interaction_ref")
+    interaction_respond = interaction_actions.add_parser("respond", help="answer an interaction")
+    interaction_respond.add_argument("interaction_ref")
+    values = interaction_respond.add_mutually_exclusive_group(required=True)
+    values.add_argument("--yes", action="store_true")
+    values.add_argument("--no", action="store_true")
+    values.add_argument("--text")
+    values.add_argument("--choice")
     return parser
 
 
@@ -191,6 +208,12 @@ def run(
     except (WorkflowStateError, CapabilityRoutingError) as error:
         print(f"error: state conflict: {error}", file=stderr)
         return int(ExitCode.DOMAIN_CONFLICT)
+    except InteractionNotFound as error:
+        print(f"error: {error}", file=stderr)
+        return int(ExitCode.NOT_FOUND)
+    except (InteractionConflict, InteractionStateError) as error:
+        print(f"error: interaction conflict: {error}", file=stderr)
+        return int(ExitCode.DOMAIN_CONFLICT)
     except TransportError as error:
         print(f"error: transport failure ({error.code})", file=stderr)
         return int(ExitCode.TRANSPORT_FAILURE)
@@ -228,10 +251,13 @@ def _dispatch(arguments: argparse.Namespace, context: CommandContext) -> None:
         ("workflow", "cancel"): commands.workflow_cancel,
         ("run", "show"): commands.run_show,
         ("service", "list"): commands.service_list,
+        ("interaction", "list"): commands.interaction_list,
+        ("interaction", "show"): commands.interaction_show,
     }
     async_handlers = {
         ("workflow", "start"): commands.workflow_start,
         ("workflow", "advance"): commands.workflow_advance,
+        ("interaction", "respond"): commands.interaction_respond,
     }
     key = (arguments.group, arguments.action)
     handler = handlers.get(key)

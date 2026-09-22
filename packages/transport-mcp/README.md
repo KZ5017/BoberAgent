@@ -10,6 +10,11 @@ acknowledgement, failure polling, and chunked Artifact reads. Capability submiss
 asynchronously; Events and Results still originate in the durable Node outboxes and remain pending
 until Core acknowledges them.
 
+Milestone 15 adds the single bounded `boberagent.interaction.respond` operation. It is a carrier for
+the neutral interaction response envelope and acknowledgement; request discovery still uses the
+existing Event outbox. The MCP adapter contains no prompt UI, response policy, or suspended-task
+state.
+
 `McpTransport` implements the existing neutral transport surface. Contract and protocol models are
 serialized to JSON before each MCP call and validated again on receipt. The BoberAgent transport
 protocol remains versioned independently from MCP and the Capability Contract.

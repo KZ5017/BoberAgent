@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 
 from boberagent_contracts import (
@@ -31,6 +32,7 @@ from boberagent_sdk import (
 )
 from pydantic import ValidationError
 
+from boberagent_execution_node.interactions import InteractionRuntime
 from boberagent_execution_node.persistence import RunRecord, RuntimeStore
 from boberagent_execution_node.results import ResultOutbox
 from boberagent_execution_node.services import (
@@ -52,12 +54,14 @@ class CapabilityRuntime:
         contexts: ExecutionContextFactory,
         store: RuntimeStore,
         results: ResultOutbox,
+        interactions: InteractionRuntime,
     ) -> None:
         self._registry = registry
         self._dependencies = dependencies
         self._contexts = contexts
         self._store = store
         self._results = results
+        self._interactions = interactions
         self._clock = UtcClock()
         self._active: dict[str, ContextBundle] = {}
 
@@ -104,6 +108,26 @@ class CapabilityRuntime:
         self._active[str(invocation.run_id)] = bundle
         try:
             result = await self._execute_started(invocation, bundle)
+        except asyncio.CancelledError:
+            result, error_code = _failure_result(
+                invocation.run_id,
+                ExecutionCancelled("Capability execution task was cancelled"),
+                self._clock.now(),
+            )
+            self._results.persist_terminal(
+                result,
+                finished_at=self._clock.now(),
+                error_code=error_code,
+            )
+            bundle.events.runtime_event(
+                "capability.run.failed",
+                {
+                    "capability_id": invocation.capability_id,
+                    "status": result.execution_status.value,
+                    "error_code": error_code,
+                },
+            )
+            return result
         except Exception as error:
             result, error_code = _failure_result(invocation.run_id, error, self._clock.now())
             finished_at = self._clock.now()
@@ -119,6 +143,10 @@ class CapabilityRuntime:
             return result
         finally:
             self._active.pop(str(invocation.run_id), None)
+            self._interactions.cancel_for_run(
+                invocation.run_id,
+                reason="CapabilityRun became terminal before interaction completion",
+            )
 
         self._results.persist_terminal(result, finished_at=self._clock.now())
         terminal_event_type = (
@@ -177,6 +205,9 @@ class CapabilityRuntime:
         if bundle is None:
             return False
         bundle.cancellation.request()
+        self._interactions.cancel_for_run(
+            CapabilityRunRef(run_ref), reason="CapabilityRun cancellation was requested"
+        )
         return True
 
 

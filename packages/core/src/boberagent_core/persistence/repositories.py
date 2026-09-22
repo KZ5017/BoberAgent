@@ -708,6 +708,7 @@ class CoreUnitOfWork:
             CapabilityProviderRepository,
             RoutingDecisionRepository,
         )
+        from boberagent_core.interactions.repository import InteractionRepository
         from boberagent_core.results.repository import ResultIngestionRepository
         from boberagent_core.transport.repository import TransportInboxRepository
 
@@ -724,6 +725,7 @@ class CoreUnitOfWork:
         self.capability_providers = CapabilityProviderRepository(session)
         self.routing_decisions = RoutingDecisionRepository(session)
         self.result_ingestions = ResultIngestionRepository(session)
+        self.interactions = InteractionRepository(session)
 
 
 def _flush_identity(session: Session, logical_ref: DomainRef) -> None:

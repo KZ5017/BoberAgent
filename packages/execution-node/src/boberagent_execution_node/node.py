@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 
 from boberagent_contracts import CapabilityInvocation, CapabilityResult, JsonObject
@@ -16,9 +17,10 @@ from .capabilities import (
     interrupted_result,
 )
 from .config import NodeConfiguration
-from .events import EventOutbox
+from .events import EventOutbox, NodeEventService
 from .health import NodeHealth
 from .identity import NodeId, NodeIdentity, load_or_create_identity
+from .interactions import InteractionRuntime
 from .lifecycle import NodeLifecycle, NodeLifecycleState
 from .listener import ListenerRuntimeManager
 from .persistence import RuntimeDatabase, RuntimeStore
@@ -49,6 +51,7 @@ class ExecutionNode:
         self.runtime: CapabilityRuntime | None = None
         self.browser_runtime: BrowserRuntimeManager | None = None
         self.listener_runtime: ListenerRuntimeManager | None = None
+        self.interaction_runtime: InteractionRuntime | None = None
         self._browser_backend = browser_backend
         self._clock = UtcClock()
         self._degraded_reasons: list[str] = []
@@ -72,6 +75,7 @@ class ExecutionNode:
             self.store = RuntimeStore(self.database)
             self.events = EventOutbox(self.store)
             self.results = ResultOutbox(self.store)
+            self.interaction_runtime = InteractionRuntime(self.store, clock=self._clock.now)
 
             recovered_runs, recovered_processes = self.store.recover_interrupted(self._clock.now())
             recovered_resources, recovered_sessions = (
@@ -87,6 +91,23 @@ class ExecutionNode:
                     finished_at=self._clock.now(),
                     error_code="INTERRUPTED_EXECUTION_STATE_UNKNOWN",
                 )
+                for interaction in self.store.list_interactions_for_run(record.run_ref):
+                    if interaction.cancellation_reason == (
+                        "Execution Node restarted; suspended capability state was not restorable"
+                    ):
+                        # Cancellation is already durable; expose only safe metadata to Core.
+                        NodeEventService(
+                            outbox=self.events,
+                            mission_ref=record.mission_ref,
+                            run_ref=record.run_ref,
+                            clock=self._clock.now,
+                        ).runtime_event(
+                            "interaction.cancelled",
+                            {
+                                "interaction_ref": str(interaction.request.interaction_id),
+                                "reason": interaction.cancellation_reason,
+                            },
+                        )
             if recovered_runs or recovered_processes:
                 self._degraded_reasons.append(
                     "recovered interrupted local execution state conservatively"
@@ -156,6 +177,7 @@ class ExecutionNode:
                 event_outbox=self.events,
                 browser_runtime=self.browser_runtime,
                 listener_runtime=self.listener_runtime,
+                interaction_runtime=self.interaction_runtime,
             )
             self.runtime = CapabilityRuntime(
                 registry=self.capabilities,
@@ -163,6 +185,7 @@ class ExecutionNode:
                 contexts=contexts,
                 store=self.store,
                 results=self.results,
+                interactions=self.interaction_runtime,
             )
             target = (
                 NodeLifecycleState.DEGRADED if self._degraded_reasons else NodeLifecycleState.READY
@@ -242,6 +265,13 @@ class ExecutionNode:
             NodeLifecycleState.DEGRADED,
         }:
             self.lifecycle.transition(NodeLifecycleState.DRAINING)
+        cancelled_interactions = 0
+        if self.interaction_runtime is not None:
+            cancelled_interactions = self.interaction_runtime.shutdown()
+        if cancelled_interactions:
+            # Let Node-owned invocation tasks observe the typed cancellation and
+            # durably finalize before the database is closed.
+            await asyncio.sleep(0)
         if self.browser_runtime is not None:
             await self.browser_runtime.shutdown()
         if self.listener_runtime is not None:

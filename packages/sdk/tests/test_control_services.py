@@ -6,6 +6,7 @@ import pytest
 from boberagent_contracts import (
     Checkpoint,
     CheckpointRef,
+    InteractionOption,
     InteractionRef,
     InteractionRequest,
     InteractionResponse,
@@ -20,10 +21,15 @@ def test_preconfigured_interaction_response_and_missing_response() -> None:
     request = InteractionRequest(
         interaction_id=InteractionRef("interaction-one"),
         run_ref=context.invocation.run_id,
-        interaction_type=InteractionType.CHOICE,
+        mission_ref=context.invocation.mission_ref,
+        interaction_type=InteractionType.SINGLE_CHOICE,
         title="Choose",
         description="Choose a safe test option",
         input_schema={"type": "string", "enum": ["stop", "continue"]},
+        options=(
+            InteractionOption(option_id="stop", label="Stop"),
+            InteractionOption(option_id="continue", label="Continue"),
+        ),
         resume_semantics="resume",
         requested_at=context.clock.now(),
     )

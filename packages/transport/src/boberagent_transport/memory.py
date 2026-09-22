@@ -5,9 +5,10 @@ from __future__ import annotations
 import asyncio
 import contextlib
 from datetime import UTC, datetime
+from typing import cast
 from uuid import uuid4
 
-from boberagent_contracts import CapabilityRunRef, CapabilityRunStatus
+from boberagent_contracts import CapabilityRunRef, CapabilityRunStatus, InteractionResponse
 
 from .artifact import (
     ArtifactTransferRequest,
@@ -23,10 +24,16 @@ from .errors import (
     TransportError,
     UnknownNode,
 )
-from .interfaces import TransportArtifactReceiver, TransportNodeEndpoint
+from .interfaces import (
+    TransportArtifactReceiver,
+    TransportInteractionEndpoint,
+    TransportNodeEndpoint,
+)
 from .models import (
     DeliveryAcknowledgement,
     HandshakeRequest,
+    InteractionResponseAcknowledgement,
+    InteractionResponseEnvelope,
     InvocationDelivery,
     InvocationEnvelope,
     NodeAdvertisement,
@@ -34,8 +41,10 @@ from .models import (
     TransportFailure,
     TransportMessageId,
     ensure_supported_protocol,
+    interaction_response_message_id,
     invocation_message_id,
     parse_advertisement,
+    parse_interaction_acknowledgement,
     parse_outbound,
     parse_run_status_response,
     serialize_message,
@@ -144,6 +153,31 @@ class InMemoryTransport:
         ):
             raise ProtocolError("Run status response does not match its request")
         return response.status
+
+    async def submit_interaction_response(
+        self, node_id: str, response: InteractionResponse
+    ) -> InteractionResponseAcknowledgement:
+        self._require_connected()
+        endpoint = self._endpoint(node_id)
+        interaction_endpoint = cast(TransportInteractionEndpoint, endpoint)
+        envelope = InteractionResponseEnvelope(
+            message_id=interaction_response_message_id(response.interaction_ref),
+            node_id=node_id,
+            correlation_id=response.run_ref,
+            timestamp=datetime.now(UTC),
+            response=response,
+        )
+        acknowledgement = parse_interaction_acknowledgement(
+            await interaction_endpoint.accept_interaction_response(serialize_message(envelope))
+        )
+        if (
+            acknowledgement.request_message_id != envelope.message_id
+            or acknowledgement.node_id != node_id
+            or acknowledgement.correlation_id != response.run_ref
+            or acknowledgement.interaction_ref != response.interaction_ref
+        ):
+            raise ProtocolError("Interaction acknowledgement does not match its response")
+        return acknowledgement
 
     async def flush_outboxes(self, node_id: str) -> int:
         self._require_connected()

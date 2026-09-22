@@ -12,6 +12,7 @@ from boberagent_core import (
     CapabilityRegistry,
     CapabilityRouter,
     CoreDatabase,
+    CoreInteractionService,
     CoreMcpNodeConnection,
     CoreTransportClient,
     CoreTransportReceiver,
@@ -97,6 +98,7 @@ class McpWorkflowCommandSession:
         receiver = CoreTransportReceiver(database, result_ingestion=ingestion)
         self._client = CoreTransportClient(self._connection.transport, receiver)
         self.workflows = WorkflowService(database, router)
+        self.interactions = CoreInteractionService(database, self._connection.transport)
 
     async def connect(self) -> None:
         await self._connection.connect_and_refresh()

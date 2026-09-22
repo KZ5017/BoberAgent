@@ -66,11 +66,22 @@ class InteractionType(StrEnum):
     """Supported human/external interaction request classes."""
 
     CONFIRMATION = "confirmation"
+    SINGLE_CHOICE = "single_choice"
+    TEXT = "text"
     CHOICE = "choice"
     TEXT_INPUT = "text_input"
     STRUCTURED_FORM = "structured_form"
     SECRET_INPUT = "secret_input"
     ARTIFACT_INPUT = "artifact_input"
+
+
+class InteractionLifecycle(StrEnum):
+    """Durable lifecycle of one human interaction exchange."""
+
+    REQUESTED = "REQUESTED"
+    ANSWERED = "ANSWERED"
+    CANCELLED = "CANCELLED"
+    EXPIRED = "EXPIRED"
 
 
 class ExecutionPlanStatus(StrEnum):

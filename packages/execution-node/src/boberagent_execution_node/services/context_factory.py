@@ -10,8 +10,6 @@ from boberagent_contracts import (
     Checkpoint,
     CheckpointRef,
     DomainRef,
-    InteractionRequest,
-    InteractionResponse,
     JsonObject,
     JsonValue,
     SecretRef,
@@ -20,7 +18,6 @@ from boberagent_sdk import (
     AssetSnapshot,
     DependencyError,
     EntitySnapshot,
-    InteractionUnavailable,
     InvocationContext,
     MissionContext,
     ScopeViolation,
@@ -34,6 +31,7 @@ from boberagent_execution_node.browser import BrowserRuntimeManager
 from boberagent_execution_node.config import NodeConfiguration
 from boberagent_execution_node.events import EventOutbox, NodeEventService
 from boberagent_execution_node.identity import NodeId
+from boberagent_execution_node.interactions import InteractionRuntime, NodeInteractionService
 from boberagent_execution_node.listener import ListenerRuntimeManager
 from boberagent_execution_node.persistence import RuntimeStore
 from boberagent_execution_node.processes import ManagedProcessService, NodeCancellationService
@@ -100,12 +98,6 @@ class UnavailableSecretService:
         raise DependencyError("Secret storage requires a future Core adapter")
 
 
-class UnavailableInteractionService:
-    async def request(self, request: InteractionRequest) -> InteractionResponse:
-        del request
-        raise InteractionUnavailable("Interaction routing is unavailable without Core transport")
-
-
 class UnavailableCheckpointService:
     async def save(self, checkpoint: Checkpoint) -> None:
         del checkpoint
@@ -160,6 +152,7 @@ class NodeExecutionContext:
         sessions: NodeSessionService,
         artifacts: LocalArtifactSpool,
         events: NodeEventService,
+        interactions: NodeInteractionService,
         logger: NodeCapabilityLogger,
         cancellation: NodeCancellationService,
     ) -> None:
@@ -173,7 +166,7 @@ class NodeExecutionContext:
         self.sessions = sessions
         self.artifacts = artifacts
         self.secrets: SecretService = UnavailableSecretService()
-        self.interactions = UnavailableInteractionService()
+        self.interactions = interactions
         self.checkpoints = UnavailableCheckpointService()
         self.events = events
         self.logger = logger
@@ -207,6 +200,7 @@ class ExecutionContextFactory:
         event_outbox: EventOutbox,
         browser_runtime: BrowserRuntimeManager,
         listener_runtime: ListenerRuntimeManager,
+        interaction_runtime: InteractionRuntime,
     ) -> None:
         self._configuration = configuration
         self._node_id = node_id
@@ -215,6 +209,7 @@ class ExecutionContextFactory:
         self._event_outbox = event_outbox
         self._browser_runtime = browser_runtime
         self._listener_runtime = listener_runtime
+        self._interaction_runtime = interaction_runtime
 
     def create(
         self,
@@ -282,6 +277,13 @@ class ExecutionContextFactory:
             sessions=sessions,
             artifacts=artifacts,
             events=events,
+            interactions=NodeInteractionService(
+                runtime=self._interaction_runtime,
+                run_ref=invocation.run_id,
+                mission_ref=invocation.mission_ref,
+                workflow_run_ref=invocation.workflow_run_ref,
+                events=events,
+            ),
             logger=NodeCapabilityLogger(
                 node_id=self._node_id,
                 invocation=invocation,

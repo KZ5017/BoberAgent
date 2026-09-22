@@ -25,6 +25,7 @@ from .enums import (
     ExecutionDuration,
     ExecutionInteraction,
     ExecutionPlanStatus,
+    InteractionLifecycle,
     InteractionType,
     ResultObjectType,
     RetrySemantics,
@@ -34,7 +35,14 @@ from .enums import (
 from .event import Event
 from .execution_plan import ExecutionPlan, IsolationRequirement
 from .finding import Finding
-from .interaction import InteractionRequest, InteractionResponse
+from .interaction import (
+    MAX_INTERACTION_OPTIONS,
+    MAX_INTERACTION_TEXT_LENGTH,
+    InteractionOption,
+    InteractionRequest,
+    InteractionResponse,
+    validate_interaction_response,
+)
 from .invocation import CapabilityInvocation
 from .observation import Observation
 from .refs import (
@@ -71,6 +79,8 @@ from .version import CONTRACT_MAJOR_VERSION, CONTRACT_VERSION, VersionString
 __all__ = [
     "CONTRACT_MAJOR_VERSION",
     "CONTRACT_VERSION",
+    "MAX_INTERACTION_OPTIONS",
+    "MAX_INTERACTION_TEXT_LENGTH",
     "AccessContextRef",
     "AccessMode",
     "ApplicationRef",
@@ -108,6 +118,8 @@ __all__ = [
     "Finding",
     "FindingRef",
     "IdentityRef",
+    "InteractionLifecycle",
+    "InteractionOption",
     "InteractionRef",
     "InteractionRequest",
     "InteractionResponse",
@@ -140,5 +152,6 @@ __all__ = [
     "WorkflowRunRef",
     "contract_schema_bundle",
     "contract_schema_json",
+    "validate_interaction_response",
     "write_contract_schema",
 ]

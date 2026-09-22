@@ -149,3 +149,25 @@ class RuntimeSessionRow(Base):
     supported_operations_json: Mapped[list[str]] = mapped_column(JSON, nullable=False)
     access_modes_json: Mapped[list[str]] = mapped_column(JSON, nullable=False)
     lifecycle_metadata_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
+
+
+class RuntimeInteractionRow(Base):
+    __tablename__ = "runtime_interactions"
+    __table_args__: tuple[Index, Index] = (
+        Index("ix_runtime_interactions_run_id", "run_id"),
+        Index("ix_runtime_interactions_state", "state"),
+    )
+
+    interaction_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("runtime_runs.run_id", ondelete="RESTRICT"), nullable=False
+    )
+    mission_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    workflow_run_id: Mapped[str | None] = mapped_column(String(255))
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    request_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
+    response_json: Mapped[JsonObject | None] = mapped_column(JSON)
+    requested_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    responded_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    cancelled_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    cancellation_reason: Mapped[str | None] = mapped_column(Text)

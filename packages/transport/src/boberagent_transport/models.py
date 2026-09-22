@@ -18,6 +18,8 @@ from boberagent_contracts import (
     DomainRef,
     Event,
     EventRef,
+    InteractionRef,
+    InteractionResponse,
     JsonObject,
     MissionRef,
 )
@@ -34,7 +36,7 @@ from pydantic import (
 
 from .errors import MalformedMessage, UnsupportedProtocolVersion
 
-TRANSPORT_PROTOCOL_VERSION = "1.2"
+TRANSPORT_PROTOCOL_VERSION = "1.3"
 
 type NodeIdentifier = Annotated[
     str,
@@ -237,6 +239,39 @@ class RunStatusResponse(TransportModel):
     status: CapabilityRunStatus | None
 
 
+class InteractionResponseEnvelope(TransportModel):
+    """One idempotent operator response targeted at the Node owning the live Run."""
+
+    protocol_version: str = TRANSPORT_PROTOCOL_VERSION
+    message_type: Literal["interaction.response"] = "interaction.response"
+    message_id: TransportMessageId
+    node_id: NodeIdentifier
+    correlation_id: CapabilityRunRef
+    timestamp: AwareDatetime
+    response: InteractionResponse
+
+    @model_validator(mode="after")
+    def validate_identity(self) -> Self:
+        if self.correlation_id != self.response.run_ref:
+            raise ValueError("Interaction response correlation does not match CapabilityRunRef")
+        if self.message_id != interaction_response_message_id(self.response.interaction_ref):
+            raise ValueError("Interaction response message ID is not stable")
+        return self
+
+
+class InteractionResponseAcknowledgement(TransportModel):
+    protocol_version: str = TRANSPORT_PROTOCOL_VERSION
+    message_type: Literal["interaction.response.acknowledgement"] = (
+        "interaction.response.acknowledgement"
+    )
+    request_message_id: TransportMessageId
+    node_id: NodeIdentifier
+    correlation_id: CapabilityRunRef
+    interaction_ref: InteractionRef
+    accepted_at: AwareDatetime
+    duplicate: bool = False
+
+
 class TransportFailure(TransportModel):
     code: str
     message: str
@@ -258,6 +293,10 @@ def event_message_id(event_ref: EventRef) -> TransportMessageId:
 
 def result_message_id(run_ref: CapabilityRunRef) -> TransportMessageId:
     return TransportMessageId(f"transport-result:{run_ref}")
+
+
+def interaction_response_message_id(interaction_ref: InteractionRef) -> TransportMessageId:
+    return TransportMessageId(f"transport-interaction-response:{interaction_ref}")
 
 
 def ensure_supported_protocol(version: str) -> None:
@@ -291,6 +330,14 @@ def parse_run_status_request(data: bytes) -> RunStatusRequest:
 
 def parse_run_status_response(data: bytes) -> RunStatusResponse:
     return _parse(RunStatusResponse, data)
+
+
+def parse_interaction_response(data: bytes) -> InteractionResponseEnvelope:
+    return _parse(InteractionResponseEnvelope, data)
+
+
+def parse_interaction_acknowledgement(data: bytes) -> InteractionResponseAcknowledgement:
+    return _parse(InteractionResponseAcknowledgement, data)
 
 
 def parse_outbound(data: bytes) -> OutboundEnvelope:

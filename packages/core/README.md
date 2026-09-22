@@ -116,6 +116,21 @@ routed invocation. The Workflow Engine has no MCP, Node, tool, or capability-imp
 imports. M11 deliberately has no expression language, dynamic input binding, branching, loops,
 parallel scheduling, background scheduler, remote cancellation protocol, Goal evaluator, or LLM.
 
+## Durable human interaction
+
+Core projects `interaction.requested` Events into an operator-facing Interaction table without
+becoming the owner of the suspended capability coroutine. `CoreInteractionService` lists and
+retrieves those records, persists an immutable response intent, validates it against the original
+request, and sends it only through the neutral interaction transport. A lost acknowledgement is
+safe: retry uses the exact persisted response, and the Node acknowledges an identical replay.
+
+Confirmation, bounded non-secret text, and single-choice responses are supported. Different
+second answers, invalid choices, wrong response shapes, and terminal or cancelled requests fail
+explicitly. Response values are not copied into Events. Core restart preserves pending requests
+and response intents; as long as the Node's original Run is still alive, a new Core process can
+deliver the answer and resume it. Node restart is deliberately handled more conservatively as
+described by ADR 0008.
+
 ## Artifact content
 
 Milestone 6 adds a configurable managed filesystem store beside the SQLite Artifact catalog.

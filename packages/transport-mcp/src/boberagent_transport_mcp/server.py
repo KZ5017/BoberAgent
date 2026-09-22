@@ -5,11 +5,13 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import socket
+from typing import cast
 
 import uvicorn
 from boberagent_contracts import ArtifactRef
 from boberagent_transport import (
     TransportFailure,
+    TransportInteractionEndpoint,
     TransportNodeEndpoint,
     parse_invocation,
 )
@@ -178,6 +180,13 @@ class McpTransportServer:
         @self._mcp.tool(name="boberagent.query_run_status")
         async def query_run_status(payload: str) -> str:
             return (await self._endpoint.query_run_status(payload.encode("utf-8"))).decode("utf-8")
+
+        @self._mcp.tool(name="boberagent.interaction.respond")
+        async def respond_to_interaction(payload: str) -> str:
+            endpoint = cast(TransportInteractionEndpoint, self._endpoint)
+            return (await endpoint.accept_interaction_response(payload.encode("utf-8"))).decode(
+                "utf-8"
+            )
 
         @self._mcp.tool(name="boberagent.acknowledge")
         async def acknowledge(payload: str) -> bool:

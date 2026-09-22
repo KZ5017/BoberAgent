@@ -21,3 +21,8 @@ uv run boberagent-contract-schema packages/contracts/schemas/contract-v1.schema.
 ```
 
 The normative semantics remain defined by `docs/02_CAPABILITY_CONTRACT.md`.
+
+Milestone 15's durable human-interaction subset supports immutable confirmation, bounded text, and
+single-choice requests. Each request is correlated to one Mission and Capability Run and is
+validated against its structured response. This is non-secret input: capability authors must not
+ask operators to enter credentials or other sensitive material through these ordinary fields.

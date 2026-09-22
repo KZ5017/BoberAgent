@@ -122,10 +122,18 @@ re-executes potentially state-changing work. Artifacts, workspaces, and pending 
 retained.
 
 Scope/entity data for the local test harness must be supplied explicitly. Services requiring Core
-(Secrets and Interactions) fail closed. Browser and TCP listener providers are selected behind the
-generic SDK Resource/Session interfaces; unsupported types fail explicitly.
+(Secrets) fail closed. Human Interaction uses the generic SDK interface and a Node-owned durable
+request runtime: request persistence and `WAITING_INPUT` precede its outbox Event; a validated
+response returns the Run to `RUNNING` and releases only the matching live waiter. Browser and TCP
+listener providers are selected behind the generic SDK Resource/Session interfaces; unsupported
+types fail explicitly.
 `ExecutionPlan` execution is deliberately unavailable. Capability implementations must use
 `boberagent_sdk` and must not import this package's persistence or manager internals.
+
+Interaction request and response data survive an ordinary Core restart. A Node restart cannot
+restore the suspended Python continuation: recovery cancels the durable request, fails the Run
+with an unknown interrupted outcome, emits safe cancellation metadata, and rejects late answers.
+Graceful shutdown releases waiters through typed cancellation so terminal state is persisted.
 
 ## MCP listener
 

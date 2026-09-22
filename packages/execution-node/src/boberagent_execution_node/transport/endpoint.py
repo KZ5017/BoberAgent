@@ -17,6 +17,7 @@ from boberagent_transport import (
     ConflictingInvocation,
     DeliveryKind,
     EventEnvelope,
+    InteractionResponseAcknowledgement,
     NodeAdvertisement,
     ProtocolError,
     ResultEnvelope,
@@ -26,6 +27,7 @@ from boberagent_transport import (
     invocation_fingerprint,
     parse_acknowledgement,
     parse_handshake_request,
+    parse_interaction_response,
     parse_invocation,
     parse_run_status_request,
     result_message_id,
@@ -159,6 +161,29 @@ class ExecutionNodeTransportEndpoint:
                 )
             )
         return tuple(messages)
+
+    async def accept_interaction_response(self, message: bytes) -> bytes:
+        envelope = parse_interaction_response(message)
+        ensure_supported_protocol(envelope.protocol_version)
+        if envelope.node_id != self.node_id:
+            raise ProtocolError("Interaction response targeted a different Node")
+        runtime = self._node.interaction_runtime
+        if runtime is None:
+            raise ProtocolError("Node interaction runtime is unavailable")
+        try:
+            _record, duplicate = runtime.accept_response(envelope.response)
+        except ValueError as error:
+            raise ProtocolError(f"Interaction response rejected: {error}") from error
+        return serialize_message(
+            InteractionResponseAcknowledgement(
+                request_message_id=envelope.message_id,
+                node_id=self.node_id,
+                correlation_id=envelope.correlation_id,
+                interaction_ref=envelope.response.interaction_ref,
+                accepted_at=envelope.response.responded_at,
+                duplicate=duplicate,
+            )
+        )
 
     async def query_run_status(self, message: bytes) -> bytes:
         request = parse_run_status_request(message)

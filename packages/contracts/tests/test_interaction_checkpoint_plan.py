@@ -18,6 +18,7 @@ from boberagent_contracts import (
     InteractionResponse,
     InteractionType,
     IsolationRequirement,
+    MissionRef,
     ResourceRef,
     SecretRef,
     SessionRef,
@@ -31,6 +32,7 @@ def test_interaction_request_validates_structured_input_schema() -> None:
     request = InteractionRequest(
         interaction_id=InteractionRef("interaction-1"),
         run_ref=CapabilityRunRef("run-1"),
+        mission_ref=MissionRef("mission-1"),
         interaction_type=InteractionType.CHOICE,
         title="Choose a payload family",
         description="Known variants did not establish a session.",
@@ -45,6 +47,7 @@ def test_interaction_request_validates_structured_input_schema() -> None:
         InteractionRequest(
             interaction_id=InteractionRef("interaction-2"),
             run_ref=CapabilityRunRef("run-1"),
+            mission_ref=MissionRef("mission-1"),
             interaction_type=InteractionType.TEXT_INPUT,
             title="Provide input",
             description="Input is required to continue.",

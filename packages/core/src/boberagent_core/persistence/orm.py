@@ -224,6 +224,29 @@ class TransportInboxRow(Base):
     delivery_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
 
+class InteractionRow(Base):
+    __tablename__ = "interactions"
+    __table_args__: tuple[Index, Index, Index] = (
+        Index("ix_interactions_state", "state"),
+        Index("ix_interactions_run_id", "run_id"),
+        Index("ix_interactions_mission_id", "mission_id"),
+    )
+
+    interaction_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    node_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    run_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    mission_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    workflow_run_id: Mapped[str | None] = mapped_column(String(255))
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    request_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
+    response_json: Mapped[JsonObject | None] = mapped_column(JSON)
+    requested_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    responded_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    accepted_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    cancelled_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    cancellation_reason: Mapped[str | None] = mapped_column(Text)
+
+
 class CapabilityProviderRow(Base):
     __tablename__ = "capability_providers"
     __table_args__: tuple[UniqueConstraint, Index, Index] = (

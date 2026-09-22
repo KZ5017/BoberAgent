@@ -4,6 +4,61 @@ These scripts are not part of the automated pytest suite.
 They require an explicitly running Kali Execution Node and lab configuration.
 Do not execute them automatically from CI or normal test runs.
 
+## Durable human-interaction smoke test
+
+This harmless fixture proves `CONFIRMATION → TEXT → SINGLE_CHOICE` across WSL Core and a live Kali
+Node. It collects no credentials or secrets. The CLI is intentionally a new process for every
+command, so the sequence also proves Core restart/reopen while the Node remains `WAITING_INPUT`.
+
+On Kali, make the manual fixture importable and start the Node:
+
+```shell
+export PYTHONPATH="$PWD/scripts/manual-smoke/interaction-capability/src"
+export BOBERAGENT_MCP_TOKEN='<dedicated-test-token>'
+uv run boberagent-node-mcp \
+  --runtime-directory /var/lib/boberagent-hitl-smoke \
+  --bind-host 0.0.0.0 --port 8443 \
+  --tls-certificate /etc/boberagent/node.crt \
+  --tls-private-key /etc/boberagent/node.key \
+  --capability-path scripts/manual-smoke/interaction-capability
+```
+
+On WSL, initialize explicit Core state and start the test Workflow. Set `NODE_ARGS` to the repeated
+transport arguments shown here (shell arrays are recommended in an interactive Bash session):
+
+```shell
+export BOBERAGENT_MCP_BEARER_TOKEN='<dedicated-test-token>'
+CORE=/tmp/boberagent-hitl-core.sqlite3
+NODE_ARGS="--node-url https://<kali-host>:8443/mcp --node-id <node-id>"
+uv run boberagent --database "$CORE" core init
+uv run boberagent --database "$CORE" mission create --mission-ref mission-hitl-smoke
+uv run boberagent --database "$CORE" $NODE_ARGS workflow start \
+  --mission mission-hitl-smoke \
+  --definition scripts/manual-smoke/interaction-workflow.json \
+  --workflow-ref workflow-hitl-smoke
+uv run boberagent --database "$CORE" $NODE_ARGS workflow advance workflow-hitl-smoke
+uv run boberagent --database "$CORE" interaction list
+```
+
+Copy each stable `interaction_id` shown by `interaction list`. Answer the confirmation, then pull the
+next durable Event and repeat for text and choice:
+
+```shell
+uv run boberagent --database "$CORE" $NODE_ARGS interaction respond <confirmation-id> --yes
+uv run boberagent --database "$CORE" $NODE_ARGS workflow advance workflow-hitl-smoke
+uv run boberagent --database "$CORE" interaction list
+uv run boberagent --database "$CORE" $NODE_ARGS interaction respond <text-id> --text lab-check
+uv run boberagent --database "$CORE" $NODE_ARGS workflow advance workflow-hitl-smoke
+uv run boberagent --database "$CORE" interaction list
+uv run boberagent --database "$CORE" $NODE_ARGS interaction respond <choice-id> --choice normal
+uv run boberagent --database "$CORE" $NODE_ARGS workflow advance workflow-hitl-smoke
+uv run boberagent --database "$CORE" workflow status workflow-hitl-smoke
+```
+
+For a private lab using plaintext HTTP, add `--allow-insecure-remote-transport`; for a private CA,
+use the repository's existing trusted TLS setup. Do not put bearer tokens or secret values in the
+workflow, request text, command history, or responses.
+
 ## Stateful browser smoke test
 
 This procedure proves that one browser Session retains a cookie across separate MCP-delivered

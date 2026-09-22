@@ -36,6 +36,7 @@ from boberagent_contracts import (
     SessionDescriptor,
     SessionRef,
     StorageRef,
+    validate_interaction_response,
 )
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -444,6 +445,10 @@ class FakeInteractionService:
             ) from error
         if response.run_ref != request.run_ref:
             raise InputError("Interaction response belongs to a different CapabilityRun")
+        try:
+            validate_interaction_response(request, response)
+        except ValueError as error:
+            raise InputError(str(error)) from error
         return response.model_copy(deep=True)
 
 

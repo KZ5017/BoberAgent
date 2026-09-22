@@ -1,0 +1,41 @@
+{
+  "definition": {
+    "capability_id": "test.manual_human_interaction",
+    "contract_version": "1.0",
+    "implementation_version": "0.1.0",
+    "title": "Manual human interaction fixture",
+    "description": "Harmless test-only fixture for cross-machine durable operator input.",
+    "operations": [
+      {
+        "name": "run",
+        "title": "Request operator input",
+        "description": "Requests confirmation, bounded text, and one explicit choice.",
+        "input_schema": {"inline": {"type": "object"}},
+        "required_references": [],
+        "result_types": [],
+        "retry_semantics": "UNSAFE",
+        "execution_requirements": {}
+      }
+    ],
+    "execution": {
+      "duration": "long_running",
+      "interaction": "stateful",
+      "asynchronous": true,
+      "supports_cancellation": true,
+      "supports_checkpointing": false
+    },
+    "interaction_surfaces": {
+      "local_compute": true,
+      "target_network": false,
+      "internet_access": false,
+      "active_session": false,
+      "managed_resource": false
+    },
+    "side_effects": [
+      {"category": "local_filesystem", "level": "none"}
+    ],
+    "dependencies": []
+  },
+  "implementation": "manual_interaction_capability:ManualInteractionCapability",
+  "input_models": {"run": "manual_interaction_capability:ManualInteractionInput"}
+}

@@ -25,10 +25,18 @@ from boberagent_contracts import (
     CapabilityRun,
     CapabilityRunRef,
     CapabilityRunStatus,
+    Event,
+    EventRef,
     ExecutionCharacteristics,
     ExecutionDuration,
     ExecutionInteraction,
+    InteractionOption,
+    InteractionRef,
+    InteractionRequest,
+    InteractionResponse,
     InteractionSurfaceDeclaration,
+    InteractionType,
+    JsonObject,
     MissionRef,
     Observation,
     ObservationRef,
@@ -45,6 +53,7 @@ from boberagent_core import (
     CapabilityRegistry,
     CapabilityRouter,
     CoreDatabase,
+    CoreInteractionService,
     CorePersistence,
     DatabaseConfig,
     Mission,
@@ -57,6 +66,7 @@ from boberagent_transport import (
     CapabilityStatusAdvertisement,
     CapabilityTransport,
     DeliveryAcknowledgement,
+    InteractionResponseAcknowledgement,
     InvocationDelivery,
     NodeAdvertisement,
     TransportDisconnected,
@@ -111,10 +121,26 @@ class RecordingTransport(CapabilityTransport):
     async def receive_failure(self) -> TransportFailure:
         raise RuntimeError("no failures")
 
+    async def submit_interaction_response(
+        self, node_id: str, response: InteractionResponse
+    ) -> InteractionResponseAcknowledgement:
+        return InteractionResponseAcknowledgement(
+            request_message_id=TransportMessageId(
+                f"transport-interaction-response:{response.interaction_ref}"
+            ),
+            node_id=node_id,
+            correlation_id=response.run_ref,
+            interaction_ref=response.interaction_ref,
+            accepted_at=response.responded_at,
+        )
+
 
 class RecordingSession:
-    def __init__(self, workflows: WorkflowService) -> None:
+    def __init__(
+        self, workflows: WorkflowService, interactions: CoreInteractionService | None = None
+    ) -> None:
         self.workflows = workflows
+        self.interactions = interactions
         self.receive_calls = 0
 
     async def receive_pending(self) -> int:
@@ -137,7 +163,8 @@ class RecordingSessionFactory:
         registry = CapabilityRegistry(database)
         registry.register_or_refresh_node(_advertisement())
         session = RecordingSession(
-            WorkflowService(database, CapabilityRouter(registry, self.transport))
+            WorkflowService(database, CapabilityRouter(registry, self.transport)),
+            CoreInteractionService(database, self.transport),
         )
         self.sessions.append(session)
         yield session
@@ -506,6 +533,129 @@ def test_run_and_world_state_inspection(tmp_path: Path) -> None:
     )
     assert code == 0 and error == ""
     assert json.loads(output)[0]["port"] == 443
+
+
+def _record_cli_interaction(
+    database: CoreDatabase,
+    *,
+    suffix: str,
+    interaction_type: InteractionType,
+) -> InteractionRequest:
+    options: tuple[InteractionOption, ...] = ()
+    if interaction_type is InteractionType.CONFIRMATION:
+        schema: JsonObject = {"type": "boolean"}
+    elif interaction_type is InteractionType.TEXT:
+        schema = {"type": "string", "minLength": 1, "maxLength": 32}
+    else:
+        schema = {"type": "string", "enum": ["normal", "stop"]}
+        options = (
+            InteractionOption(option_id="normal", label="Normal"),
+            InteractionOption(option_id="stop", label="Stop"),
+        )
+    request = InteractionRequest(
+        interaction_id=InteractionRef(f"interaction-cli-{suffix}"),
+        run_ref=CapabilityRunRef(f"run-cli-{suffix}"),
+        mission_ref=MissionRef("mission-cli-interactions"),
+        interaction_type=interaction_type,
+        title=f"CLI {suffix}",
+        description="Provide a non-secret CLI test response.",
+        input_schema=schema,
+        resume_semantics="same_run",
+        requested_at=NOW,
+        options=options,
+    )
+    CoreInteractionService(database).observe_event(
+        "node-cli-test",
+        Event(
+            event_id=EventRef(f"event-cli-{suffix}"),
+            type="interaction.requested",
+            timestamp=NOW,
+            mission_ref=request.mission_ref,
+            source_ref=request.run_ref,
+            payload={
+                "interaction_ref": str(request.interaction_id),
+                "request": request.model_dump(mode="json"),
+            },
+        ),
+    )
+    return request
+
+
+def test_interaction_list_show_and_all_response_types(tmp_path: Path) -> None:
+    database_path = tmp_path / "core.sqlite3"
+    _initialize(database_path)
+    database = CoreDatabase(DatabaseConfig.sqlite(database_path))
+    try:
+        confirmation = _record_cli_interaction(
+            database, suffix="confirmation", interaction_type=InteractionType.CONFIRMATION
+        )
+        text_request = _record_cli_interaction(
+            database, suffix="text", interaction_type=InteractionType.TEXT
+        )
+        choice = _record_cli_interaction(
+            database, suffix="choice", interaction_type=InteractionType.SINGLE_CHOICE
+        )
+    finally:
+        database.dispose()
+
+    code, output, error = _invoke(database_path, ["--json", "interaction", "list"])
+    assert code == 0 and error == ""
+    assert len(json.loads(output)) == 3
+    code, output, error = _invoke(
+        database_path,
+        ["--json", "interaction", "show", str(confirmation.interaction_id)],
+    )
+    assert code == 0 and error == ""
+    assert json.loads(output)["request"]["interaction_id"] == str(confirmation.interaction_id)
+
+    sessions = RecordingSessionFactory()
+    remote = [
+        "--node-url",
+        "http://localhost:12345/mcp",
+        "--node-id",
+        "node-cli-test",
+        "--json",
+    ]
+    environment = {"BOBERAGENT_MCP_BEARER_TOKEN": "never-render-interaction-token"}
+    responses = (
+        (confirmation, ["--yes"], True),
+        (text_request, ["--text", "harmless-text"], "harmless-text"),
+        (choice, ["--choice", "normal"], "normal"),
+    )
+    for request, flags, expected in responses:
+        code, output, error = _invoke(
+            database_path,
+            [*remote, "interaction", "respond", str(request.interaction_id), *flags],
+            environment=environment,
+            sessions=sessions,
+        )
+        assert code == 0 and error == ""
+        payload = json.loads(output)
+        assert payload["state"] == "ANSWERED"
+        assert payload["response"]["value"] == expected
+        assert "never-render-interaction-token" not in output + error
+
+    assert json.loads(_invoke(database_path, ["--json", "interaction", "list"])[1]) == []
+    all_records = json.loads(_invoke(database_path, ["--json", "interaction", "list", "--all"])[1])
+    assert len(all_records) == 3
+
+
+def test_interaction_cli_rejects_wrong_response_shape_without_traceback(tmp_path: Path) -> None:
+    database_path = tmp_path / "core.sqlite3"
+    _initialize(database_path)
+    database = CoreDatabase(DatabaseConfig.sqlite(database_path))
+    try:
+        request = _record_cli_interaction(
+            database, suffix="wrong-shape", interaction_type=InteractionType.CONFIRMATION
+        )
+    finally:
+        database.dispose()
+    code, _output, error = _invoke(
+        database_path,
+        ["interaction", "respond", str(request.interaction_id), "--text", "not-a-secret"],
+    )
+    assert code == 2
+    assert "Traceback" not in error
 
 
 def test_malformed_workflow_definition_fails_without_traceback(tmp_path: Path) -> None:

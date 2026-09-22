@@ -7,6 +7,9 @@ from boberagent_contracts import (
     CapabilityRunRef,
     CapabilityRunStatus,
     Event,
+    InteractionLifecycle,
+    InteractionRequest,
+    InteractionResponse,
     JsonObject,
     MissionRef,
     ResourceDescriptor,
@@ -140,3 +143,13 @@ class SessionRuntimeRecord(RuntimeModel):
     descriptor: SessionDescriptor
     updated_at: AwareDatetime
     last_activity_at: AwareDatetime
+
+
+class InteractionRuntimeRecord(RuntimeModel):
+    """Durable Node-owned interaction state; live waiters are intentionally absent."""
+
+    request: InteractionRequest
+    state: InteractionLifecycle
+    response: InteractionResponse | None = None
+    cancelled_at: AwareDatetime | None = None
+    cancellation_reason: str | None = None

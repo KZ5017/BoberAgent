@@ -8,11 +8,14 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Protocol, cast
 from uuid import UUID
 
 from boberagent_contracts import (
     AssetRef,
     CapabilityRunRef,
+    InteractionRef,
+    InteractionType,
     JsonObject,
     MissionRef,
     WorkflowRunRef,
@@ -21,6 +24,7 @@ from boberagent_core import (
     Asset,
     CapabilityRegistry,
     CoreDatabase,
+    CoreInteractionService,
     CorePersistence,
     Mission,
     ResultIngestionService,
@@ -40,6 +44,10 @@ from .errors import CliInvalidInput, CliNotFound
 from .output import OutputWriter
 
 _json_object_adapter: TypeAdapter[JsonObject] = TypeAdapter(JsonObject)
+
+
+class _InteractionCommandSession(Protocol):
+    interactions: CoreInteractionService
 
 
 @dataclass(slots=True)
@@ -221,6 +229,46 @@ def service_list(arguments: Namespace, context: CommandContext) -> None:
     if context.core.get_asset(asset_ref) is None:
         raise CliNotFound(f"Asset not found: {arguments.asset_ref}")
     context.output.emit(context.core.services_for_asset(asset_ref))
+
+
+def interaction_list(arguments: Namespace, context: CommandContext) -> None:
+    service = CoreInteractionService(context.database)
+    context.output.emit(service.list_all() if arguments.all else service.list_pending())
+
+
+def interaction_show(arguments: Namespace, context: CommandContext) -> None:
+    record = CoreInteractionService(context.database).get(InteractionRef(arguments.interaction_ref))
+    if record is None:
+        raise CliNotFound(f"Interaction not found: {arguments.interaction_ref}")
+    context.output.emit(record)
+
+
+async def interaction_respond(arguments: Namespace, context: CommandContext) -> None:
+    interaction_ref = InteractionRef(arguments.interaction_ref)
+    stored = CoreInteractionService(context.database).get(interaction_ref)
+    if stored is None:
+        raise CliNotFound(f"Interaction not found: {interaction_ref}")
+    interaction_type = stored.request.interaction_type
+    if arguments.yes or arguments.no:
+        if interaction_type is not InteractionType.CONFIRMATION:
+            raise CliInvalidInput("--yes/--no require a confirmation Interaction")
+        value: bool | str = bool(arguments.yes)
+    elif arguments.text is not None:
+        if interaction_type is not InteractionType.TEXT:
+            raise CliInvalidInput("--text requires a text Interaction")
+        value = arguments.text
+    elif arguments.choice is not None:
+        if interaction_type is not InteractionType.SINGLE_CHOICE:
+            raise CliInvalidInput("--choice requires a single-choice Interaction")
+        value = arguments.choice
+    else:
+        raise CliInvalidInput("one response value is required")
+    remote = _remote_configuration(arguments, context.environment)
+    async with context.workflow_sessions(context.database, remote) as session:
+        await session.receive_pending()
+        interaction_session = cast(_InteractionCommandSession, session)
+        record = await interaction_session.interactions.respond(interaction_ref, value)
+    context.output.emit(record)
 
 
 def _json_object(value: str) -> JsonObject:

@@ -58,13 +58,14 @@ class InteractionRuntime:
         self._waiters[key] = waiter
         self._event_services[key] = events
         try:
-            self._store.begin_interaction(request)
+            record = self._store.begin_interaction(request, activated_at=self._clock())
+            activated_request = record.request
             events.runtime_event(
                 "interaction.requested",
                 {
-                    "interaction_ref": str(request.interaction_id),
+                    "interaction_ref": str(activated_request.interaction_id),
                     "request": _json_object_adapter.validate_python(
-                        request.model_dump(mode="json")
+                        activated_request.model_dump(mode="json")
                     ),
                 },
             )

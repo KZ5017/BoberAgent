@@ -21,6 +21,13 @@ record. The response is persisted in Core before delivery through the neutral in
 transport, and the Node validates and durably accepts it before waking the one live waiter and
 returning the Run to `RUNNING`.
 
+`InteractionRequest.requested_at` is the durable activation time: the instant the Node accepts the
+request for persistence and makes the Run `WAITING_INPUT`. It is not the time capability code
+happened to construct a request object. The Node finalizes this value with its injected runtime
+clock, and the same immutable timestamp is stored in Node persistence, emitted in the request
+Event, projected by Core, and shown to operators. Duplicate handling and response acceptance never
+rewrite it.
+
 Milestone 15 supports `CONFIRMATION`, bounded `TEXT`, and `SINGLE_CHOICE`. Requests are immutable,
 correlated to one Mission and Capability Run, and may optionally carry Workflow correlation.
 Responses are immutable: an identical replay is acknowledged idempotently, while a different

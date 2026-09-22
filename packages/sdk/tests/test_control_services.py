@@ -1,6 +1,7 @@
 """Interaction, Checkpoint, Event, and structured logging test services."""
 
 import asyncio
+from datetime import timedelta
 
 import pytest
 from boberagent_contracts import (
@@ -41,7 +42,10 @@ def test_preconfigured_interaction_response_and_missing_response() -> None:
     )
     context.interactions.respond_with(response)
     try:
+        context.clock.set(context.clock.now() + timedelta(minutes=5))
         assert asyncio.run(context.interactions.request(request)) == response
+        assert context.interactions.requests[0].requested_at == context.clock.now()
+        assert context.interactions.requests[0].requested_at != request.requested_at
         with pytest.raises(InteractionUnavailable, match="interaction-one"):
             asyncio.run(context.interactions.request(request))
     finally:

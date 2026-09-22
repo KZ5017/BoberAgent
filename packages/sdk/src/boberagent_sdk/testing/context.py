@@ -63,7 +63,7 @@ class FakeExecutionContext:
         self._sessions = FakeSessionService(selected_invocation.run_id, self._clock)
         self._artifacts = FakeArtifactService(selected_invocation.run_id, self._clock)
         self._secrets = FakeSecretService()
-        self._interactions = FakeInteractionService()
+        self._interactions = FakeInteractionService(self._clock.now)
         self._checkpoints = FakeCheckpointService(selected_invocation.run_id)
         self._events = FakeEventService(
             mission_ref=selected_invocation.mission_ref,

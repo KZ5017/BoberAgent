@@ -25,6 +25,7 @@ from boberagent_execution_node.persistence.migrations import upgrade_database
 from boberagent_sdk import ExecutionCancelled
 
 NOW = datetime(2026, 9, 22, 10, 0, tzinfo=UTC)
+PREPARED_AT = NOW - timedelta(hours=1)
 RUN_REF = CapabilityRunRef("run-human-interaction")
 MISSION_REF = MissionRef("mission-human-interaction")
 
@@ -39,7 +40,7 @@ def _request(*, mission_ref: MissionRef = MISSION_REF) -> InteractionRequest:
         description="Confirm the harmless synthetic operation.",
         input_schema={"type": "boolean"},
         resume_semantics="same_run",
-        requested_at=NOW,
+        requested_at=PREPARED_AT,
     )
 
 
@@ -87,8 +88,14 @@ def test_request_waits_durably_resumes_and_rejects_conflicting_response(
         persisted = store.get_interaction(request.interaction_id)
         assert persisted is not None
         assert persisted.state is InteractionLifecycle.REQUESTED
+        assert persisted.request.requested_at == NOW
         assert store.get_run(RUN_REF).status is CapabilityRunStatus.WAITING_INPUT  # type: ignore[union-attr]
-        assert [record.event.type for record in store.pending_events()] == ["interaction.requested"]
+        pending_events = store.pending_events()
+        assert [record.event.type for record in pending_events] == ["interaction.requested"]
+        event_request = InteractionRequest.model_validate(
+            pending_events[0].event.payload["request"]
+        )
+        assert event_request == persisted.request
 
         response = InteractionResponse(
             interaction_ref=request.interaction_id,
@@ -99,11 +106,17 @@ def test_request_waits_durably_resumes_and_rejects_conflicting_response(
         accepted, duplicate = runtime.accept_response(response)
         assert not duplicate
         assert accepted.state is InteractionLifecycle.ANSWERED
+        assert accepted.request.requested_at == NOW
         assert await task == response
         assert store.get_run(RUN_REF).status is CapabilityRunStatus.RUNNING  # type: ignore[union-attr]
 
         replay, duplicate = runtime.accept_response(response)
         assert duplicate and replay.response == response
+        duplicate_request = store.begin_interaction(
+            request.model_copy(update={"requested_at": NOW + timedelta(hours=2)}),
+            activated_at=NOW + timedelta(hours=3),
+        )
+        assert duplicate_request.request.requested_at == NOW
         conflicting = response.model_copy(update={"value": False})
         with pytest.raises(InteractionConflict, match="different immutable response"):
             runtime.accept_response(conflicting)
@@ -116,10 +129,13 @@ def test_cross_mission_and_late_responses_are_rejected(tmp_path: Path) -> None:
     database, store = _store(tmp_path / "runtime.sqlite3")
     runtime = InteractionRuntime(store, clock=lambda: NOW)
     with pytest.raises(ValueError, match="Mission"):
-        store.begin_interaction(_request(mission_ref=MissionRef("mission-other")))
+        store.begin_interaction(
+            _request(mission_ref=MissionRef("mission-other")),
+            activated_at=NOW,
+        )
 
     request = _request()
-    store.begin_interaction(request)
+    store.begin_interaction(request, activated_at=NOW)
     runtime.cancel_for_run(RUN_REF, reason="Run cancelled")
     response = InteractionResponse(
         interaction_ref=request.interaction_id,
@@ -152,7 +168,7 @@ def test_node_restart_marks_waiting_run_failed_and_interaction_cancelled(tmp_pat
                 started_at=NOW,
             )
         )
-        first.store.begin_interaction(_request())
+        first.store.begin_interaction(_request(), activated_at=NOW)
         assert first.database is not None
         first.database.close()  # simulate process loss; do not invoke graceful waiter release
 

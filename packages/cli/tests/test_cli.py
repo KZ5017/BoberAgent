@@ -606,7 +606,9 @@ def test_interaction_list_show_and_all_response_types(tmp_path: Path) -> None:
         ["--json", "interaction", "show", str(confirmation.interaction_id)],
     )
     assert code == 0 and error == ""
-    assert json.loads(output)["request"]["interaction_id"] == str(confirmation.interaction_id)
+    shown = json.loads(output)
+    assert shown["request"]["interaction_id"] == str(confirmation.interaction_id)
+    assert shown["request"]["requested_at"] == NOW.isoformat().replace("+00:00", "Z")
 
     sessions = RecordingSessionFactory()
     remote = [

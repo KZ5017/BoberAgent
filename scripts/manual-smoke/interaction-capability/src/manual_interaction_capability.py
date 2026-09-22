@@ -26,6 +26,9 @@ class ManualInteractionCapability(Capability):
     ) -> CapabilityResult:
         if operation != "run" or not isinstance(inputs, ManualInteractionInput):
             raise ValueError("unsupported manual interaction operation/input")
+        # Requests may be prepared together; the Node assigns requested_at when each becomes
+        # durable and operator-actionable.
+        prepared_at = ctx.clock.now()
         requests = (
             InteractionRequest(
                 interaction_id=InteractionRef(f"interaction-{ctx.invocation.run_id}-confirm"),
@@ -37,7 +40,7 @@ class ManualInteractionCapability(Capability):
                 description="This is a harmless transport and persistence check.",
                 input_schema={"type": "boolean"},
                 resume_semantics="same_run",
-                requested_at=ctx.clock.now(),
+                requested_at=prepared_at,
             ),
             InteractionRequest(
                 interaction_id=InteractionRef(f"interaction-{ctx.invocation.run_id}-text"),
@@ -49,7 +52,7 @@ class ManualInteractionCapability(Capability):
                 description="Enter a non-secret label such as lab-check.",
                 input_schema={"type": "string", "minLength": 1, "maxLength": 64},
                 resume_semantics="same_run",
-                requested_at=ctx.clock.now(),
+                requested_at=prepared_at,
             ),
             InteractionRequest(
                 interaction_id=InteractionRef(f"interaction-{ctx.invocation.run_id}-choice"),
@@ -61,7 +64,7 @@ class ManualInteractionCapability(Capability):
                 description="Choose normal completion or a negative test outcome.",
                 input_schema={"type": "string", "enum": ["normal", "stop"]},
                 resume_semantics="same_run",
-                requested_at=ctx.clock.now(),
+                requested_at=prepared_at,
                 options=(
                     InteractionOption(option_id="normal", label="Complete normally"),
                     InteractionOption(option_id="stop", label="Return negative"),

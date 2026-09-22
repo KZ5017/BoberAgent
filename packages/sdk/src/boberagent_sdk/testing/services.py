@@ -428,7 +428,8 @@ class FakeEventService:
 
 
 class FakeInteractionService:
-    def __init__(self) -> None:
+    def __init__(self, clock: Callable[[], datetime]) -> None:
+        self._clock = clock
         self._responses: dict[str, InteractionResponse] = {}
         self.requests: list[InteractionRequest] = []
 
@@ -436,17 +437,20 @@ class FakeInteractionService:
         self._responses[str(response.interaction_ref)] = response.model_copy(deep=True)
 
     async def request(self, request: InteractionRequest) -> InteractionResponse:
-        self.requests.append(request.model_copy(deep=True))
+        activated_request = InteractionRequest.model_validate(
+            {**request.model_dump(), "requested_at": self._clock()}
+        )
+        self.requests.append(activated_request.model_copy(deep=True))
         try:
             response = self._responses.pop(str(request.interaction_id))
         except KeyError as error:
             raise InteractionUnavailable(
                 f"No response configured for Interaction: {request.interaction_id}"
             ) from error
-        if response.run_ref != request.run_ref:
+        if response.run_ref != activated_request.run_ref:
             raise InputError("Interaction response belongs to a different CapabilityRun")
         try:
-            validate_interaction_response(request, response)
+            validate_interaction_response(activated_request, response)
         except ValueError as error:
             raise InputError(str(error)) from error
         return response.model_copy(deep=True)

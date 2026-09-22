@@ -130,6 +130,11 @@ types fail explicitly.
 `ExecutionPlan` execution is deliberately unavailable. Capability implementations must use
 `boberagent_sdk` and must not import this package's persistence or manager internals.
 
+The runtime finalizes `InteractionRequest.requested_at` at this durable activation boundary. A
+timestamp supplied while capability code prepares the immutable request is not authoritative;
+Node persistence, the request Event, Core projection, and CLI output all retain the finalized
+activation timestamp unchanged.
+
 Interaction request and response data survive an ordinary Core restart. A Node restart cannot
 restore the suspended Python continuation: recovery cancels the durable request, fails the Run
 with an unknown interrupted outcome, emits safe cancellation metadata, and rejects late answers.

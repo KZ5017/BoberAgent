@@ -134,6 +134,9 @@ class InteractiveSyntheticCapability(Capability):
         if operation != "run" or not isinstance(inputs, InteractiveInput):
             raise ValueError("unsupported interactive test operation/input")
         type(self).execution_count += 1
+        # Deliberately prepare every future request at once. The Node runtime must replace this
+        # construction timestamp with each request's actual durable activation time.
+        prepared_at = ctx.clock.now()
         requests = (
             InteractionRequest(
                 interaction_id=InteractionRef(f"interaction-{ctx.invocation.run_id}-confirm"),
@@ -145,7 +148,7 @@ class InteractiveSyntheticCapability(Capability):
                 description="Confirm a harmless interaction test.",
                 input_schema={"type": "boolean"},
                 resume_semantics="same_run",
-                requested_at=ctx.clock.now(),
+                requested_at=prepared_at,
             ),
             InteractionRequest(
                 interaction_id=InteractionRef(f"interaction-{ctx.invocation.run_id}-text"),
@@ -157,7 +160,7 @@ class InteractiveSyntheticCapability(Capability):
                 description="Provide a non-secret test identifier.",
                 input_schema={"type": "string", "minLength": 1, "maxLength": 64},
                 resume_semantics="same_run",
-                requested_at=ctx.clock.now(),
+                requested_at=prepared_at,
             ),
             InteractionRequest(
                 interaction_id=InteractionRef(f"interaction-{ctx.invocation.run_id}-choice"),
@@ -169,7 +172,7 @@ class InteractiveSyntheticCapability(Capability):
                 description="Choose a deterministic harmless completion mode.",
                 input_schema={"type": "string", "enum": ["normal", "stop"]},
                 resume_semantics="same_run",
-                requested_at=ctx.clock.now(),
+                requested_at=prepared_at,
                 options=(
                     InteractionOption(option_id="normal", label="Complete normally"),
                     InteractionOption(option_id="stop", label="Stop"),

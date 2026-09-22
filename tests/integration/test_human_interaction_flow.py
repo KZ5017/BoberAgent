@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 from boberagent_contracts import (
     CapabilityRunStatus,
+    InteractionRequest,
     InteractionResponse,
     InteractionType,
     MissionRef,
@@ -160,6 +161,18 @@ def test_core_restart_workflow_blocks_then_resumes_same_run(tmp_path: Path) -> N
         pending_a = CoreInteractionService(core_a).list_pending()
         assert len(pending_a) == 1
         assert pending_a[0].request.interaction_type is InteractionType.CONFIRMATION
+        confirmation_requested_at = pending_a[0].request.requested_at
+        assert node.store is not None
+        node_confirmation = node.store.get_interaction(pending_a[0].request.interaction_id)
+        assert node_confirmation is not None
+        assert node_confirmation.request.requested_at == confirmation_requested_at
+        requested_event = next(
+            envelope.event
+            for envelope in receiver_a.events_for_run(run_ref)
+            if envelope.event.type == "interaction.requested"
+        )
+        event_request = InteractionRequest.model_validate(requested_event.payload["request"])
+        assert event_request.requested_at == confirmation_requested_at
         blocked = await workflows_a.advance(WORKFLOW_REF)
         assert blocked.run.status is WorkflowStatus.RUNNING
         assert blocked.steps[0].status is WorkflowStepStatus.ACTIVE
@@ -179,6 +192,7 @@ def test_core_restart_workflow_blocks_then_resumes_same_run(tmp_path: Path) -> N
             assert len(restored) == 1
             assert restored[0].request.interaction_id == pending_a[0].request.interaction_id
             assert restored[0].request.run_ref == stable_run_ref
+            assert restored[0].request.requested_at == confirmation_requested_at
 
             with pytest.raises(TransportDisconnected):
                 await interactions.respond(restored[0].request.interaction_id, True)
@@ -186,6 +200,10 @@ def test_core_restart_workflow_blocks_then_resumes_same_run(tmp_path: Path) -> N
             assert response_intent is not None and response_intent.response is not None
             answered = await interactions.respond(restored[0].request.interaction_id, True)
             assert answered.response == response_intent.response
+            assert answered.request.requested_at == confirmation_requested_at
+            node_answered = node.store.get_interaction(restored[0].request.interaction_id)
+            assert node_answered is not None
+            assert node_answered.request.requested_at == confirmation_requested_at
             conflicting = response_intent.response.model_copy(update={"value": False})
             with pytest.raises(ProtocolError, match="rejected"):
                 await transport.submit_interaction_response(endpoint.node_id, conflicting)
@@ -196,6 +214,8 @@ def test_core_restart_workflow_blocks_then_resumes_same_run(tmp_path: Path) -> N
             text_request = interactions.list_pending()
             assert len(text_request) == 1
             assert text_request[0].request.interaction_type is InteractionType.TEXT
+            text_requested_at = text_request[0].request.requested_at
+            assert text_requested_at > confirmation_requested_at
             await interactions.respond(text_request[0].request.interaction_id, "harmless-id")
 
             await _wait_for_status(
@@ -205,6 +225,7 @@ def test_core_restart_workflow_blocks_then_resumes_same_run(tmp_path: Path) -> N
             choice = interactions.list_pending()
             assert len(choice) == 1
             assert choice[0].request.interaction_type is InteractionType.SINGLE_CHOICE
+            assert choice[0].request.requested_at > text_requested_at
             await interactions.respond(choice[0].request.interaction_id, "normal")
 
             await asyncio.wait_for(transport.wait_for_idle(), timeout=5)

@@ -122,9 +122,17 @@ class RuntimeStore:
                 row.finished_at = finished_at
             row.error_code = error_code
 
-    def begin_interaction(self, request: InteractionRequest) -> InteractionRuntimeRecord:
-        """Persist a request before atomically moving its Run to WAITING_INPUT."""
+    def begin_interaction(
+        self,
+        request: InteractionRequest,
+        *,
+        activated_at: datetime,
+    ) -> InteractionRuntimeRecord:
+        """Finalize activation time, persist, then atomically enter WAITING_INPUT."""
 
+        request = InteractionRequest.model_validate(
+            {**request.model_dump(), "requested_at": activated_at}
+        )
         request_json = _json_object_adapter.validate_python(request.model_dump(mode="json"))
         with self._database.transaction() as session:
             run = session.get(RunRow, str(request.run_ref))
@@ -138,7 +146,11 @@ class RuntimeStore:
                 raise ValueError("Interaction Workflow does not match its CapabilityRun")
             existing = session.get(RuntimeInteractionRow, str(request.interaction_id))
             if existing is not None:
-                if existing.request_json != request_json:
+                existing_request = InteractionRequest.model_validate(existing.request_json)
+                comparable_request = request.model_copy(
+                    update={"requested_at": existing_request.requested_at}
+                )
+                if comparable_request != existing_request:
                     raise ValueError(f"Interaction identity collision: {request.interaction_id}")
                 return _interaction_record(existing)
             if CapabilityRunStatus(run.status) is not CapabilityRunStatus.RUNNING:

@@ -11,6 +11,7 @@ from boberagent_contracts import (
     CapabilityInvocation,
     CapabilityRunRef,
     MissionRef,
+    SecretRef,
 )
 from boberagent_transport import (
     ArtifactChunk,
@@ -19,6 +20,7 @@ from boberagent_transport import (
     InvocationDelivery,
     InvocationEnvelope,
     MissionProjection,
+    SecretGrant,
     TransportBackpressure,
     TransportDisconnected,
     UnknownNode,
@@ -65,6 +67,32 @@ def test_invocation_envelope_json_round_trip_and_stable_fingerprint() -> None:
 
     assert restored == envelope
     assert invocation_fingerprint(reordered) == invocation_fingerprint(delivery)
+
+
+def test_secret_grant_crosses_json_boundary_without_value_in_fingerprint() -> None:
+    base = _delivery()
+    grant = SecretGrant(
+        secret_ref=SecretRef("secret-transport-unit"),
+        value=b"binary\x00secret\xff",
+        authorized_purpose="test.transport_unit:execute",
+    )
+    delivery = base.model_copy(update={"secret_grants": (grant,)})
+    envelope = InvocationEnvelope(
+        message_id=invocation_message_id(delivery.invocation.run_id),
+        node_id="node-unit",
+        correlation_id=delivery.invocation.run_id,
+        timestamp=datetime(2026, 9, 17, tzinfo=UTC),
+        delivery=delivery,
+    )
+
+    restored = parse_invocation(serialize_message(envelope))
+    assert restored.delivery.secret_grants == (grant,)
+    assert "value=binary" not in repr(grant)
+
+    changed = delivery.model_copy(
+        update={"secret_grants": (grant.model_copy(update={"value": b"changed"}),)}
+    )
+    assert invocation_fingerprint(changed) == invocation_fingerprint(delivery)
 
 
 class BlockingEndpoint:

@@ -20,6 +20,7 @@ from boberagent_contracts import (
     CapabilityRunRef,
     Checkpoint,
     CheckpointRef,
+    CredentialRef,
     DomainRef,
     Event,
     EventRef,
@@ -50,7 +51,7 @@ from boberagent_sdk.exceptions import (
     SessionUnavailable,
     ToolExecutionError,
 )
-from boberagent_sdk.services.entities import AssetSnapshot, EntitySnapshot
+from boberagent_sdk.services.entities import AssetSnapshot, CredentialSnapshot, EntitySnapshot
 from boberagent_sdk.services.processes import ProcessResult
 from boberagent_sdk.services.resources import ResourceLease
 from boberagent_sdk.services.secrets import SensitiveValue
@@ -112,12 +113,12 @@ class FakeScopeService:
 
 class FakeEntityReader:
     def __init__(self) -> None:
-        self._entities: dict[str, EntitySnapshot | AssetSnapshot] = {}
+        self._entities: dict[str, EntitySnapshot | AssetSnapshot | CredentialSnapshot] = {}
 
-    def add(self, snapshot: EntitySnapshot | AssetSnapshot) -> None:
+    def add(self, snapshot: EntitySnapshot | AssetSnapshot | CredentialSnapshot) -> None:
         self._entities[str(snapshot.ref)] = snapshot.model_copy(deep=True)
 
-    async def get(self, ref: DomainRef) -> EntitySnapshot | AssetSnapshot:
+    async def get(self, ref: DomainRef) -> EntitySnapshot | AssetSnapshot | CredentialSnapshot:
         try:
             return self._entities[str(ref)].model_copy(deep=True)
         except KeyError as error:
@@ -127,6 +128,12 @@ class FakeEntityReader:
         snapshot = await self.get(asset_ref)
         if not isinstance(snapshot, AssetSnapshot):
             raise DependencyError(f"Entity is not an Asset snapshot: {asset_ref}")
+        return snapshot
+
+    async def credential(self, credential_ref: CredentialRef) -> CredentialSnapshot:
+        snapshot = await self.get(credential_ref)
+        if not isinstance(snapshot, CredentialSnapshot):
+            raise DependencyError(f"Entity is not a Credential snapshot: {credential_ref}")
         return snapshot
 
 

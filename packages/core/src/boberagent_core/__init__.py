@@ -26,6 +26,13 @@ from .capabilities import (
     provider_id_for,
 )
 from .capabilities.mcp import CoreMcpNodeConnection
+from .credentials import (
+    CandidateSecretBinding,
+    CoreCredentialService,
+    CredentialCandidateReducer,
+    CredentialCandidateValue,
+    credential_ref_for_candidate,
+)
 from .interactions import (
     CoreInteraction,
     CoreInteractionService,
@@ -36,11 +43,17 @@ from .interactions import (
 from .models import (
     ArtifactContentState,
     Asset,
+    Credential,
+    CredentialSecretBinding,
+    CredentialStatus,
     Goal,
     GoalRef,
     GoalStatus,
     MaterializationStatus,
     Mission,
+    SecretAccessRecord,
+    SecretMetadata,
+    SecretStatus,
     Service,
     StoredArtifact,
     StoredObservation,
@@ -64,6 +77,7 @@ from .results import (
     ResultProvenanceError,
     result_fingerprint,
 )
+from .secrets import CoreSecretService, RevealedSecret, SecretAccessDenied
 from .service import CorePersistence
 from .state import NetworkServiceValue, ReducerRegistry, service_ref_for_endpoint
 from .transport import CoreTransportClient, CoreTransportReceiver, TransportInboxRecord
@@ -80,6 +94,7 @@ __all__ = [
     "ArtifactContentState",
     "ArtifactStorageConfiguration",
     "Asset",
+    "CandidateSecretBinding",
     "CapabilityProvider",
     "CapabilityRegistrationClient",
     "CapabilityRegistry",
@@ -91,13 +106,20 @@ __all__ = [
     "ConflictingRoutingDecision",
     "CoreArtifactReceiver",
     "CoreArtifactService",
+    "CoreCredentialService",
     "CoreDatabase",
     "CoreInteraction",
     "CoreInteractionService",
     "CoreMcpNodeConnection",
     "CorePersistence",
+    "CoreSecretService",
     "CoreTransportClient",
     "CoreTransportReceiver",
+    "Credential",
+    "CredentialCandidateReducer",
+    "CredentialCandidateValue",
+    "CredentialSecretBinding",
+    "CredentialStatus",
     "DatabaseConfig",
     "ExplicitProviderUnavailable",
     "FilesystemArtifactStorage",
@@ -121,7 +143,12 @@ __all__ = [
     "ResultIngestionService",
     "ResultIngestionStatus",
     "ResultProvenanceError",
+    "RevealedSecret",
     "RoutingDecision",
+    "SecretAccessDenied",
+    "SecretAccessRecord",
+    "SecretMetadata",
+    "SecretStatus",
     "Service",
     "StoredArtifact",
     "StoredObservation",
@@ -142,6 +169,7 @@ __all__ = [
     "WorkflowStepStatus",
     "WorkflowStepSuccessPolicy",
     "capability_run_ref_for_step",
+    "credential_ref_for_candidate",
     "current_revision",
     "head_revision",
     "provider_id_for",

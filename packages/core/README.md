@@ -82,8 +82,9 @@ status share one transaction.
 
 The current API is synchronous and uses short-lived SQLAlchemy units of work; database access is
 isolated behind this boundary so later asynchronous orchestration does not acquire ORM sessions.
-No general Event Bus table exists. The transport inbox stores received envelopes for later
-processing and acknowledgement without interpreting their assessment meaning.
+There is no general Event Bus. A small Core event journal records replay-safe domain notifications
+such as `credential.available`; it performs no delivery, scheduling, or workflow reaction. The
+transport inbox remains separate and stores received envelopes for processing and acknowledgement.
 
 The Registry and Router do not ingest received Results, select assessment strategy, or import
 capability implementations. Result ingestion is a separate Core application service. Workflow
@@ -162,3 +163,22 @@ capability implementation details.
 
 `GoalRef` is Core-owned for now: Contract v1 does not exchange Goal objects, so adding a new
 cross-package Contract identity would create semantics beyond this milestone.
+
+## Secrets and Credentials
+
+Milestone 16 keeps sensitive reusable values and authentication context distinct. `SecretMetadata`
+contains a stable Mission-owned `SecretRef`, kind, lifecycle, timestamps, and provenance but never
+the bytes. `Credential` contains safe account metadata plus named SecretRef bindings. The
+`credential.candidate` reducer derives a deterministic Credential from a normalized Observation,
+retains its source Observation/Artifact refs, and appends a durable `credential.available` event.
+
+`CoreSecretService` is the only ordinary Core value boundary. Listing and lookup return metadata;
+operator reveal and CapabilityRun grant issuance are explicit, Mission-checked, and recorded in a
+non-sensitive access journal. SQLite stores the value as a BLOB and SQL parameters are hidden from
+engine logs. The BLOB is not application-encrypted: host/database permissions, volume encryption,
+and backup protection are deployment responsibilities for this bootstrap implementation.
+
+Workflow steps can explicitly authorize CredentialRefs and SecretRefs. Core sends only their
+bounded snapshots and short-lived values in the invocation projection. The Execution Node does not
+persist those values. Raw Artifact evidence is never rewritten or redacted by credential
+normalization, even when the evidence itself contains sensitive bytes. See ADR 0009.

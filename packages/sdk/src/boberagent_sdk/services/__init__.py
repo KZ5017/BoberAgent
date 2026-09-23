@@ -4,7 +4,13 @@ from .artifacts import ArtifactService
 from .cancellation import CancellationService
 from .checkpoints import CheckpointService
 from .clock import ClockService, UtcClock
-from .entities import AssetSnapshot, EntityReader, EntitySnapshot
+from .entities import (
+    AssetSnapshot,
+    CredentialSecretSnapshot,
+    CredentialSnapshot,
+    EntityReader,
+    EntitySnapshot,
+)
 from .events import EventService
 from .interactions import InteractionService
 from .logging import CapabilityLogger
@@ -45,6 +51,8 @@ __all__ = [
     "ClockService",
     "CommandResult",
     "CommandSession",
+    "CredentialSecretSnapshot",
+    "CredentialSnapshot",
     "EntityReader",
     "EntitySnapshot",
     "EventService",

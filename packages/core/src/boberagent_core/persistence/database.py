@@ -43,7 +43,9 @@ class CoreDatabase:
 
     def __init__(self, config: DatabaseConfig) -> None:
         self.config = config
-        self._engine = create_engine(config.url, echo=config.echo)
+        # SQL parameters can include canonical Secret bytes. Even opt-in SQL echo therefore keeps
+        # values hidden while retaining statement-level diagnostics.
+        self._engine = create_engine(config.url, echo=config.echo, hide_parameters=True)
         event.listen(self._engine, "connect", _enable_sqlite_foreign_keys)
         self._sessions = sessionmaker(bind=self._engine, expire_on_commit=False)
 

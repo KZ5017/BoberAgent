@@ -10,7 +10,12 @@ from boberagent_contracts import (
     CapabilityRunRef,
     EventRef,
 )
-from boberagent_sdk import AssetSnapshot, MissionContext
+from boberagent_sdk import (
+    AssetSnapshot,
+    CredentialSecretSnapshot,
+    CredentialSnapshot,
+    MissionContext,
+)
 from boberagent_transport import (
     AdvertisedCapabilityStatus,
     CapabilityStatusAdvertisement,
@@ -121,7 +126,26 @@ class ExecutionNodeTransportEndpoint:
                         metadata=asset.metadata,
                     )
                     for asset in envelope.delivery.assets
+                )
+                + tuple(
+                    CredentialSnapshot(
+                        ref=credential.credential_ref,
+                        credential_type=credential.credential_type,
+                        username=credential.username,
+                        identity_ref=credential.identity_ref,
+                        secrets=tuple(
+                            CredentialSecretSnapshot(
+                                role=binding.role,
+                                secret_ref=binding.secret_ref,
+                            )
+                            for binding in credential.secrets
+                        ),
+                        scope_refs=credential.scope_refs,
+                        metadata=credential.metadata,
+                    )
+                    for credential in envelope.delivery.credentials
                 ),
+                secret_grants=envelope.delivery.secret_grants,
             )
             await self._node.execute_local(
                 envelope.delivery.invocation,

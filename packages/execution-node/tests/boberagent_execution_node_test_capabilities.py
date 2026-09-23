@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from typing import cast
 
 from boberagent_contracts import (
@@ -23,6 +24,7 @@ from boberagent_contracts import (
     ResultObjectType,
     RetrySemantics,
     SchemaDeclaration,
+    SecretRef,
     SideEffectCategory,
     SideEffectDeclaration,
     SideEffectLevel,
@@ -130,6 +132,50 @@ class InvalidResultCapability(Capability):
         return cast(CapabilityResult, {"malformed": True})
 
 
+class SecretConsumerInput(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    secret_ref: SecretRef
+    expected_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class SecretConsumerCapability(Capability):
+    """Resolve a granted Secret while returning only a safe verification result."""
+
+    capability_id = "test.secret_consumer"
+
+    async def execute(
+        self,
+        operation: str,
+        ctx: ExecutionContext,
+        inputs: BaseModel,
+    ) -> CapabilityResult:
+        if operation != "verify" or not isinstance(inputs, SecretConsumerInput):
+            raise ValueError("unsupported secret consumer operation or input")
+        value = await ctx.secrets.resolve(
+            inputs.secret_ref,
+            purpose="test.secret_consumer:verify",
+        )
+        plaintext = value.reveal_bytes()
+        verified = hashlib.sha256(plaintext).hexdigest() == inputs.expected_sha256
+        ctx.logger.info(
+            f"synthetic credential value={plaintext.decode('utf-8')}",
+            secret_value=plaintext.decode("utf-8"),
+            secret_ref=str(inputs.secret_ref),
+        )
+        return CapabilityResult(
+            run_ref=ctx.invocation.run_id,
+            execution_status=CapabilityRunStatus.COMPLETED,
+            outcome=CapabilityOutcome(
+                category=(
+                    CapabilityOutcomeCategory.SUCCESS
+                    if verified
+                    else CapabilityOutcomeCategory.NEGATIVE
+                )
+            ),
+        )
+
+
 def capability_definition(
     *,
     capability_id: str = "test.synthetic_runtime",
@@ -187,13 +233,13 @@ def capability_manifest(
     implementation: str = ("boberagent_execution_node_test_capabilities:SyntheticCapability"),
     dependencies: tuple[DependencyDeclaration, ...] = (),
     operations: tuple[str, ...] = ("run", "sleep"),
+    input_model: str = "boberagent_execution_node_test_capabilities:SyntheticInput",
 ) -> dict[str, object]:
     definition = capability_definition(
         capability_id=capability_id,
         dependencies=dependencies,
         operations=operations,
     )
-    input_model = "boberagent_execution_node_test_capabilities:SyntheticInput"
     return {
         "definition": definition.model_dump(mode="json"),
         "implementation": implementation,

@@ -18,6 +18,7 @@ from boberagent_core import (
     InteractionNotFound,
     InteractionStateError,
     PersistenceIntegrityError,
+    SecretAccessDenied,
     WorkflowDefinitionConflict,
     WorkflowNotFound,
     WorkflowStateError,
@@ -136,6 +137,33 @@ def build_parser() -> argparse.ArgumentParser:
     service_list = service_actions.add_parser("list", help="list Services for an Asset")
     service_list.add_argument("--asset", dest="asset_ref", required=True)
 
+    secret = groups.add_parser("secret", help="canonical Mission-owned Secrets")
+    secret_actions = secret.add_subparsers(dest="action", required=True)
+    secret_list = secret_actions.add_parser("list", help="list Secret metadata")
+    secret_list.add_argument("--mission", dest="mission_ref", required=True)
+    secret_show = secret_actions.add_parser("show", help="show Secret metadata")
+    secret_show.add_argument("secret_ref")
+    secret_show.add_argument("--mission", dest="mission_ref", required=True)
+    secret_reveal = secret_actions.add_parser("reveal", help="deliberately reveal one Secret value")
+    secret_reveal.add_argument("secret_ref")
+    secret_reveal.add_argument("--mission", dest="mission_ref", required=True)
+    secret_reveal.add_argument("--encoding", choices=("text", "base64"), default="text")
+
+    credential = groups.add_parser("credential", help="Mission-owned Credential metadata")
+    credential_actions = credential.add_subparsers(dest="action", required=True)
+    credential_list = credential_actions.add_parser("list", help="list Credentials")
+    credential_list.add_argument("--mission", dest="mission_ref", required=True)
+    credential_show = credential_actions.add_parser("show", help="show a Credential")
+    credential_show.add_argument("credential_ref")
+    credential_show.add_argument("--mission", dest="mission_ref", required=True)
+    credential_reveal = credential_actions.add_parser(
+        "reveal", help="deliberately reveal one Credential Secret role"
+    )
+    credential_reveal.add_argument("credential_ref")
+    credential_reveal.add_argument("--mission", dest="mission_ref", required=True)
+    credential_reveal.add_argument("--role", required=True)
+    credential_reveal.add_argument("--encoding", choices=("text", "base64"), default="text")
+
     interaction = groups.add_parser("interaction", help="durable human interactions")
     interaction_actions = interaction.add_subparsers(dest="action", required=True)
     interaction_list = interaction_actions.add_parser("list", help="list pending interactions")
@@ -214,6 +242,9 @@ def run(
     except (InteractionConflict, InteractionStateError) as error:
         print(f"error: interaction conflict: {error}", file=stderr)
         return int(ExitCode.DOMAIN_CONFLICT)
+    except SecretAccessDenied:
+        print("error: secret access denied", file=stderr)
+        return int(ExitCode.DOMAIN_CONFLICT)
     except TransportError as error:
         print(f"error: transport failure ({error.code})", file=stderr)
         return int(ExitCode.TRANSPORT_FAILURE)
@@ -251,6 +282,12 @@ def _dispatch(arguments: argparse.Namespace, context: CommandContext) -> None:
         ("workflow", "cancel"): commands.workflow_cancel,
         ("run", "show"): commands.run_show,
         ("service", "list"): commands.service_list,
+        ("secret", "list"): commands.secret_list,
+        ("secret", "show"): commands.secret_show,
+        ("secret", "reveal"): commands.secret_reveal,
+        ("credential", "list"): commands.credential_list,
+        ("credential", "show"): commands.credential_show,
+        ("credential", "reveal"): commands.credential_reveal,
         ("interaction", "list"): commands.interaction_list,
         ("interaction", "show"): commands.interaction_show,
     }

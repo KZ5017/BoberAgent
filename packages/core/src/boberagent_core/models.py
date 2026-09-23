@@ -5,15 +5,19 @@ from typing import Annotated, Self
 
 from boberagent_contracts import (
     ArtifactDescriptor,
+    ArtifactRef,
     AssetRef,
     CapabilityId,
     CapabilityOutcomeCategory,
     CapabilityRunRef,
+    CredentialRef,
+    IdentityRef,
     JsonObject,
     MissionRef,
     Observation,
     ObservationRef,
     OperationName,
+    SecretRef,
     ServiceRef,
     WorkflowRunRef,
 )
@@ -30,6 +34,9 @@ from pydantic import (
 type ExtensibleStatus = Annotated[str, StringConstraints(min_length=1, max_length=64)]
 type AssetKind = Annotated[str, StringConstraints(min_length=1, max_length=64)]
 type GoalType = Annotated[str, StringConstraints(min_length=1, max_length=255)]
+type CredentialKind = Annotated[str, StringConstraints(min_length=1, max_length=64)]
+type SecretKind = Annotated[str, StringConstraints(min_length=1, max_length=64)]
+type SecretRole = Annotated[str, StringConstraints(min_length=1, max_length=64)]
 
 
 class GoalRef(DomainRef):
@@ -59,6 +66,83 @@ class ArtifactContentState(StrEnum):
     RECEIVING = "RECEIVING"
     AVAILABLE = "AVAILABLE"
     FAILED = "FAILED"
+
+
+class SecretStatus(StrEnum):
+    """Small Core-owned lifecycle for canonical sensitive values."""
+
+    AVAILABLE = "AVAILABLE"
+    REVOKED = "REVOKED"
+    UNAVAILABLE = "UNAVAILABLE"
+
+
+class CredentialStatus(StrEnum):
+    """Assessment lifecycle for reusable authentication context."""
+
+    CANDIDATE = "CANDIDATE"
+    VALIDATED = "VALIDATED"
+    REJECTED = "REJECTED"
+    EXPIRED = "EXPIRED"
+    UNAVAILABLE = "UNAVAILABLE"
+    UNKNOWN = "UNKNOWN"
+
+
+class SecretMetadata(CoreModel):
+    """Inspectable Secret metadata that intentionally excludes the value."""
+
+    secret_ref: SecretRef
+    mission_ref: MissionRef
+    secret_type: SecretKind
+    status: SecretStatus
+    created_at: AwareDatetime
+    created_by_run_ref: CapabilityRunRef | None = None
+    source_observation_ref: ObservationRef | None = None
+    source_artifact_refs: tuple[ArtifactRef, ...] = ()
+    metadata: JsonObject = Field(default_factory=dict)
+
+
+class CredentialSecretBinding(CoreModel):
+    """Name the operational role of one referenced sensitive value."""
+
+    role: SecretRole
+    secret_ref: SecretRef
+
+
+class Credential(CoreModel):
+    """Mission-owned authentication identity/context referencing canonical Secrets."""
+
+    credential_ref: CredentialRef
+    mission_ref: MissionRef
+    credential_type: CredentialKind
+    username: str | None = Field(default=None, min_length=1, max_length=255)
+    identity_ref: IdentityRef | None = None
+    secrets: tuple[CredentialSecretBinding, ...] = Field(min_length=1)
+    scope_refs: tuple[DomainRef, ...] = ()
+    status: CredentialStatus
+    source_observation_refs: tuple[ObservationRef, ...] = ()
+    source_artifact_refs: tuple[ArtifactRef, ...] = ()
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    metadata: JsonObject = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def require_unique_secret_roles(self) -> Self:
+        roles = [binding.role for binding in self.secrets]
+        if len(roles) != len(set(roles)):
+            raise ValueError("Credential secret roles must be unique")
+        return self
+
+
+class SecretAccessRecord(CoreModel):
+    """Non-sensitive audit metadata for an explicit Secret resolution."""
+
+    access_id: int
+    secret_ref: SecretRef
+    mission_ref: MissionRef
+    run_ref: CapabilityRunRef | None = None
+    accessor: str = Field(min_length=1, max_length=32)
+    purpose: str = Field(min_length=1, max_length=255)
+    accessed_at: AwareDatetime
 
 
 class WorkflowStatus(StrEnum):
@@ -125,7 +209,17 @@ class WorkflowStepDefinition(CoreModel):
     capability_id: CapabilityId
     operation: OperationName
     inputs: JsonObject = Field(default_factory=dict)
+    credential_refs: tuple[CredentialRef, ...] = ()
+    secret_refs: tuple[SecretRef, ...] = ()
     success_policy: WorkflowStepSuccessPolicy = WorkflowStepSuccessPolicy.SUCCESS_ONLY
+
+    @model_validator(mode="after")
+    def require_unique_authorization_refs(self) -> Self:
+        if len(self.credential_refs) != len(set(self.credential_refs)):
+            raise ValueError("Workflow step CredentialRefs must be unique")
+        if len(self.secret_refs) != len(set(self.secret_refs)):
+            raise ValueError("Workflow step SecretRefs must be unique")
+        return self
 
 
 class WorkflowDefinition(CoreModel):

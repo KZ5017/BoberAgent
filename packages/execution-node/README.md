@@ -121,8 +121,13 @@ with an unknown interrupted outcome; its process records become `LOST`. The Node
 re-executes potentially state-changing work. Artifacts, workspaces, and pending outbox records are
 retained.
 
-Scope/entity data for the local test harness must be supplied explicitly. Services requiring Core
-(Secrets) fail closed. Human Interaction uses the generic SDK interface and a Node-owned durable
+Scope/entity data for the local test harness must be supplied explicitly. Secret resolution fails
+closed unless Core included an explicit Mission-checked grant for this Run. Granted bytes remain
+in the Execution Context lifetime and are not written to Node persistence; capability-side Secret
+creation remains unavailable until a durable Core delivery path exists. Resolved UTF-8 values are
+registered with the Run-local structured logger and redacted from subsequent messages/fields.
+Managed process arguments are never logged or persisted, while raw tool output and Artifacts remain
+unaltered evidence. Human Interaction uses the generic SDK interface and a Node-owned durable
 request runtime: request persistence and `WAITING_INPUT` precede its outbox Event; a validated
 response returns the Run to `RUNNING` and releases only the matching live waiter. Browser and TCP
 listener providers are selected behind the generic SDK Resource/Session interfaces; unsupported

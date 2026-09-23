@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import json
 from argparse import Namespace
 from collections.abc import Mapping
@@ -14,18 +15,22 @@ from uuid import UUID
 from boberagent_contracts import (
     AssetRef,
     CapabilityRunRef,
+    CredentialRef,
     InteractionRef,
     InteractionType,
     JsonObject,
     MissionRef,
+    SecretRef,
     WorkflowRunRef,
 )
 from boberagent_core import (
     Asset,
     CapabilityRegistry,
+    CoreCredentialService,
     CoreDatabase,
     CoreInteractionService,
     CorePersistence,
+    CoreSecretService,
     Mission,
     ResultIngestionService,
     WorkflowDefinition,
@@ -231,6 +236,67 @@ def service_list(arguments: Namespace, context: CommandContext) -> None:
     context.output.emit(context.core.services_for_asset(asset_ref))
 
 
+def secret_list(arguments: Namespace, context: CommandContext) -> None:
+    mission_ref = MissionRef(arguments.mission_ref)
+    context.output.emit(CoreSecretService(context.database).list_for_mission(mission_ref))
+
+
+def secret_show(arguments: Namespace, context: CommandContext) -> None:
+    mission_ref = MissionRef(arguments.mission_ref)
+    secret = CoreSecretService(context.database).get(SecretRef(arguments.secret_ref))
+    if secret is None or secret.mission_ref != mission_ref:
+        raise CliNotFound(f"Secret not found for Mission: {arguments.secret_ref}")
+    context.output.emit(secret)
+
+
+def secret_reveal(arguments: Namespace, context: CommandContext) -> None:
+    secret_ref = SecretRef(arguments.secret_ref)
+    revealed = CoreSecretService(context.database).reveal_for_operator(
+        secret_ref,
+        mission_ref=MissionRef(arguments.mission_ref),
+    )
+    context.output.emit(
+        {
+            "secret_ref": str(secret_ref),
+            "value": _render_revealed(revealed.reveal_bytes(), arguments.encoding),
+            "encoding": arguments.encoding,
+        }
+    )
+
+
+def credential_list(arguments: Namespace, context: CommandContext) -> None:
+    context.output.emit(
+        CoreCredentialService(context.database).list_for_mission(MissionRef(arguments.mission_ref))
+    )
+
+
+def credential_show(arguments: Namespace, context: CommandContext) -> None:
+    mission_ref = MissionRef(arguments.mission_ref)
+    credential = CoreCredentialService(context.database).get(
+        CredentialRef(arguments.credential_ref)
+    )
+    if credential is None or credential.mission_ref != mission_ref:
+        raise CliNotFound(f"Credential not found for Mission: {arguments.credential_ref}")
+    context.output.emit(credential)
+
+
+def credential_reveal(arguments: Namespace, context: CommandContext) -> None:
+    credential_ref = CredentialRef(arguments.credential_ref)
+    revealed = CoreCredentialService(context.database).reveal(
+        credential_ref,
+        role=arguments.role,
+        mission_ref=MissionRef(arguments.mission_ref),
+    )
+    context.output.emit(
+        {
+            "credential_ref": str(credential_ref),
+            "role": arguments.role,
+            "value": _render_revealed(revealed.reveal_bytes(), arguments.encoding),
+            "encoding": arguments.encoding,
+        }
+    )
+
+
 def interaction_list(arguments: Namespace, context: CommandContext) -> None:
     service = CoreInteractionService(context.database)
     context.output.emit(service.list_all() if arguments.all else service.list_pending())
@@ -277,6 +343,15 @@ def _json_object(value: str) -> JsonObject:
         return _json_object_adapter.validate_python(parsed)
     except (json.JSONDecodeError, ValidationError) as error:
         raise CliInvalidInput("metadata must be a JSON object") from error
+
+
+def _render_revealed(value: bytes, encoding: str) -> str:
+    if encoding == "base64":
+        return base64.b64encode(value).decode("ascii")
+    try:
+        return value.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise CliInvalidInput("Secret is not UTF-8 text; use --encoding base64") from error
 
 
 def _workflow_definition(path: Path) -> WorkflowDefinition:

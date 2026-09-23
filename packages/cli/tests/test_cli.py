@@ -44,6 +44,7 @@ from boberagent_contracts import (
     ResultObjectType,
     RetrySemantics,
     SchemaDeclaration,
+    SecretRef,
     SideEffectCategory,
     SideEffectDeclaration,
     SideEffectLevel,
@@ -55,8 +56,10 @@ from boberagent_core import (
     CoreDatabase,
     CoreInteractionService,
     CorePersistence,
+    CoreSecretService,
     DatabaseConfig,
     Mission,
+    ReducerRegistry,
     ResultIngestionService,
     WorkflowService,
     current_revision,
@@ -339,6 +342,92 @@ def test_mission_and_asset_create_show_list_json(tmp_path: Path) -> None:
         database_path, ["--json", "asset", "list", "--mission", "mission-cli"]
     )
     assert code == 0 and json.loads(output)[0]["primary_address"] == "192.0.2.44"
+
+
+def test_secret_and_credential_commands_require_explicit_reveal(tmp_path: Path) -> None:
+    database_path = tmp_path / "core.sqlite3"
+    _initialize(database_path)
+    plaintext = "harmless-cli-password"
+    mission_ref = MissionRef("mission-cli-secrets")
+    run_ref = CapabilityRunRef("run-cli-secrets")
+    database = CoreDatabase(DatabaseConfig.sqlite(database_path))
+    try:
+        persistence = CorePersistence(database)
+        persistence.create_mission(
+            Mission(mission_ref=mission_ref, status="ACTIVE", created_at=NOW)
+        )
+        persistence.record_run(
+            CapabilityRun(
+                run_id=run_ref,
+                capability_id="test.secret.discovery",
+                operation="discover",
+                mission_ref=mission_ref,
+                status=CapabilityRunStatus.COMPLETED,
+                created_at=NOW,
+                finished_at=NOW,
+            )
+        )
+        secret = CoreSecretService(database, clock=lambda: NOW).store(
+            mission_ref=mission_ref,
+            value=plaintext.encode(),
+            secret_type="password",
+            secret_ref=SecretRef("secret-cli-password"),
+        )
+        observation = Observation(
+            observation_id=ObservationRef("observation-cli-credential"),
+            type="credential.candidate",
+            value={
+                "credential_type": "username_password",
+                "username": "operator-test",
+                "secrets": [{"role": "password", "secret_ref": str(secret.secret_ref)}],
+            },
+            run_ref=run_ref,
+            observed_at=NOW,
+        )
+        with database.unit_of_work() as work:
+            work.observations.append(observation)
+            ReducerRegistry().materialize(observation.observation_id, work)
+            credential = work.credentials.list_for_mission(mission_ref)[0]
+    finally:
+        database.dispose()
+
+    code, output, error = _invoke(
+        database_path,
+        ["--json", "secret", "list", "--mission", str(mission_ref)],
+    )
+    assert code == 0 and error == ""
+    assert json.loads(output)[0]["secret_ref"] == str(secret.secret_ref)
+    assert plaintext not in output
+    code, output, _error = _invoke(
+        database_path,
+        [
+            "--json",
+            "credential",
+            "show",
+            str(credential.credential_ref),
+            "--mission",
+            str(mission_ref),
+        ],
+    )
+    assert code == 0
+    assert json.loads(output)["username"] == "operator-test"
+    assert plaintext not in output
+
+    code, output, error = _invoke(
+        database_path,
+        [
+            "--json",
+            "credential",
+            "reveal",
+            str(credential.credential_ref),
+            "--mission",
+            str(mission_ref),
+            "--role",
+            "password",
+        ],
+    )
+    assert code == 0 and error == ""
+    assert json.loads(output)["value"] == plaintext
 
 
 def test_invalid_input_not_found_conflict_and_no_traceback(tmp_path: Path) -> None:

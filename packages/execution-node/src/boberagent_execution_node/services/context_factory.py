@@ -9,6 +9,7 @@ from boberagent_contracts import (
     AssetRef,
     Checkpoint,
     CheckpointRef,
+    CredentialRef,
     DomainRef,
     JsonObject,
     JsonValue,
@@ -16,6 +17,7 @@ from boberagent_contracts import (
 )
 from boberagent_sdk import (
     AssetSnapshot,
+    CredentialSnapshot,
     DependencyError,
     EntitySnapshot,
     InvocationContext,
@@ -25,6 +27,7 @@ from boberagent_sdk import (
     SensitiveValue,
     UtcClock,
 )
+from boberagent_transport import SecretGrant
 
 from boberagent_execution_node.artifacts import LocalArtifactSpool
 from boberagent_execution_node.browser import BrowserRuntimeManager
@@ -64,10 +67,13 @@ class LocalScopeService:
 
 
 class LocalEntityReader:
-    def __init__(self, entities: tuple[EntitySnapshot | AssetSnapshot, ...]) -> None:
+    def __init__(
+        self,
+        entities: tuple[EntitySnapshot | AssetSnapshot | CredentialSnapshot, ...],
+    ) -> None:
         self._entities = {str(entity.ref): entity.model_copy(deep=True) for entity in entities}
 
-    async def get(self, ref: DomainRef) -> EntitySnapshot | AssetSnapshot:
+    async def get(self, ref: DomainRef) -> EntitySnapshot | AssetSnapshot | CredentialSnapshot:
         try:
             return self._entities[str(ref)].model_copy(deep=True)
         except KeyError as error:
@@ -81,11 +87,66 @@ class LocalEntityReader:
             raise DependencyError(f"Entity is not an Asset snapshot: {asset_ref}")
         return entity
 
+    async def credential(self, credential_ref: CredentialRef) -> CredentialSnapshot:
+        entity = await self.get(credential_ref)
+        if not isinstance(entity, CredentialSnapshot):
+            raise DependencyError(f"Entity is not a Credential snapshot: {credential_ref}")
+        return entity
 
-class UnavailableSecretService:
+
+class SecretRedactor:
+    """Run-local best-effort redaction for values explicitly resolved by a capability."""
+
+    def __init__(self) -> None:
+        self._known_text: set[str] = set()
+
+    def register(self, value: bytes) -> None:
+        try:
+            decoded = value.decode("utf-8")
+        except UnicodeDecodeError:
+            return
+        if decoded:
+            self._known_text.add(decoded)
+
+    def text(self, value: str) -> str:
+        redacted = value
+        for secret in sorted(self._known_text, key=len, reverse=True):
+            redacted = redacted.replace(secret, "<REDACTED>")
+        return redacted
+
+    def json(self, value: JsonValue) -> JsonValue:
+        if isinstance(value, str):
+            return self.text(value)
+        if isinstance(value, list):
+            return [self.json(item) for item in value]
+        if isinstance(value, dict):
+            return {key: self.json(item) for key, item in value.items()}
+        return value
+
+
+class RunSecretService:
+    """Resolve only values explicitly granted to this invocation; never enumerate them."""
+
+    def __init__(self, grants: tuple[SecretGrant, ...], redactor: SecretRedactor) -> None:
+        self._grants = {str(grant.secret_ref): grant for grant in grants}
+        self._redactor = redactor
+
     async def resolve(self, secret_ref: SecretRef, *, purpose: str) -> SensitiveValue:
-        del secret_ref, purpose
-        raise DependencyError("Secret resolution requires a future Core adapter")
+        if not purpose:
+            raise ValueError("Secret resolution requires an explicit purpose")
+        try:
+            grant = self._grants[str(secret_ref)]
+        except KeyError as error:
+            raise DependencyError(
+                f"Secret was not authorized for this CapabilityRun: {secret_ref}"
+            ) from error
+        if purpose != grant.authorized_purpose:
+            raise DependencyError(
+                f"Secret was not authorized for purpose {purpose!r}: {secret_ref}"
+            )
+        value = bytes(grant.value)
+        self._redactor.register(value)
+        return SensitiveValue(value)
 
     async def store(
         self,
@@ -95,7 +156,9 @@ class UnavailableSecretService:
         metadata: JsonObject | None = None,
     ) -> SecretRef:
         del value, secret_type, metadata
-        raise DependencyError("Secret storage requires a future Core adapter")
+        raise DependencyError(
+            "Capability-side Secret creation requires a canonical Core delivery path"
+        )
 
 
 class UnavailableCheckpointService:
@@ -110,9 +173,15 @@ class UnavailableCheckpointService:
 
 class NodeCapabilityLogger:
     def __init__(
-        self, *, node_id: NodeId, invocation: InvocationContext, logger: logging.Logger
+        self,
+        *,
+        node_id: NodeId,
+        invocation: InvocationContext,
+        logger: logging.Logger,
+        redactor: SecretRedactor,
     ) -> None:
         self._logger = logger
+        self._redactor = redactor
         self._base: JsonObject = {
             "node_id": str(node_id),
             "run_id": str(invocation.run_id),
@@ -121,7 +190,10 @@ class NodeCapabilityLogger:
         }
 
     def _log(self, level: int, message: str, fields: dict[str, JsonValue]) -> None:
-        self._logger.log(level, "%s | %s", message, {**self._base, **fields})
+        safe_fields = {
+            key: self._redactor.json(value) for key, value in {**self._base, **fields}.items()
+        }
+        self._logger.log(level, "%s | %s", self._redactor.text(message), safe_fields)
 
     def debug(self, message: str, **fields: JsonValue) -> None:
         self._log(logging.DEBUG, message, fields)
@@ -151,6 +223,7 @@ class NodeExecutionContext:
         resources: NodeResourceService,
         sessions: NodeSessionService,
         artifacts: LocalArtifactSpool,
+        secrets: SecretService,
         events: NodeEventService,
         interactions: NodeInteractionService,
         logger: NodeCapabilityLogger,
@@ -165,7 +238,7 @@ class NodeExecutionContext:
         self.resources = resources
         self.sessions = sessions
         self.artifacts = artifacts
-        self.secrets: SecretService = UnavailableSecretService()
+        self.secrets = secrets
         self.interactions = interactions
         self.checkpoints = UnavailableCheckpointService()
         self.events = events
@@ -179,7 +252,8 @@ class LocalInvocationEnvironment:
     mission: MissionContext
     allowed_assets: frozenset[AssetRef] = frozenset()
     allowed_addresses: frozenset[str] = frozenset()
-    entities: tuple[EntitySnapshot | AssetSnapshot, ...] = ()
+    entities: tuple[EntitySnapshot | AssetSnapshot | CredentialSnapshot, ...] = ()
+    secret_grants: tuple[SecretGrant, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -254,6 +328,7 @@ class ExecutionContextFactory:
             browser=self._browser_runtime,
             listener=self._listener_runtime,
         )
+        redactor = SecretRedactor()
         context = NodeExecutionContext(
             invocation=invocation,
             mission=environment.mission,
@@ -276,6 +351,7 @@ class ExecutionContextFactory:
             resources=resources,
             sessions=sessions,
             artifacts=artifacts,
+            secrets=RunSecretService(environment.secret_grants, redactor),
             events=events,
             interactions=NodeInteractionService(
                 runtime=self._interaction_runtime,
@@ -288,6 +364,7 @@ class ExecutionContextFactory:
                 node_id=self._node_id,
                 invocation=invocation,
                 logger=logging.getLogger("boberagent.execution_node.capability"),
+                redactor=redactor,
             ),
             cancellation=cancellation,
         )

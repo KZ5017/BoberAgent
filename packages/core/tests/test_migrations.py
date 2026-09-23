@@ -12,11 +12,15 @@ EXPECTED_TABLES = {
     "capability_runs",
     "capability_providers",
     "capability_routing_decisions",
+    "core_events",
+    "credentials",
     "goals",
     "interactions",
     "missions",
     "observations",
     "result_ingestions",
+    "secret_access_records",
+    "secrets",
     "services",
     "transport_inbox",
     "workflow_runs",
@@ -30,7 +34,7 @@ def test_migration_upgrades_empty_database(database_path: Path) -> None:
         assert not database_path.exists()
         upgrade_database(database)
         assert set(inspect(database._migration_engine).get_table_names()) == EXPECTED_TABLES
-        assert current_revision(database) == "0007_durable_interactions"
+        assert current_revision(database) == "0008_secret_credentials"
     finally:
         database.dispose()
 
@@ -43,7 +47,7 @@ def test_migrated_database_can_be_reopened(database_path: Path) -> None:
     reopened = CoreDatabase(DatabaseConfig.sqlite(database_path))
     try:
         upgrade_database(reopened)
-        assert current_revision(reopened) == "0007_durable_interactions"
+        assert current_revision(reopened) == "0008_secret_credentials"
     finally:
         reopened.dispose()
 
@@ -58,7 +62,7 @@ def test_transport_inbox_migration_upgrades_milestone_2_schema(
         assert "transport_inbox" not in inspect(database._migration_engine).get_table_names()
 
         upgrade_database(database)
-        assert current_revision(database) == "0007_durable_interactions"
+        assert current_revision(database) == "0008_secret_credentials"
         assert "transport_inbox" in inspect(database._migration_engine).get_table_names()
     finally:
         database.dispose()
@@ -75,7 +79,7 @@ def test_capability_registry_migration_upgrades_milestone_7_schema(
         assert "capability_providers" not in tables
 
         upgrade_database(database)
-        assert current_revision(database) == "0007_durable_interactions"
+        assert current_revision(database) == "0008_secret_credentials"
         tables = set(inspect(database._migration_engine).get_table_names())
         assert {"capability_providers", "capability_routing_decisions"} <= tables
     finally:
@@ -116,7 +120,7 @@ def test_artifact_content_migration_preserves_milestone_5_metadata(
             )
 
         upgrade_database(database)
-        assert current_revision(database) == "0007_durable_interactions"
+        assert current_revision(database) == "0008_secret_credentials"
         columns = {
             str(column["name"])
             for column in inspect(database._migration_engine).get_columns("artifacts")
@@ -207,7 +211,7 @@ def test_result_ingestion_migration_upgrades_milestone_8_without_data_loss(
                 )
             )
         upgrade_database(database)
-        assert current_revision(database) == "0007_durable_interactions"
+        assert current_revision(database) == "0008_secret_credentials"
         assert "result_ingestions" in inspect(database._migration_engine).get_table_names()
         with database._migration_engine.connect() as connection:
             assert (
@@ -260,7 +264,7 @@ def test_workflow_engine_migration_preserves_existing_workflow_metadata(
             )
 
         upgrade_database(database)
-        assert current_revision(database) == "0007_durable_interactions"
+        assert current_revision(database) == "0008_secret_credentials"
         with database._migration_engine.connect() as connection:
             row = connection.execute(
                 text(
@@ -270,6 +274,58 @@ def test_workflow_engine_migration_preserves_existing_workflow_metadata(
             ).one()
         assert tuple(row) == ("procedure.legacy@1", "CREATED", None, None)
         assert "workflow_step_runs" in inspect(database._migration_engine).get_table_names()
+    finally:
+        database.dispose()
+
+
+def test_secret_credential_migration_upgrades_milestone_15_schema(
+    database_path: Path,
+) -> None:
+    database = CoreDatabase(DatabaseConfig.sqlite(database_path))
+    try:
+        upgrade_database(database, "0007_durable_interactions")
+        assert current_revision(database) == "0007_durable_interactions"
+        with database._migration_engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO missions "
+                    "(mission_id, status, created_at, metadata_json) VALUES "
+                    "('mission-m16-upgrade', 'ACTIVE', "
+                    "'2026-01-01T00:00:00+00:00', '{}')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO workflow_runs "
+                    "(workflow_run_id, mission_id, procedure_ref, status, created_at, updated_at, "
+                    "definition_json) VALUES ('workflow-m16-upgrade', 'mission-m16-upgrade', "
+                    "'procedure.m16@1', 'CREATED', '2026-01-01T00:00:00+00:00', "
+                    "'2026-01-01T00:00:00+00:00', '{}')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO workflow_step_runs "
+                    "(workflow_run_id, step_id, position, capability_id, operation, inputs_json, "
+                    "success_policy, status, created_at, updated_at) VALUES "
+                    "('workflow-m16-upgrade', 'step', 0, 'test.capability', 'run', '{}', "
+                    "'SUCCESS_ONLY', 'PENDING', '2026-01-01T00:00:00+00:00', "
+                    "'2026-01-01T00:00:00+00:00')"
+                )
+            )
+
+        upgrade_database(database)
+        assert current_revision(database) == "0008_secret_credentials"
+        tables = set(inspect(database._migration_engine).get_table_names())
+        assert {"secrets", "credentials", "secret_access_records", "core_events"} <= tables
+        with database._migration_engine.connect() as connection:
+            row = connection.execute(
+                text(
+                    "SELECT credential_refs_json, secret_refs_json FROM workflow_step_runs "
+                    "WHERE workflow_run_id = 'workflow-m16-upgrade'"
+                )
+            ).one()
+        assert tuple(row) == ("[]", "[]")
     finally:
         database.dispose()
 

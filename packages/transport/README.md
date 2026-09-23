@@ -4,7 +4,7 @@ This package owns transport-neutral protocol envelopes, interfaces, errors, and 
 in-memory Milestone 5 adapter. It depends only on the Contract package and Pydantic. It contains no
 Core business logic, Execution Node runtime logic, MCP types, networking, or Artifact storage.
 
-Protocol version `1.3` is independent from the Capability Contract version. Invocation, Event,
+Protocol version `1.4` is independent from the Capability Contract version. Invocation, Event,
 Result, and dedicated Artifact-transfer messages always cross a JSON serialization/validation
 boundary. Artifact bytes use bounded base64-encoded chunks with explicit offsets and per-chunk
 SHA-256; they are never embedded in Results or Events.
@@ -36,3 +36,9 @@ Human responses use one separate neutral request/acknowledgement exchange correl
 `InteractionRef` and `CapabilityRunRef`. It carries the validated Contract response, not a UI or
 MCP model. Core persists response intent before sending; the Node persists acceptance before
 acknowledging. Identical redelivery is idempotent and conflicting redelivery is rejected.
+
+M16 invocation projections may contain explicit non-sensitive Credential snapshots and short-lived
+Secret grants. The grant is infrastructure authorization for one Run, not a Contract Result/Event
+field or a Secret repository. JSON byte encoding makes the same boundary work over in-memory and
+MCP carriers. Nodes do not persist grants, and invocation fingerprints retain only SecretRef plus
+purpose—not secret bytes or a value-derived digest.

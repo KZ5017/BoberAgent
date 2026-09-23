@@ -16,6 +16,8 @@ from boberagent_contracts import (
 )
 from boberagent_transport import (
     AssetProjection,
+    CredentialProjection,
+    CredentialSecretProjection,
     InvocationDelivery,
     MissionProjection,
     TransportError,
@@ -24,6 +26,7 @@ from boberagent_transport import (
 from boberagent_core.capabilities import CapabilityRouter, CapabilityRoutingError
 from boberagent_core.clock import utc_now
 from boberagent_core.models import (
+    CredentialStatus,
     WorkflowDefinition,
     WorkflowExecution,
     WorkflowRun,
@@ -33,6 +36,7 @@ from boberagent_core.models import (
 )
 from boberagent_core.persistence import CoreDatabase
 from boberagent_core.results import ResultIngestionStatus
+from boberagent_core.secrets import CoreSecretService, SecretAccessDenied
 
 from .errors import WorkflowDefinitionConflict, WorkflowNotFound, WorkflowStateError
 
@@ -242,9 +246,9 @@ class WorkflowService:
             inputs=step.definition.inputs,
             workflow_run_ref=workflow.workflow_run_ref,
         )
-        delivery = self._build_delivery(invocation)
         router = self._require_router()
         try:
+            delivery = self._build_delivery(invocation, step)
             provider = router.selected_provider_for_run(invocation.run_id)
             if provider is None:
                 provider = router.select_provider(
@@ -256,7 +260,13 @@ class WorkflowService:
                 delivery=delivery,
                 provider=provider,
             )
-        except (CapabilityRoutingError, TransportError) as error:
+        except (
+            CapabilityRoutingError,
+            KeyError,
+            SecretAccessDenied,
+            TransportError,
+            WorkflowStateError,
+        ) as error:
             return self._mark_failed(
                 workflow.workflow_run_ref,
                 step.step_id,
@@ -277,12 +287,49 @@ class WorkflowService:
             )
         return self._required_execution(workflow.workflow_run_ref)
 
-    def _build_delivery(self, invocation: CapabilityInvocation) -> InvocationDelivery:
+    def _build_delivery(
+        self, invocation: CapabilityInvocation, step: WorkflowStepRun
+    ) -> InvocationDelivery:
         with self._database.unit_of_work() as work:
             mission = work.missions.get(invocation.mission_ref)
             if mission is None:
                 raise WorkflowStateError(f"unknown Workflow Mission: {invocation.mission_ref}")
             assets = work.assets.list_for_mission(invocation.mission_ref)
+            credentials = tuple(
+                work.credentials.get(credential_ref)
+                for credential_ref in step.definition.credential_refs
+            )
+        if any(credential is None for credential in credentials):
+            raise WorkflowStateError("Workflow step references an unknown Credential")
+        resolved_credentials = tuple(
+            credential for credential in credentials if credential is not None
+        )
+        for credential in resolved_credentials:
+            if credential.mission_ref != invocation.mission_ref:
+                raise WorkflowStateError(
+                    "Workflow step Credential does not belong to the Workflow Mission"
+                )
+            if credential.status not in {
+                CredentialStatus.CANDIDATE,
+                CredentialStatus.VALIDATED,
+                CredentialStatus.UNKNOWN,
+            }:
+                raise WorkflowStateError(
+                    f"Workflow step Credential is unavailable: {credential.credential_ref}"
+                )
+        purpose = f"{invocation.capability_id}:{invocation.operation}"
+        authorized_secret_refs = {
+            *step.definition.secret_refs,
+            *(
+                binding.secret_ref
+                for credential in resolved_credentials
+                for binding in credential.secrets
+            ),
+        }
+        grants = CoreSecretService(self._database).execution_grants(
+            invocation.run_id,
+            {secret_ref: purpose for secret_ref in authorized_secret_refs},
+        )
         return InvocationDelivery(
             invocation=invocation,
             mission=MissionProjection(
@@ -300,6 +347,25 @@ class WorkflowService:
                 )
                 for asset in assets
             ),
+            credentials=tuple(
+                CredentialProjection(
+                    credential_ref=credential.credential_ref,
+                    credential_type=credential.credential_type,
+                    username=credential.username,
+                    identity_ref=credential.identity_ref,
+                    secrets=tuple(
+                        CredentialSecretProjection(
+                            role=binding.role,
+                            secret_ref=binding.secret_ref,
+                        )
+                        for binding in credential.secrets
+                    ),
+                    scope_refs=credential.scope_refs,
+                    metadata=credential.metadata,
+                )
+                for credential in resolved_credentials
+            ),
+            secret_grants=grants,
         )
 
     def _reconcile_active_step(

@@ -12,9 +12,13 @@ from boberagent_contracts import (
     CapabilityOutcome,
     CapabilityOutcomeCategory,
     CapabilityResult,
+    CapabilityRun,
     CapabilityRunRef,
     CapabilityRunStatus,
     MissionRef,
+    Observation,
+    ObservationRef,
+    SecretRef,
     WorkflowRunRef,
 )
 from boberagent_core import (
@@ -22,8 +26,10 @@ from boberagent_core import (
     CapabilityRegistry,
     CapabilityRouter,
     CoreDatabase,
+    CoreSecretService,
     DatabaseConfig,
     Mission,
+    ReducerRegistry,
     ResultIngestionService,
     WorkflowDefinition,
     WorkflowService,
@@ -228,6 +234,78 @@ def test_two_step_workflow_is_sequential_idempotent_and_routed(
     assert completed.run.status is WorkflowStatus.COMPLETED
     assert all(step.status is WorkflowStepStatus.COMPLETED for step in completed.steps)
     assert len(transport.submissions) == 2
+
+
+def test_workflow_projects_only_explicit_credential_and_secret_grants(
+    database: CoreDatabase,
+) -> None:
+    _seed_mission(database)
+    discovery_run = CapabilityRun(
+        run_id=CapabilityRunRef("run-workflow-secret-discovery"),
+        capability_id="test.secret_discovery",
+        operation="discover",
+        mission_ref=MISSION_REF,
+        status=CapabilityRunStatus.COMPLETED,
+        created_at=NOW,
+        finished_at=NOW,
+    )
+    with database.unit_of_work() as work:
+        work.runs.add(discovery_run)
+    secret = CoreSecretService(database, clock=lambda: NOW).store(
+        mission_ref=MISSION_REF,
+        value=b"workflow-secret-value",
+        secret_type="password",
+        secret_ref=SecretRef("secret-workflow-projection"),
+    )
+    observation = Observation(
+        observation_id=ObservationRef("observation-workflow-credential"),
+        type="credential.candidate",
+        value={
+            "credential_type": "username_password",
+            "username": "workflow-user",
+            "secrets": [{"role": "password", "secret_ref": str(secret.secret_ref)}],
+        },
+        run_ref=discovery_run.run_id,
+        observed_at=NOW,
+    )
+    with database.unit_of_work() as work:
+        work.observations.append(observation)
+        ReducerRegistry().materialize(observation.observation_id, work)
+        credential = work.credentials.list_for_mission(MISSION_REF)[0]
+
+    definition = WorkflowDefinition(
+        definition_id="procedure.test.secret",
+        version="1",
+        steps=(
+            WorkflowStepDefinition(
+                step_id="use-secret",
+                capability_id="test.registry_capability",
+                operation="assess",
+                inputs={"credential_ref": str(credential.credential_ref)},
+                credential_refs=(credential.credential_ref,),
+            ),
+        ),
+    )
+    transport = RecordingTransport()
+    _registry, workflows = _runtime(database, transport)
+    started = asyncio.run(
+        workflows.start(
+            definition,
+            MISSION_REF,
+            workflow_run_ref=WorkflowRunRef("workflow-secret-projection"),
+        )
+    )
+    assert started.steps[0].status is WorkflowStepStatus.ACTIVE
+    delivery = transport.submissions[0][1]
+    assert tuple(item.credential_ref for item in delivery.credentials) == (
+        credential.credential_ref,
+    )
+    assert tuple(item.secret_ref for item in delivery.secret_grants) == (secret.secret_ref,)
+    assert delivery.secret_grants[0].value == b"workflow-secret-value"
+    assert (
+        CoreSecretService(database).access_records(secret.secret_ref)[0].run_ref
+        == delivery.invocation.run_id
+    )
 
 
 def test_restart_between_dispatch_and_result_does_not_redispatch(

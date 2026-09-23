@@ -1,6 +1,7 @@
 """Local Capability Runtime integration tests with production Node services."""
 
 import asyncio
+import hashlib
 import json
 import os
 import sys
@@ -17,6 +18,7 @@ from boberagent_contracts import (
     DependencyDeclaration,
     DependencyType,
     MissionRef,
+    SecretRef,
     WorkflowRunRef,
 )
 from boberagent_execution_node import (
@@ -35,6 +37,7 @@ from boberagent_execution_node.persistence import (
 )
 from boberagent_execution_node_test_capabilities import capability_manifest
 from boberagent_sdk import AssetSnapshot, MissionContext, UtcClock
+from boberagent_transport import SecretGrant
 
 MISSION_REF = MissionRef("mission-node-tests")
 ASSET_REF = AssetRef("asset-node-tests")
@@ -56,12 +59,16 @@ def _write_manifest(
     capability_id: str = "test.synthetic_runtime",
     implementation: str = ("boberagent_execution_node_test_capabilities:SyntheticCapability"),
     dependencies: tuple[DependencyDeclaration, ...] | None = None,
+    operations: tuple[str, ...] = ("run", "sleep"),
+    input_model: str = "boberagent_execution_node_test_capabilities:SyntheticInput",
 ) -> None:
     root.mkdir(parents=True)
     manifest = capability_manifest(
         capability_id=capability_id,
         implementation=implementation,
         dependencies=_python_dependency() if dependencies is None else dependencies,
+        operations=operations,
+        input_model=input_model,
     )
     (root / "capability.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
@@ -208,6 +215,58 @@ def test_synthetic_capability_runtime_persists_and_replays_after_restart(
         await reopened.shutdown()
 
     asyncio.run(scenario())
+
+
+def test_authorized_secret_resolution_and_logging_redaction(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    capability_root = tmp_path / "capabilities"
+    _write_manifest(
+        capability_root,
+        capability_id="test.secret_consumer",
+        implementation=("boberagent_execution_node_test_capabilities:SecretConsumerCapability"),
+        dependencies=(),
+        operations=("verify",),
+        input_model=("boberagent_execution_node_test_capabilities:SecretConsumerInput"),
+    )
+    configuration = _configuration(tmp_path / "runtime", capability_root)
+    plaintext = b"harmless-test-password"
+    secret_ref = SecretRef("secret-node-test")
+    invocation = CapabilityInvocation(
+        run_id=CapabilityRunRef("run-secret-consumer"),
+        capability_id="test.secret_consumer",
+        operation="verify",
+        mission_ref=MISSION_REF,
+        inputs={
+            "secret_ref": str(secret_ref),
+            "expected_sha256": hashlib.sha256(plaintext).hexdigest(),
+        },
+    )
+    environment = LocalInvocationEnvironment(
+        mission=MissionContext(mission_ref=MISSION_REF),
+        secret_grants=(
+            SecretGrant(
+                secret_ref=secret_ref,
+                value=plaintext,
+                authorized_purpose="test.secret_consumer:verify",
+            ),
+        ),
+    )
+
+    async def scenario() -> None:
+        node = ExecutionNode(configuration)
+        await node.initialize()
+        result = await node.execute_local(invocation, environment)
+        assert result.execution_status is CapabilityRunStatus.COMPLETED
+        assert result.outcome.category is CapabilityOutcomeCategory.SUCCESS
+        assert plaintext.decode() not in result.model_dump_json()
+        await node.shutdown()
+
+    with caplog.at_level("INFO", logger="boberagent.execution_node.capability"):
+        asyncio.run(scenario())
+    assert plaintext.decode() not in caplog.text
+    assert "<REDACTED>" in caplog.text
+    assert str(secret_ref) in caplog.text
 
 
 def test_large_process_output_spills_to_artifact(tmp_path: Path) -> None:

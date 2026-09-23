@@ -12,6 +12,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -81,6 +82,8 @@ class WorkflowStepRunRow(Base):
     capability_id: Mapped[str] = mapped_column(String(255), nullable=False)
     operation: Mapped[str] = mapped_column(String(128), nullable=False)
     inputs_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False, default=dict)
+    credential_refs_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    secret_refs_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     success_policy: Mapped[str] = mapped_column(String(32), nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False)
     capability_run_id: Mapped[str | None] = mapped_column(
@@ -179,6 +182,96 @@ class ObservationRow(Base):
     evidence_refs_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     materialization_status: Mapped[str] = mapped_column(String(32), nullable=False)
     materialization_error: Mapped[str | None] = mapped_column(Text)
+
+
+class SecretRow(Base):
+    __tablename__ = "secrets"
+    __table_args__: tuple[Index, Index] = (
+        Index("ix_secrets_mission_id", "mission_id"),
+        Index("ix_secrets_status", "status"),
+    )
+
+    secret_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    mission_id: Mapped[str] = mapped_column(
+        ForeignKey("missions.mission_id", ondelete="CASCADE"), nullable=False
+    )
+    secret_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    value_blob: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    created_by_run_id: Mapped[str | None] = mapped_column(
+        ForeignKey("capability_runs.run_id", ondelete="SET NULL")
+    )
+    source_observation_id: Mapped[str | None] = mapped_column(
+        ForeignKey("observations.observation_id", ondelete="SET NULL")
+    )
+    source_artifact_refs_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    metadata_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False, default=dict)
+
+
+class CredentialRow(Base):
+    __tablename__ = "credentials"
+    __table_args__: tuple[Index, Index] = (
+        Index("ix_credentials_mission_id", "mission_id"),
+        Index("ix_credentials_status", "status"),
+    )
+
+    credential_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    mission_id: Mapped[str] = mapped_column(
+        ForeignKey("missions.mission_id", ondelete="CASCADE"), nullable=False
+    )
+    credential_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    username: Mapped[str | None] = mapped_column(String(255))
+    identity_ref: Mapped[str | None] = mapped_column(String(255))
+    secret_bindings_json: Mapped[list[JsonObject]] = mapped_column(JSON, nullable=False)
+    scope_refs_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_observation_refs_json: Mapped[list[str]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    source_artifact_refs_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    metadata_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False, default=dict)
+
+
+class CoreEventRow(Base):
+    __tablename__ = "core_events"
+    __table_args__: tuple[Index, Index] = (
+        Index("ix_core_events_mission_id", "mission_id"),
+        Index("ix_core_events_type", "event_type"),
+    )
+
+    event_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    event_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    mission_id: Mapped[str] = mapped_column(
+        ForeignKey("missions.mission_id", ondelete="CASCADE"), nullable=False
+    )
+    source_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    payload_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
+
+
+class SecretAccessRow(Base):
+    __tablename__ = "secret_access_records"
+    __table_args__: tuple[Index, Index] = (
+        Index("ix_secret_access_secret_id", "secret_id"),
+        Index("ix_secret_access_run_id", "run_id"),
+    )
+
+    access_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    secret_id: Mapped[str] = mapped_column(
+        ForeignKey("secrets.secret_id", ondelete="CASCADE"), nullable=False
+    )
+    mission_id: Mapped[str] = mapped_column(
+        ForeignKey("missions.mission_id", ondelete="CASCADE"), nullable=False
+    )
+    run_id: Mapped[str | None] = mapped_column(
+        ForeignKey("capability_runs.run_id", ondelete="SET NULL")
+    )
+    accessor: Mapped[str] = mapped_column(String(32), nullable=False)
+    purpose: Mapped[str] = mapped_column(String(255), nullable=False)
+    accessed_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
 
 
 class ServiceRow(Base):

@@ -8,6 +8,7 @@ from typing import Protocol
 from boberagent_contracts import Observation, ObservationRef
 from pydantic import ValidationError
 
+from boberagent_core.credentials import CredentialCandidateReducer
 from boberagent_core.models import MaterializationStatus
 from boberagent_core.persistence.repositories import CoreUnitOfWork
 
@@ -24,11 +25,14 @@ class ReducerRegistry:
     """Dispatch normalized Observation types without a monolithic reducer."""
 
     def __init__(self, reducers: Mapping[str, ObservationReducer] | None = None) -> None:
-        default_reducer = NetworkServiceReducer()
+        default_reducers: tuple[ObservationReducer, ...] = (
+            NetworkServiceReducer(),
+            CredentialCandidateReducer(),
+        )
         self._reducers = (
             dict(reducers)
             if reducers is not None
-            else {default_reducer.observation_type: default_reducer}
+            else {reducer.observation_type: reducer for reducer in default_reducers}
         )
 
     def materialize(

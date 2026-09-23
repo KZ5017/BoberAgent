@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 
 from boberagent_contracts import (
     CONTRACT_VERSION,
@@ -26,6 +27,7 @@ from boberagent_contracts import (
     ResultObjectType,
     RetrySemantics,
     SchemaDeclaration,
+    SecretRef,
     SideEffectCategory,
     SideEffectDeclaration,
     SideEffectLevel,
@@ -194,6 +196,44 @@ class InteractiveSyntheticCapability(Capability):
         )
 
 
+class SecretConsumerInput(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    secret_ref: SecretRef
+    expected_sha256: str
+
+
+class SecretConsumerCapability(Capability):
+    """Test-only proof that an authorized Run receives usable secret bytes."""
+
+    capability_id = "test.secret_consumer"
+
+    async def execute(
+        self,
+        operation: str,
+        ctx: ExecutionContext,
+        inputs: BaseModel,
+    ) -> CapabilityResult:
+        if operation != "verify" or not isinstance(inputs, SecretConsumerInput):
+            raise ValueError("unsupported Secret consumer operation/input")
+        value = await ctx.secrets.resolve(
+            inputs.secret_ref,
+            purpose="test.secret_consumer:verify",
+        )
+        verified = hashlib.sha256(value.reveal_bytes()).hexdigest() == inputs.expected_sha256
+        return CapabilityResult(
+            run_ref=ctx.invocation.run_id,
+            execution_status=CapabilityRunStatus.COMPLETED,
+            outcome=CapabilityOutcome(
+                category=(
+                    CapabilityOutcomeCategory.SUCCESS
+                    if verified
+                    else CapabilityOutcomeCategory.NEGATIVE
+                )
+            ),
+        )
+
+
 def capability_manifest() -> dict[str, object]:
     definition = CapabilityDefinition(
         capability_id="test.transport_synthetic",
@@ -286,4 +326,48 @@ def interaction_capability_manifest() -> dict[str, object]:
         "definition": definition.model_dump(mode="json"),
         "implementation": f"{module}:InteractiveSyntheticCapability",
         "input_models": {"run": f"{module}:InteractiveInput"},
+    }
+
+
+def secret_capability_manifest() -> dict[str, object]:
+    definition = CapabilityDefinition(
+        capability_id="test.secret_consumer",
+        contract_version=CONTRACT_VERSION,
+        implementation_version="0.1.0",
+        title="Synthetic Secret consumer",
+        description="Test-only capability resolving an explicitly granted SecretRef.",
+        operations=(
+            OperationDefinition(
+                name="verify",
+                title="Verify Secret",
+                description="Resolve and hash a harmless synthetic Secret.",
+                input_schema=SchemaDeclaration(inline={"type": "object"}),
+                result_types=(),
+                retry_semantics=RetrySemantics.SAFE,
+            ),
+        ),
+        execution=ExecutionCharacteristics(
+            duration=ExecutionDuration.ONE_SHOT,
+            interaction=ExecutionInteraction.STATELESS,
+        ),
+        interaction_surfaces=InteractionSurfaceDeclaration(
+            local_compute=True,
+            target_network=False,
+            internet_access=False,
+            active_session=False,
+            managed_resource=False,
+        ),
+        side_effects=(
+            SideEffectDeclaration(
+                category=SideEffectCategory.LOCAL_FILESYSTEM,
+                level=SideEffectLevel.NONE,
+            ),
+        ),
+        dependencies=(),
+    )
+    module = "transport_test_capability"
+    return {
+        "definition": definition.model_dump(mode="json"),
+        "implementation": f"{module}:SecretConsumerCapability",
+        "input_models": {"verify": f"{module}:SecretConsumerInput"},
     }

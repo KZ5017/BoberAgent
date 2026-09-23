@@ -15,13 +15,16 @@ from boberagent_contracts import (
     CapabilityResult,
     CapabilityRunRef,
     CapabilityRunStatus,
+    CredentialRef,
     DomainRef,
     Event,
     EventRef,
+    IdentityRef,
     InteractionRef,
     InteractionResponse,
     JsonObject,
     MissionRef,
+    SecretRef,
 )
 from pydantic import (
     AwareDatetime,
@@ -36,7 +39,7 @@ from pydantic import (
 
 from .errors import MalformedMessage, UnsupportedProtocolVersion
 
-TRANSPORT_PROTOCOL_VERSION = "1.3"
+TRANSPORT_PROTOCOL_VERSION = "1.4"
 
 type NodeIdentifier = Annotated[
     str,
@@ -96,6 +99,31 @@ class AssetProjection(TransportModel):
     metadata: JsonObject = Field(default_factory=dict)
 
 
+class CredentialSecretProjection(TransportModel):
+    role: str = Field(min_length=1, max_length=64)
+    secret_ref: SecretRef
+
+
+class CredentialProjection(TransportModel):
+    """Non-sensitive Credential metadata explicitly authorized for one Run."""
+
+    credential_ref: CredentialRef
+    credential_type: str = Field(min_length=1, max_length=64)
+    username: str | None = Field(default=None, min_length=1, max_length=255)
+    identity_ref: IdentityRef | None = None
+    secrets: tuple[CredentialSecretProjection, ...] = Field(min_length=1)
+    scope_refs: tuple[DomainRef, ...] = ()
+    metadata: JsonObject = Field(default_factory=dict)
+
+
+class SecretGrant(TransportModel):
+    """Short-lived secret material authorized for exactly one invocation projection."""
+
+    secret_ref: SecretRef
+    value: bytes = Field(repr=False)
+    authorized_purpose: str = Field(min_length=1, max_length=255)
+
+
 class InvocationDelivery(TransportModel):
     """Contract invocation plus the bounded local authorization/read projection."""
 
@@ -104,6 +132,8 @@ class InvocationDelivery(TransportModel):
     allowed_assets: tuple[AssetRef, ...] = ()
     allowed_addresses: tuple[str, ...] = ()
     assets: tuple[AssetProjection, ...] = ()
+    credentials: tuple[CredentialProjection, ...] = ()
+    secret_grants: tuple[SecretGrant, ...] = ()
 
     @model_validator(mode="after")
     def validate_projection(self) -> Self:
@@ -112,6 +142,12 @@ class InvocationDelivery(TransportModel):
         refs = [asset.asset_ref for asset in self.assets]
         if len(refs) != len(set(refs)):
             raise ValueError("Asset projections must have unique references")
+        credential_refs = [credential.credential_ref for credential in self.credentials]
+        if len(credential_refs) != len(set(credential_refs)):
+            raise ValueError("Credential projections must have unique references")
+        secret_refs = [grant.secret_ref for grant in self.secret_grants]
+        if len(secret_refs) != len(set(secret_refs)):
+            raise ValueError("Secret grants must have unique references")
         return self
 
 
@@ -348,8 +384,18 @@ def parse_outbound(data: bytes) -> OutboundEnvelope:
 
 
 def invocation_fingerprint(delivery: InvocationDelivery) -> str:
+    # Secret bytes are ephemeral delivery material, not durable invocation identity. Persisting
+    # their hash would create an unnecessary offline oracle. Stable refs remain fingerprinted.
+    canonical_delivery = delivery.model_dump(mode="json", exclude={"secret_grants"})
+    canonical_delivery["secret_grants"] = [
+        {
+            "secret_ref": str(grant.secret_ref),
+            "authorized_purpose": grant.authorized_purpose,
+        }
+        for grant in delivery.secret_grants
+    ]
     canonical = json.dumps(
-        delivery.model_dump(mode="json"),
+        canonical_delivery,
         sort_keys=True,
         separators=(",", ":"),
         ensure_ascii=True,

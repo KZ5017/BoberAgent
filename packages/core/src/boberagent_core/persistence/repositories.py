@@ -11,10 +11,12 @@ from boberagent_contracts import (
     AssetRef,
     CapabilityRun,
     CapabilityRunRef,
+    CredentialRef,
     JsonObject,
     MissionRef,
     Observation,
     ObservationRef,
+    SecretRef,
     ServiceRef,
     StorageRef,
     WorkflowRunRef,
@@ -544,6 +546,8 @@ class WorkflowStepRepository:
                 capability_id=step.definition.capability_id,
                 operation=step.definition.operation,
                 inputs_json=deepcopy(step.definition.inputs),
+                credential_refs_json=[str(ref) for ref in step.definition.credential_refs],
+                secret_refs_json=[str(ref) for ref in step.definition.secret_refs],
                 success_policy=step.definition.success_policy.value,
                 status=step.status.value,
                 capability_run_id=(
@@ -708,8 +712,13 @@ class CoreUnitOfWork:
             CapabilityProviderRepository,
             RoutingDecisionRepository,
         )
+        from boberagent_core.credentials.repository import (
+            CoreEventRepository,
+            CredentialRepository,
+        )
         from boberagent_core.interactions.repository import InteractionRepository
         from boberagent_core.results.repository import ResultIngestionRepository
+        from boberagent_core.secrets.repository import SecretRepository
         from boberagent_core.transport.repository import TransportInboxRepository
 
         self.missions = MissionRepository(session)
@@ -726,6 +735,9 @@ class CoreUnitOfWork:
         self.routing_decisions = RoutingDecisionRepository(session)
         self.result_ingestions = ResultIngestionRepository(session)
         self.interactions = InteractionRepository(session)
+        self.secrets = SecretRepository(session)
+        self.credentials = CredentialRepository(session)
+        self.core_events = CoreEventRepository(session)
 
 
 def _flush_identity(session: Session, logical_ref: DomainRef) -> None:
@@ -867,6 +879,8 @@ def _workflow_step_from_row(row: WorkflowStepRunRow) -> WorkflowStepRun:
             capability_id=row.capability_id,
             operation=row.operation,
             inputs=deepcopy(row.inputs_json),
+            credential_refs=tuple(CredentialRef(ref) for ref in row.credential_refs_json),
+            secret_refs=tuple(SecretRef(ref) for ref in row.secret_refs_json),
             success_policy=WorkflowStepSuccessPolicy(row.success_policy),
         ),
         status=WorkflowStepStatus(row.status),

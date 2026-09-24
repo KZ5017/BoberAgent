@@ -1,0 +1,53 @@
+{
+  "definition": {
+    "capability_id": "test.secret_consumer",
+    "contract_version": "1.0",
+    "implementation_version": "0.1.0",
+    "title": "Manual Secret resolution fixture",
+    "description": "Harmless manual-only proof of an explicitly granted SecretRef.",
+    "operations": [
+      {
+        "name": "verify",
+        "title": "Verify synthetic Secret",
+        "description": "Resolve one authorized SecretRef and compare its SHA-256 internally.",
+        "input_schema": {
+          "inline": {
+            "type": "object",
+            "properties": {
+              "secret_ref": {"type": "string"},
+              "expected_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+            },
+            "required": ["secret_ref", "expected_sha256"],
+            "additionalProperties": false
+          }
+        },
+        "required_references": [],
+        "result_types": [],
+        "retry_semantics": "SAFE",
+        "execution_requirements": {}
+      }
+    ],
+    "execution": {
+      "duration": "one_shot",
+      "interaction": "stateless",
+      "asynchronous": true,
+      "supports_cancellation": false,
+      "supports_checkpointing": false
+    },
+    "interaction_surfaces": {
+      "local_compute": true,
+      "target_network": false,
+      "internet_access": false,
+      "active_session": false,
+      "managed_resource": false
+    },
+    "side_effects": [
+      {"category": "local_filesystem", "level": "none"}
+    ],
+    "dependencies": []
+  },
+  "implementation": "manual_secret_resolution_capability:SecretConsumerCapability",
+  "input_models": {
+    "verify": "manual_secret_resolution_capability:SecretConsumerInput"
+  }
+}

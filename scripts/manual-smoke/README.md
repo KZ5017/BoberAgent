@@ -4,6 +4,63 @@ These scripts are not part of the automated pytest suite.
 They require an explicitly running Kali Execution Node and lab configuration.
 Do not execute them automatically from CI or normal test runs.
 
+## M16 Secret resolution smoke test
+
+This harmless fixture proves a Core-owned Secret can be granted to one Run, resolved through
+`ctx.secrets` on Kali, and verified without placing the value in a CapabilityResult. It creates no
+Credential: candidate Credential reduction is already covered by automated Core tests.
+
+From the repository root on Kali, start a dedicated Node runtime with the manual fixture:
+
+```shell
+export PYTHONPATH="$PWD/scripts/manual-smoke/secret-resolution-capability/src"
+export BOBERAGENT_MCP_TOKEN='<dedicated-test-token>'
+uv run boberagent-node-mcp \
+  --runtime-directory /var/lib/boberagent-secret-smoke \
+  --bind-host 0.0.0.0 --port 8443 \
+  --tls-certificate /etc/boberagent/node.crt \
+  --tls-private-key /etc/boberagent/node.key \
+  --capability-path scripts/manual-smoke/secret-resolution-capability
+```
+
+From WSL, use the Node ID printed at startup and an explicit temporary Core directory:
+
+```shell
+export BOBERAGENT_MCP_TOKEN='<dedicated-test-token>'
+uv run python scripts/manual-smoke/secret_resolution_smoke_test.py \
+  --endpoint https://<kali-host>:8443/mcp \
+  --node-id <node-id> \
+  --core-runtime-directory /tmp/boberagent-secret-smoke-core \
+  --ca-file /path/to/lab-ca.pem
+```
+
+For an isolated plaintext lab, replace `--ca-file` with
+`--allow-insecure-remote-transport` and use an `http://` endpoint. The script prints its Core
+database path, MissionRef, SecretRef, and RunRef, then checks the remote Result, Core ingestion,
+and the `CAPABILITY_GRANT` audit. It never prints the synthetic value.
+
+Afterward, substitute the printed database path and refs to compare ordinary metadata with an
+explicit operator reveal:
+
+```shell
+uv run boberagent --database <printed-core-database> secret show <printed-secret-ref> \
+  --mission <printed-mission-ref>
+uv run boberagent --database <printed-core-database> secret reveal <printed-secret-ref> \
+  --mission <printed-mission-ref>
+```
+
+The reveal command intentionally exposes the harmless test value. This harness does not create a
+CredentialRef. If one exists from a separate Core-local candidate flow, its equivalent checks are:
+
+```shell
+uv run boberagent --database <core-database> credential show <credential-ref> \
+  --mission <mission-ref>
+uv run boberagent --database <core-database> credential reveal <credential-ref> \
+  --mission <mission-ref> --role password
+```
+
+Ordinary `show` output remains metadata-only; `reveal` output is sensitive by design.
+
 ## Durable human-interaction smoke test
 
 This harmless fixture proves `CONFIRMATION → TEXT → SINGLE_CHOICE` across WSL Core and a live Kali

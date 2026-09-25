@@ -20,6 +20,7 @@ from boberagent_core.knowledge import (
     KnowledgeStatus,
     ProcedureId,
     ProcedureRegistry,
+    SemanticUnavailable,
     UnsupportedKnowledgeRoute,
 )
 from pydantic import ValidationError
@@ -275,7 +276,7 @@ def test_semantic_and_external_routes_are_explicitly_unavailable(tmp_path: Path)
         )
     )
     assert exact.route is KnowledgeRoute.PROCEDURE_ID
-    with pytest.raises(UnsupportedKnowledgeRoute, match="M18"):
+    with pytest.raises(SemanticUnavailable, match="not configured"):
         router.resolve(KnowledgeRequest(semantic_query="similar scanner failure"))
     with pytest.raises(UnsupportedKnowledgeRoute, match="external"):
         router.resolve(KnowledgeRequest(requires_current_external=True))

@@ -55,6 +55,10 @@ class KnowledgeRepository:
         tool: str | None = None,
         capability_id: str | None = None,
         procedure_id: ProcedureId | None = None,
+        kind: str | None = None,
+        tag: str | None = None,
+        platform: str | None = None,
+        version_applicability: str | None = None,
     ) -> tuple[KnowledgeDocument, ...]:
         values = (
             self._by_version.values()
@@ -72,6 +76,13 @@ class KnowledgeRepository:
                     and (tool is None or item.tool == tool)
                     and (capability_id is None or capability_id in item.capability_ids)
                     and (procedure_id is None or procedure_id in item.procedure_ids)
+                    and (kind is None or item.kind == kind)
+                    and (tag is None or tag in item.tags)
+                    and (platform is None or item.platform == platform)
+                    and (
+                        version_applicability is None
+                        or item.version_applicability == version_applicability
+                    )
                 ),
                 key=lambda item: (item.knowledge_id, item.version),
             )

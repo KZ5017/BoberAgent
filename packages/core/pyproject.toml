@@ -13,7 +13,9 @@ dependencies = [
     "boberagent-contracts",
     "boberagent-transport",
     "boberagent-transport-mcp",
+    "httpx>=0.28,<1",
     "pydantic>=2.12,<3",
+    "qdrant-client>=1.15,<2",
     "sqlalchemy>=2.0,<3",
 ]
 

@@ -1,5 +1,6 @@
-"""Deterministic, file-backed reusable Knowledge services owned by Core."""
+"""Deterministic Knowledge and optional derived semantic discovery owned by Core."""
 
+from .chunking import CHUNKING_VERSION, EMBEDDING_INPUT_VERSION, chunk_source
 from .markdown import CuratedMarkdownLoader, KnowledgeSourceError
 from .models import (
     KnowledgeDocument,
@@ -12,6 +13,7 @@ from .models import (
     ProcedureStep,
     SourceProvenance,
 )
+from .openai_embeddings import EmbeddingHTTPConfiguration, OpenAICompatibleEmbeddingProvider
 from .procedures import ProcedureRegistry
 from .repository import KnowledgeConflict, KnowledgeRepository
 from .router import (
@@ -21,9 +23,40 @@ from .router import (
     KnowledgeRouter,
     UnsupportedKnowledgeRoute,
 )
+from .semantic import (
+    EmbeddingAuthenticationError,
+    EmbeddingBatch,
+    EmbeddingConfigurationError,
+    EmbeddingDimensionError,
+    EmbeddingError,
+    EmbeddingProvider,
+    EmbeddingResponseError,
+    EmbeddingUnavailableError,
+    IndexManifest,
+    SemanticChunk,
+    SemanticFilters,
+    SemanticHit,
+    SemanticIndex,
+    SemanticIndexIncompatible,
+    SemanticIndexStale,
+    SemanticRetrievalService,
+    SemanticUnavailable,
+)
 
 __all__ = [
+    "CHUNKING_VERSION",
+    "EMBEDDING_INPUT_VERSION",
     "CuratedMarkdownLoader",
+    "EmbeddingAuthenticationError",
+    "EmbeddingBatch",
+    "EmbeddingConfigurationError",
+    "EmbeddingDimensionError",
+    "EmbeddingError",
+    "EmbeddingHTTPConfiguration",
+    "EmbeddingProvider",
+    "EmbeddingResponseError",
+    "EmbeddingUnavailableError",
+    "IndexManifest",
     "KnowledgeConflict",
     "KnowledgeDocument",
     "KnowledgeId",
@@ -36,10 +69,20 @@ __all__ = [
     "KnowledgeSourceKind",
     "KnowledgeStatus",
     "MarkdownHeading",
+    "OpenAICompatibleEmbeddingProvider",
     "ProcedureDefinition",
     "ProcedureId",
     "ProcedureRegistry",
     "ProcedureStep",
+    "SemanticChunk",
+    "SemanticFilters",
+    "SemanticHit",
+    "SemanticIndex",
+    "SemanticIndexIncompatible",
+    "SemanticIndexStale",
+    "SemanticRetrievalService",
+    "SemanticUnavailable",
     "SourceProvenance",
     "UnsupportedKnowledgeRoute",
+    "chunk_source",
 ]

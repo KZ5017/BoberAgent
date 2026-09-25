@@ -1,4 +1,4 @@
-"""Core-facing deterministic Knowledge routing, without M18/M19 fallbacks."""
+"""Core-facing Knowledge routing: deterministic authority before semantic discovery."""
 
 from __future__ import annotations
 
@@ -20,16 +20,18 @@ from .models import (
 )
 from .procedures import ProcedureRegistry
 from .repository import KnowledgeConflict, KnowledgeRepository
+from .semantic import SemanticFilters, SemanticHit, SemanticRetrievalService, SemanticUnavailable
 
 
 class UnsupportedKnowledgeRoute(ValueError):
-    """A requested semantic or external route is deliberately unavailable in M17."""
+    """A requested external route is deliberately unavailable."""
 
 
 class KnowledgeRoute(StrEnum):
     PROCEDURE_ID = "PROCEDURE_ID"
     KNOWLEDGE_ID = "KNOWLEDGE_ID"
     STRUCTURED = "STRUCTURED"
+    SEMANTIC = "SEMANTIC"
 
 
 class KnowledgeRequest(CoreModel):
@@ -45,8 +47,14 @@ class KnowledgeRequest(CoreModel):
     domain: str | None = None
     protocol: str | None = None
     tool: str | None = None
+    kind: str | None = None
+    tag: str | None = None
+    platform: str | None = None
+    procedure_filter: ProcedureId | None = None
+    version_applicability: str | None = None
     status: KnowledgeStatus = KnowledgeStatus.CANONICAL
     semantic_query: str | None = None
+    semantic_limit: int = Field(default=10, ge=1, le=50)
     requires_current_external: bool = False
 
     @model_validator(mode="after")
@@ -62,6 +70,7 @@ class KnowledgeResolution(CoreModel):
     route: KnowledgeRoute
     procedures: tuple[ProcedureDefinition, ...] = ()
     documents: tuple[KnowledgeDocument, ...] = ()
+    semantic_hits: tuple[SemanticHit, ...] = ()
 
 
 class KnowledgeRouter:
@@ -74,11 +83,13 @@ class KnowledgeRouter:
         *,
         source_root: Path | None = None,
         known_capability_ids: frozenset[str] | None = None,
+        semantic_service: SemanticRetrievalService | None = None,
     ) -> None:
         self.repository = repository
         self.procedures = procedures
         self._source_root = source_root
         self._known_capability_ids = known_capability_ids
+        self._semantic_service = semantic_service
         self._validate_references()
 
     @classmethod
@@ -87,6 +98,7 @@ class KnowledgeRouter:
         root: Path,
         *,
         known_capability_ids: frozenset[str] | None = None,
+        semantic_service: SemanticRetrievalService | None = None,
     ) -> KnowledgeRouter:
         loader = CuratedMarkdownLoader(root)
         repository = KnowledgeRepository.from_directory(loader)
@@ -98,6 +110,7 @@ class KnowledgeRouter:
             procedures,
             source_root=root,
             known_capability_ids=known_capability_ids,
+            semantic_service=semantic_service,
         )
 
     def reload(self) -> KnowledgeRouter:
@@ -106,8 +119,17 @@ class KnowledgeRouter:
         if self._source_root is None:
             raise ValueError("router was not created from a source directory")
         return self.from_directory(
-            self._source_root, known_capability_ids=self._known_capability_ids
+            self._source_root,
+            known_capability_ids=self._known_capability_ids,
+            semantic_service=self._semantic_service,
         )
+
+    def refresh_semantic(self) -> bool:
+        """Explicitly rebuild derived state from this validated M17 snapshot."""
+
+        if self._semantic_service is None:
+            raise SemanticUnavailable("semantic retrieval is not configured")
+        return self._semantic_service.refresh(self.repository, self.procedures)
 
     def lookup_procedure(
         self, procedure_id: ProcedureId, *, version: int | None = None
@@ -119,7 +141,7 @@ class KnowledgeRouter:
 
     def resolve(self, request: KnowledgeRequest) -> KnowledgeResolution:
         if request.requires_current_external:
-            raise UnsupportedKnowledgeRoute("external research is not available in M17")
+            raise UnsupportedKnowledgeRoute("external research is not available in M18")
         if request.procedure_id is not None:
             procedure = self.procedures.get(request.procedure_id, version=request.version)
             return KnowledgeResolution(
@@ -133,7 +155,32 @@ class KnowledgeRouter:
                 documents=(document,) if document is not None else (),
             )
         if request.semantic_query is not None:
-            raise UnsupportedKnowledgeRoute("semantic retrieval belongs to M18")
+            if self._semantic_service is None:
+                raise SemanticUnavailable("semantic retrieval is not configured")
+            hits = self._semantic_service.search(
+                request.semantic_query,
+                filters=SemanticFilters(
+                    status=request.status,
+                    kind=request.kind,
+                    domain=request.domain,
+                    tag=request.tag,
+                    technology=request.technology,
+                    platform=request.platform,
+                    protocol=request.protocol,
+                    tool=request.tool,
+                    capability_id=request.capability_id,
+                    procedure_filter=request.procedure_filter,
+                    version_applicability=request.version_applicability,
+                    goal_type=request.goal_type,
+                    environment=request.environment,
+                    required_state=request.required_state,
+                    produced_state=request.produced_state,
+                ),
+                limit=request.semantic_limit,
+                repository=self.repository,
+                procedures=self.procedures,
+            )
+            return KnowledgeResolution(route=KnowledgeRoute.SEMANTIC, semantic_hits=hits)
         fields = (
             request.goal_type,
             request.environment,
@@ -144,6 +191,11 @@ class KnowledgeRouter:
             request.domain,
             request.protocol,
             request.tool,
+            request.kind,
+            request.tag,
+            request.platform,
+            request.procedure_filter,
+            request.version_applicability,
         )
         if not any(field is not None for field in fields):
             raise ValueError("structured Knowledge lookup requires at least one metadata filter")
@@ -163,6 +215,11 @@ class KnowledgeRouter:
             protocol=request.protocol,
             tool=request.tool,
             capability_id=request.capability_id,
+            procedure_id=request.procedure_filter,
+            kind=request.kind,
+            tag=request.tag,
+            platform=request.platform,
+            version_applicability=request.version_applicability,
         )
         if any(
             field is not None
@@ -174,7 +231,19 @@ class KnowledgeRouter:
             )
         ):
             documents = ()
-        if any(field is not None for field in (request.domain, request.protocol, request.tool)):
+        if any(
+            field is not None
+            for field in (
+                request.domain,
+                request.protocol,
+                request.tool,
+                request.kind,
+                request.tag,
+                request.platform,
+                request.procedure_filter,
+                request.version_applicability,
+            )
+        ):
             procedures = ()
         return KnowledgeResolution(
             route=KnowledgeRoute.STRUCTURED,

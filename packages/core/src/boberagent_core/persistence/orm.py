@@ -299,6 +299,79 @@ class ServiceRow(Base):
     provenance_refs_json: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
 
 
+class VulnerabilityHypothesisRow(Base):
+    __tablename__ = "vulnerability_hypotheses"
+    __table_args__: tuple[Index] = (Index("ix_hypotheses_mission_id", "mission_id"),)
+
+    hypothesis_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    mission_id: Mapped[str] = mapped_column(ForeignKey("missions.mission_id"), nullable=False)
+    asset_id: Mapped[str] = mapped_column(ForeignKey("assets.asset_id"), nullable=False)
+    service_id: Mapped[str | None] = mapped_column(ForeignKey("services.service_id"))
+    claim: Mapped[str] = mapped_column(String(512), nullable=False)
+    vulnerability_ids_json: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    product: Mapped[str | None] = mapped_column(String(128))
+    version: Mapped[str | None] = mapped_column(String(128))
+    observation_refs_json: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    provenance: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+
+
+class ResearchAttemptRow(Base):
+    __tablename__ = "research_attempts"
+    __table_args__: tuple[Index] = (Index("ix_research_attempts_hypothesis_id", "hypothesis_id"),)
+
+    attempt_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    hypothesis_id: Mapped[str] = mapped_column(
+        ForeignKey("vulnerability_hypotheses.hypothesis_id"), nullable=False
+    )
+    provider_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    request_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    diagnostic: Mapped[str | None] = mapped_column(String(512))
+
+
+class PoCCandidateRow(Base):
+    __tablename__ = "poc_candidates"
+    __table_args__: tuple[UniqueConstraint, Index] = (
+        UniqueConstraint("hypothesis_id", "source_identity", name="uq_poc_candidate_source"),
+        Index("ix_poc_candidates_hypothesis_id", "hypothesis_id"),
+    )
+
+    candidate_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    mission_id: Mapped[str] = mapped_column(ForeignKey("missions.mission_id"), nullable=False)
+    hypothesis_id: Mapped[str] = mapped_column(
+        ForeignKey("vulnerability_hypotheses.hypothesis_id"), nullable=False
+    )
+    source_identity: Mapped[str] = mapped_column(String(2048), nullable=False)
+    source_class: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_uri: Mapped[str] = mapped_column(String(2048), nullable=False)
+    first_seen_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+
+
+class ResearchSourceHitRow(Base):
+    __tablename__ = "research_source_hits"
+    __table_args__: tuple[Index, Index] = (
+        Index("ix_research_source_hits_attempt_id", "attempt_id"),
+        Index("ix_research_source_hits_candidate_id", "candidate_id"),
+    )
+
+    hit_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    attempt_id: Mapped[str] = mapped_column(
+        ForeignKey("research_attempts.attempt_id"), nullable=False
+    )
+    candidate_id: Mapped[str | None] = mapped_column(ForeignKey("poc_candidates.candidate_id"))
+    provider_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    source_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
+    source_identity: Mapped[str | None] = mapped_column(String(2048))
+    decision: Mapped[str] = mapped_column(String(32), nullable=False)
+    decision_reason: Mapped[str | None] = mapped_column(String(255))
+    observed_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+
+
 class TransportInboxRow(Base):
     __tablename__ = "transport_inbox"
     __table_args__: tuple[Index, Index] = (

@@ -416,6 +416,10 @@ class ServiceRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
+    def get(self, service_ref: ServiceRef) -> Service | None:
+        row = self._session.get(ServiceRow, str(service_ref))
+        return None if row is None else _service_from_row(row)
+
     def get_by_endpoint(self, asset_ref: AssetRef, transport: str, port: int) -> Service | None:
         row = self._session.scalar(
             select(ServiceRow).where(
@@ -717,6 +721,7 @@ class CoreUnitOfWork:
             CredentialRepository,
         )
         from boberagent_core.interactions.repository import InteractionRepository
+        from boberagent_core.research.repository import ResearchRepository
         from boberagent_core.results.repository import ResultIngestionRepository
         from boberagent_core.secrets.repository import SecretRepository
         from boberagent_core.transport.repository import TransportInboxRepository
@@ -738,6 +743,7 @@ class CoreUnitOfWork:
         self.secrets = SecretRepository(session)
         self.credentials = CredentialRepository(session)
         self.core_events = CoreEventRepository(session)
+        self.research = ResearchRepository(session)
 
 
 def _flush_identity(session: Session, logical_ref: DomainRef) -> None:

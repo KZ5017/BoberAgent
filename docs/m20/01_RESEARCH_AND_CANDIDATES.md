@@ -81,3 +81,6 @@ identity generation, dedup normalization, and lifecycle schema remain M20-A impl
 details. **Deferred to M20-A live integration:** first external provider, concrete adapter
 location/configuration, and operational egress/rate limits. Do not make the domain GitHub-specific
 or bypass Mission ownership.
+
+The deterministic M20-A foundation is implemented. Its concrete lifecycle, request/admission
+rules, source normalization and smoke command are recorded in [M20-A implementation](M20A_IMPLEMENTATION.md).

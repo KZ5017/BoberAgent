@@ -1,9 +1,21 @@
-Manual cross-machine smoke tests only.
+Manual smoke tests only.
 
 These scripts are not part of the automated pytest suite.
-They require an explicitly running Kali Execution Node and lab configuration.
+Most require an explicitly running Kali Execution Node and lab configuration;
+the M20-A research smoke below is completely offline.
 Do not execute them automatically from CI or normal test runs.
 
+## M20-A deterministic research smoke (offline)
+
+From the repository root run:
+
+```shell
+
+It creates a temporary Core database and verifies bounded hypothesis research, two candidates,
+a duplicate revision hit, no-match, and provider-error history. No internet, token, LM Studio,
+Kali Node, PoC download, or execution is used.
+uv run python scripts/manual-smoke/m20a_research_smoke_test.py
+```
 ## M16 Secret resolution smoke test
 
 This harmless fixture proves a Core-owned Secret can be granted to one Run, resolved through

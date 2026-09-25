@@ -11,6 +11,7 @@ dev = [
     "mypy>=1.18,<2",
     "pytest>=8.4,<9",
     "ruff>=0.13,<1",
+    "types-jsonschema>=4.25,<5",
 ]
 
 [tool.uv]

@@ -1,4 +1,4 @@
-"""Qdrant and embedding HTTP details stay behind their Core Knowledge adapters."""
+"""Derived-index, embedding, and Reasoner HTTP details stay adapter-local."""
 
 from __future__ import annotations
 
@@ -11,8 +11,12 @@ CORE_SOURCE = Path(__file__).resolve().parents[2] / "packages/core/src/boberagen
 def test_qdrant_and_embedding_http_dependencies_are_adapter_local() -> None:
     violations: list[str] = []
     allowed = {
-        "qdrant_client": "qdrant_local.py",
-        "httpx": "openai_embeddings.py",
+        "qdrant_client": {("knowledge", "qdrant_local.py")},
+        "httpx": {
+            ("knowledge", "openai_embeddings.py"),
+            ("reasoning", "provider.py"),
+        },
+        "jsonschema": {("reasoning", "service.py")},
     }
     for path in sorted(CORE_SOURCE.rglob("*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -24,9 +28,9 @@ def test_qdrant_and_embedding_http_dependencies_are_adapter_local() -> None:
             else:
                 continue
             for name in names:
-                for dependency, adapter in allowed.items():
+                for dependency, adapters in allowed.items():
                     if (name == dependency or name.startswith(f"{dependency}.")) and (
-                        path.name != adapter or path.parent.name != "knowledge"
+                        (path.parent.name, path.name) not in adapters
                     ):
                         violations.append(f"{path}: {name}")
     assert not violations, violations

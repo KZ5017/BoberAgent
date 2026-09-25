@@ -182,3 +182,35 @@ Workflow steps can explicitly authorize CredentialRefs and SecretRefs. Core send
 bounded snapshots and short-lived values in the invocation projection. The Execution Node does not
 persist those values. Raw Artifact evidence is never rewritten or redacted by credential
 normalization, even when the evidence itself contains sensitive bytes. See ADR 0009.
+
+## Bounded advisory Reasoner
+
+Milestone 19 adds the public `boberagent_core.reasoning` API. A `ReasoningSelection` names one
+Mission Goal and Asset plus optional Observation/Run refs, one active Procedure, selected canonical
+Knowledge IDs, semantic hits, and advertised Capability IDs. `ContextBuilder` resolves those refs
+through Core repositories and the Knowledge Router, preserving source IDs, versions, chunk order,
+and provenance. The projection includes materialized Service metadata but does not load raw
+Observation values, Artifact bytes, Goal parameters, or Secret values. It admits Goal/World State,
+Procedure, attempts, canonical Knowledge, semantic Knowledge, then Capability metadata against a
+deterministic character budget; included/omitted counts remain visible.
+
+Selected Capability operations include their exact advertised inline input schemas as atomic,
+lower-priority context entries. `ActionProposal.inputs` is required when a proposal exists;
+proposal-level refs are distinct from operation inputs. Core does not infer or repair missing
+inputs, and the authoritative operation schema remains the validator's final check.
+
+`ReasonerProvider` is a separate async structured-generation contract, unrelated to embeddings.
+The initial `OpenAICompatibleReasonerProvider` calls only `POST /v1/chat/completions` with
+`response_format.type=json_schema`. Configure base URL, model ID, optional `SecretStr` bearer key,
+timeout, temperature, and max output tokens explicitly at an application/operator boundary. The
+provider itself never loads `.env.local`. An operator entrypoint may use the CLI's
+`operator_environment(...)` to obtain `LM_API_TOKEN` and construct the provider; no such token is
+required by Core or pytest.
+
+`ReasoningService.interpret_and_propose(selection)` returns an `InterpretationResult`, optional
+`ActionProposal`, provider/model metadata, and the exact bounded context/provenance used.
+`ProposalValidator` rejects invented refs/operations, unavailable providers, out-of-Mission
+targets, uncited sources, and inputs that fail the advertised inline JSON Schema. It never
+dispatches: validation is **not** authorization, Workflow advancement, or Capability execution.
+The provider has no tool-calling or MCP surface. No Decision persistence or autonomous planning was
+added; see ADR 0012.

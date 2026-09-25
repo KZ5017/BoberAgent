@@ -267,3 +267,27 @@ calibrated probabilities. Qdrant local permits one process/client on the index d
 time; close other users before rerunning. The index is derived data and may be discarded when not
 in use. Automated tests continue to use fake embeddings and require no LM Studio, token, network,
 GPU, or Qdrant server.
+
+## M19 advisory Reasoner (manual, local model)
+
+With an OpenAI-compatible chat model running in LM Studio, use the same private
+`LM_API_TOKEN` convention described above. From the repository root:
+
+```bash
+uv run python scripts/manual-smoke/reasoner_smoke_test.py \
+  --base-url http://127.0.0.1:1234/v1 \
+  --model qwen/qwen3.5-9b \
+  --api-key-env LM_API_TOKEN
+```
+
+`--model` is operator-selectable: `qwen3.8-9b-distill` has also been used with the same
+command. Neither model name is a Core default. The Reasoner now receives the selected
+operation's input schema through normal ContextBuilder projection, not a smoke-only hint.
+
+The script upgrades a temporary Core database, creates synthetic Mission/Asset/Goal/service
+evidence, loads the repository's curated Knowledge and Procedure, advertises one *synthetic*
+provider definition, builds a bounded context, asks the real chat model for structured output,
+then validates any proposed action. It prints the structured assessment, source provenance, and
+budget; it never dispatches the proposal or creates a Run for it. A model's invented
+reference, unsupported operation, or invalid inputs cause an explicit validation failure. This
+smoke is not collected by pytest and requires no Kali Node or network target.

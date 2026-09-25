@@ -11,6 +11,7 @@ import math
 import os
 from pathlib import Path
 
+from boberagent_cli.operator_env import operator_environment
 from boberagent_core.knowledge import (
     EmbeddingHTTPConfiguration,
     KnowledgeId,
@@ -64,7 +65,8 @@ def _run(arguments: argparse.Namespace) -> None:
     if not canonical or not any(chunk_source(document) for document in canonical):
         raise RuntimeError("no canonical reference Knowledge with indexable body was found")
 
-    token = os.environ.get(arguments.api_key_env)
+    environment = operator_environment(os.environ, project_root=Path(__file__).resolve().parents[2])
+    token = environment.get(arguments.api_key_env)
     if token is None or not token.strip():
         raise RuntimeError(
             f"bearer token environment variable is unset or blank: {arguments.api_key_env}"

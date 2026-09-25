@@ -38,6 +38,7 @@ from .errors import (
     CliNotFound,
     ExitCode,
 )
+from .operator_env import operator_environment
 from .output import OutputWriter
 
 
@@ -265,7 +266,12 @@ def run(
 def main(argv: Sequence[str] | None = None) -> int:
     import sys
 
-    return run(argv, stdout=sys.stdout, stderr=sys.stderr)
+    try:
+        environment = operator_environment(os.environ, project_root=Path.cwd())
+    except (OSError, ValueError):
+        print("error: could not load local environment configuration", file=sys.stderr)
+        return int(ExitCode.INVALID_INPUT)
+    return run(argv, stdout=sys.stdout, stderr=sys.stderr, environment=environment)
 
 
 def _dispatch(arguments: argparse.Namespace, context: CommandContext) -> None:

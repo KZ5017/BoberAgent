@@ -233,11 +233,14 @@ curated; the script indexes only canonical `reference/` and `procedures/` there.
 walks the parent Obsidian vault. If the real root has other canonical notes, they may also appear
 in ranked results.
 
-From the repository root in WSL, supply the required bearer token only through the shell
-environment and run the smoke with an explicit, separate on-disk derived-index directory:
+From the repository root in WSL, copy the safe template once, then privately edit
+`.env.local` to set `LM_API_TOKEN`. The file is Git-ignored; do not commit it. The script reads
+that file at startup, so no shell export is required. Use an explicit, separate on-disk derived-index
+directory:
 
 ```bash
-export LM_API_TOKEN='...'
+cp -n .env.example .env.local
+# Privately edit .env.local and set LM_API_TOKEN before running the command below.
 uv run python scripts/manual-smoke/semantic_retrieval_smoke_test.py \
   --knowledge-root /mnt/d/hack/OBSIDIAN/my_notes_v2/BOBER_AGENT \
   --index-directory /tmp/boberagent-m18-semantic-smoke \
@@ -245,14 +248,13 @@ uv run python scripts/manual-smoke/semantic_retrieval_smoke_test.py \
   --model text-embedding-bge-m3 \
   --api-key-env LM_API_TOKEN \
   --query "authentication is rejected because the directory service requires signed communication"
-unset LM_API_TOKEN
 ```
 
-`LM_API_TOKEN` is secret configuration: **do not commit it** or place its value in Knowledge
-Markdown, Qdrant payloads, logs, screenshots, an `.env` file, or command-line arguments. The
-repository has no dotenv convention for this smoke; no env file is needed. The script does not
-print the token or vectors and does not persist the token. `--timeout`, `--limit`, `--domain`,
-`--protocol`, and `--tool` are optional; filters narrow the real candidate set.
+An existing process `LM_API_TOKEN` overrides `.env.local`. Set `BOBERAGENT_ENV_FILE` to
+explicitly select another private env file if needed. Do not place the token in Knowledge Markdown,
+Qdrant payloads, logs, screenshots, command-line arguments, or committed files. The script does not
+print or persist the token or vectors. `--timeout`, `--limit`, `--domain`, `--protocol`, and
+`--tool` are optional; filters narrow the real candidate set.
 
 The script explicitly refreshes the derived Qdrant-local generation, queries the production
 KnowledgeRouter, checks that hits are canonical source-faithful reference chunks, and verifies

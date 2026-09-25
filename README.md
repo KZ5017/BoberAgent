@@ -45,6 +45,20 @@ Install the complete workspace and development tools:
 uv sync --all-packages --dev
 ```
 
+For optional local operator credentials, copy the committed [`.env.example`](.env.example) to
+repo-root `.env.local` and fill in the needed values privately. `.env.local` is Git-ignored;
+**never commit it or real API keys**. The operator CLI (when run from the repository root) and the
+manual semantic-retrieval smoke script read it at startup. Existing process environment values
+take precedence. Set `BOBERAGENT_ENV_FILE` to an explicit path to use a different file; a relative
+path is resolved from the selected project root. A missing default file is harmless, and automated
+tests/CI do not need one. For the current semantic smoke, the only template variable is
+`LM_API_TOKEN`; populate it yourself in `.env.local` before running the smoke.
+
+This file is local application configuration, **not** the M16 Mission-owned Secret/Credential
+Store. Core/domain libraries do not search for env files or mutate `os.environ` on import. The
+operator CLI receives a merged configuration mapping; secrets are not written to Core by this
+loader.
+
 Canonical quality commands:
 
 ```shell

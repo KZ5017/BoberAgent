@@ -206,3 +206,62 @@ The client sends only `hello-boberagent` and expects `pong-boberagent`. Core wai
 Capability Runs, then exits. No command interpreter, PTY, payload generation, or received-byte
 execution is involved. For an isolated plaintext lab only, the Core script also accepts
 `--allow-insecure-remote-transport` instead of `--ca-file`.
+
+
+## M18 semantic retrieval smoke test (local LM Studio)
+
+This is manual validation of the existing M17 loader and M18 provider/index/router path. It does not
+use Kali, MCP, a Qdrant server, model discovery, or an LLM chat endpoint. Start LM Studio's
+OpenAI-compatible server locally, load the already-verified `text-embedding-bge-m3` embedding
+model, and ensure its bearer-authenticated `POST /v1/embeddings` endpoint is reachable at
+`http://127.0.0.1:1234/v1`. The script calls only that embedding endpoint.
+
+Three small, harmless M17-compatible reference fixtures are in
+`scripts/manual-smoke/fixtures/semantic-retrieval/reference/`: LDAP signing (with multiple
+headings), HTTP service response inspection, and DNS resolution. The script **never copies**
+them or scans outside `--knowledge-root`. To include them in the real authored Knowledge root,
+the operator may explicitly check for conflicting filenames and then copy without overwriting:
+
+```bash
+KNOWLEDGE_ROOT=/mnt/d/hack/OBSIDIAN/my_notes_v2/BOBER_AGENT
+cp -n scripts/manual-smoke/fixtures/semantic-retrieval/reference/*.md "$KNOWLEDGE_ROOT/reference/"
+```
+
+The Windows equivalent Knowledge root is
+`D:\hack\OBSIDIAN\my_notes_v2\BOBER_AGENT`. Keep any existing authored notes under that root
+curated; the script indexes only canonical `reference/` and `procedures/` there. It never
+walks the parent Obsidian vault. If the real root has other canonical notes, they may also appear
+in ranked results.
+
+From the repository root in WSL, supply the required bearer token only through the shell
+environment and run the smoke with an explicit, separate on-disk derived-index directory:
+
+```bash
+export LM_API_TOKEN='...'
+uv run python scripts/manual-smoke/semantic_retrieval_smoke_test.py \
+  --knowledge-root /mnt/d/hack/OBSIDIAN/my_notes_v2/BOBER_AGENT \
+  --index-directory /tmp/boberagent-m18-semantic-smoke \
+  --base-url http://127.0.0.1:1234/v1 \
+  --model text-embedding-bge-m3 \
+  --api-key-env LM_API_TOKEN \
+  --query "authentication is rejected because the directory service requires signed communication"
+unset LM_API_TOKEN
+```
+
+`LM_API_TOKEN` is secret configuration: **do not commit it** or place its value in Knowledge
+Markdown, Qdrant payloads, logs, screenshots, an `.env` file, or command-line arguments. The
+repository has no dotenv convention for this smoke; no env file is needed. The script does not
+print the token or vectors and does not persist the token. `--timeout`, `--limit`, `--domain`,
+`--protocol`, and `--tool` are optional; filters narrow the real candidate set.
+
+The script explicitly refreshes the derived Qdrant-local generation, queries the production
+KnowledgeRouter, checks that hits are canonical source-faithful reference chunks, and verifies
+an independent exact-ID lookup of the top hit. It prints rebuilt/reused generation state and
+ranked score, Knowledge ID/version, title, heading path, section/chunk/document ordinals,
+root-relative provenance path, and a bounded JSON-escaped **source** excerpt—not synthesized
+embedding input. The LDAP-signing fixture should rank ahead of the unrelated HTTP/DNS fixtures
+for the example query; inspect the printed scores and order. Scores are cosine relevance, not
+calibrated probabilities. Qdrant local permits one process/client on the index directory at a
+time; close other users before rerunning. The index is derived data and may be discarded when not
+in use. Automated tests continue to use fake embeddings and require no LM Studio, token, network,
+GPU, or Qdrant server.

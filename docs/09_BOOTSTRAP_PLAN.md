@@ -2260,6 +2260,9 @@ Do NOT make the first LLM integration:
 
 # 100. Milestone 20 — Unknown PoC Pipeline
 
+The normative M20 scope, phased implementation roadmap and acceptance gates are in
+[`10_M20_UNKNOWN_POC_PIPELINE.md`](10_M20_UNKNOWN_POC_PIPELINE.md).
+
 Only after:
 
 ```text

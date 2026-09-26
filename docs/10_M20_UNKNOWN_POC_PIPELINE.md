@@ -1,7 +1,8 @@
 # Milestone 20 — Generic Unknown PoC Pipeline
 
-**Status:** Normative implementation plan; M20-A bounded research is implemented, while M20-B
-through M20-H remain planned. This plan refines
+**Status:** Normative implementation plan; M20-A bounded research is implemented. M20-B
+architecture decisions are accepted in ADR 0014, while M20-B implementation and M20-C through
+M20-H remain planned. This plan refines
 `09_BOOTSTRAP_PLAN.md` §100 without changing the Capability, Core, or Execution Node ownership
 rules. Implement M20-A through M20-H incrementally, but judge M20 as one milestone.
 
@@ -47,7 +48,7 @@ hypothesis; scope and the selected target never expand implicitly.
 | Stage | Planned input → output | Owner and rule |
 | --- | --- | --- |
 | Research | `VulnerabilityHypothesis` → bounded `ResearchRequest` → sourced hits / `PoCCandidate`s | Core-owned `ResearchProvider` port and admission; no download-as-execution |
-| Acquire | selected candidate → pinned source Artifact + acquisition record | Node-managed Workspace/Artifact; Core catalog after existing sync |
+| Acquire | selected candidate + historical source hit → Core `PoCAcquisition`, full-SHA GitHub ZIP Artifact + structural manifest Artifact | Core authorizes/routes/finalizes only after both Artifacts sync and verify; Node resolves/retrieves/inventories without execution |
 | Inspect | acquired Artifact → `PoCInspection` + classification and reasons | deterministic inspection, optionally bounded advisory Reasoner; no PoC execution |
 | Plan | inspection + selected target → proposed Contract `ExecutionPlan` and explicit bindings | Core validates against authoritative refs, source, scope and policy |
 | Validate | draft plan → validated plan / rejection / assistance or approval requirement | deterministic Core gate; Node revalidates enforceable constraints |
@@ -128,5 +129,7 @@ with this plan. Accepted ADRs [0005](adr/0005-durable-sequential-workflow-execut
 [0010](adr/0010-file-backed-knowledge-foundation.md),
 [0011](adr/0011-derived-semantic-retrieval.md), and
 [0012](adr/0012-bounded-advisory-reasoner.md) describe currently implemented limits.
-[ADR 0013](adr/0013-m20-research-ownership-and-candidate-identity.md) fixes the M20-A
-research ownership, hypothesis, query and candidate-identity decisions; later phases remain open.
+[ADR 0013](adr/0013-m20-research-ownership-and-candidate-identity.md) fixes M20-A research
+ownership, hypothesis, query and candidate identity. [ADR 0014](adr/0014-m20-acquisition-ownership-and-immutable-source-representation.md)
+fixes M20-B acquisition ownership, selected-hit binding, immutable source representation,
+provenance and finalization. M20-C and later-phase architecture decisions remain open.

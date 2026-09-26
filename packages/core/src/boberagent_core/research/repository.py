@@ -196,6 +196,12 @@ class ResearchRepository:
         self._session.flush()
         return _hit(row)
 
+    def get_hit(self, hit_id: int) -> ResearchSourceHit | None:
+        """Return one immutable historical row; never substitute a newer hit."""
+
+        row = self._session.get(ResearchSourceHitRow, hit_id)
+        return None if row is None else _hit(row)
+
     def list_hits(self, attempt_ref: ResearchAttemptRef) -> tuple[ResearchSourceHit, ...]:
         rows = self._session.scalars(
             select(ResearchSourceHitRow)

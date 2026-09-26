@@ -137,6 +137,14 @@ class ResultIngestionService:
                     raise ResultProvenanceError(
                         f"Result source Node conflicts with routing provenance: {run_ref}"
                     )
+            # Acquiring source is infrastructure provenance, never a target fact.
+            acquisition = work.acquisitions.get_by_run(run_ref)
+            if acquisition is not None and (
+                result.observations or result.findings or result.effects
+            ):
+                raise ResultProvenanceError(
+                    "acquisition Result may not create target Observations, Findings, or Effects"
+                )
             _validate_result_provenance(result)
             work.runs.reconcile_terminal(
                 run_ref,

@@ -45,6 +45,12 @@ from .interaction import (
 )
 from .invocation import CapabilityInvocation
 from .observation import Observation
+from .poc_acquisition import (
+    FullGitCommitSha,
+    PoCAcquisitionBounds,
+    PoCSourceAcquisitionInput,
+    PoCSourceAcquisitionReceipt,
+)
 from .refs import (
     AccessContextRef,
     ApplicationRef,
@@ -62,6 +68,7 @@ from .refs import (
     InteractionRef,
     MissionRef,
     ObservationRef,
+    PoCAcquisitionRef,
     ResourceRef,
     SecretRef,
     ServiceRef,
@@ -117,6 +124,7 @@ __all__ = [
     "ExecutionPlanStatus",
     "Finding",
     "FindingRef",
+    "FullGitCommitSha",
     "IdentityRef",
     "InteractionLifecycle",
     "InteractionOption",
@@ -134,6 +142,10 @@ __all__ = [
     "ObservationRef",
     "OperationDefinition",
     "OperationName",
+    "PoCAcquisitionBounds",
+    "PoCAcquisitionRef",
+    "PoCSourceAcquisitionInput",
+    "PoCSourceAcquisitionReceipt",
     "ResourceDescriptor",
     "ResourceRef",
     "ResultObjectType",

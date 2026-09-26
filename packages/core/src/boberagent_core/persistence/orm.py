@@ -372,6 +372,54 @@ class ResearchSourceHitRow(Base):
     observed_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
 
 
+class PoCAcquisitionRow(Base):
+    __tablename__ = "poc_acquisitions"
+    __table_args__: tuple[Index, Index] = (
+        Index("ix_poc_acquisitions_candidate_id", "candidate_id"),
+        Index("ix_poc_acquisitions_status", "status"),
+    )
+
+    acquisition_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    mission_id: Mapped[str] = mapped_column(ForeignKey("missions.mission_id"), nullable=False)
+    hypothesis_id: Mapped[str] = mapped_column(
+        ForeignKey("vulnerability_hypotheses.hypothesis_id"), nullable=False
+    )
+    candidate_id: Mapped[str] = mapped_column(
+        ForeignKey("poc_candidates.candidate_id"), nullable=False
+    )
+    selected_hit_id: Mapped[int] = mapped_column(
+        ForeignKey("research_source_hits.hit_id"), nullable=False
+    )
+    research_attempt_id: Mapped[str] = mapped_column(
+        ForeignKey("research_attempts.attempt_id"), nullable=False
+    )
+    research_provider_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    source_identity: Mapped[str] = mapped_column(String(2048), nullable=False)
+    source_uri: Mapped[str] = mapped_column(String(2048), nullable=False)
+    repository_uri: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider_repository_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    historical_ref: Mapped[str] = mapped_column(String(247), nullable=False)
+    bounds_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    run_id: Mapped[str | None] = mapped_column(ForeignKey("capability_runs.run_id"), unique=True)
+    routing_provider_id: Mapped[str | None] = mapped_column(
+        ForeignKey("capability_providers.provider_id")
+    )
+    node_id: Mapped[str | None] = mapped_column(String(255))
+    receipt_json: Mapped[JsonObject | None] = mapped_column(JSON)
+    resolved_commit_sha: Mapped[str | None] = mapped_column(String(40))
+    raw_artifact_id: Mapped[str | None] = mapped_column(ForeignKey("artifacts.artifact_id"))
+    raw_archive_sha256: Mapped[str | None] = mapped_column(String(64))
+    raw_archive_size_bytes: Mapped[int | None] = mapped_column(Integer)
+    manifest_artifact_id: Mapped[str | None] = mapped_column(ForeignKey("artifacts.artifact_id"))
+    manifest_sha256: Mapped[str | None] = mapped_column(String(64))
+    adapter_id: Mapped[str | None] = mapped_column(String(128))
+    adapter_version: Mapped[str | None] = mapped_column(String(128))
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    diagnostic: Mapped[str | None] = mapped_column(String(512))
+
+
 class TransportInboxRow(Base):
     __tablename__ = "transport_inbox"
     __table_args__: tuple[Index, Index] = (

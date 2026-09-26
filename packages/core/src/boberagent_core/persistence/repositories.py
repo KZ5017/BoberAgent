@@ -712,6 +712,7 @@ class CoreUnitOfWork:
     """Repository collection sharing one private SQLAlchemy transaction."""
 
     def __init__(self, session: Session) -> None:
+        from boberagent_core.acquisitions.repository import PoCAcquisitionRepository
         from boberagent_core.capabilities.repository import (
             CapabilityProviderRepository,
             RoutingDecisionRepository,
@@ -744,6 +745,7 @@ class CoreUnitOfWork:
         self.credentials = CredentialRepository(session)
         self.core_events = CoreEventRepository(session)
         self.research = ResearchRepository(session)
+        self.acquisitions = PoCAcquisitionRepository(session)
 
 
 def _flush_identity(session: Session, logical_ref: DomainRef) -> None:

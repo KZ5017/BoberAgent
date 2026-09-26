@@ -327,3 +327,18 @@ then validates any proposed action. It prints the structured assessment, source 
 budget; it never dispatches the proposal or creates a Run for it. A model's invented
 reference, unsupported operation, or invalid inputs cause an explicit validation failure. This
 smoke is not collected by pytest and requires no Kali Node or network target.
+## M20-B1 acquisition foundation (offline)
+
+From the repository root:
+
+```bash
+uv run python scripts/manual-smoke/m20b1_acquisition_foundation_smoke_test.py
+```
+
+This uses a disposable Core SQLite database and local synthetic bytes. It explicitly chooses
+one of two historical research hits, persists a bounded acquisition request, builds the normal
+invocation shape, reconciles a synthetic receipt before and after both verified Artifacts become
+available, and reopens Core to confirm provenance. The provider registration is an offline
+fixture, not an advertised live acquisition capability. No GitHub request, download, ZIP
+inventory, Kali Node, API token, or target interaction occurs. See
+[the B1 implementation note](../../docs/m20/M20B_IMPLEMENTATION.md).

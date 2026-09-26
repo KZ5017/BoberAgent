@@ -26,7 +26,7 @@ def test_m20_research_migration_preserves_existing_state(database_path: Path) ->
                 )
             )
         upgrade_database(database)
-        assert current_revision(database) == "0009_m20_research"
+        assert current_revision(database) == "0010_m20_acquisition"
         tables = set(inspect(database._migration_engine).get_table_names())
         assert {
             "vulnerability_hypotheses",

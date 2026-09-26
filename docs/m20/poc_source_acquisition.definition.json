@@ -1,0 +1,51 @@
+{
+  "capability_id": "poc.source_acquisition",
+  "contract_version": "1.0",
+  "implementation_version": "0.0.0+planned",
+  "title": "PoC source acquisition",
+  "description": "Acquire one explicitly selected public source snapshot as bounded immutable evidence.",
+  "operations": [
+    {
+      "name": "acquire",
+      "title": "Acquire selected source",
+      "description": "Resolve one selected historical GitHub ref and preserve a bounded raw ZIP and structural manifest.",
+      "input_schema": {"ref": "boberagent-contracts:PoCSourceAcquisitionInput"},
+      "output_schema": {"ref": "boberagent-contracts:PoCSourceAcquisitionReceipt"},
+      "required_references": ["acquisition_ref"],
+      "result_types": ["artifact", "diagnostic"],
+      "retry_semantics": "CONDITIONAL",
+      "execution_requirements": {
+        "source_kind": "github_repository",
+        "target_interaction": false,
+        "bounded_acquisition": true
+      }
+    }
+  ],
+  "execution": {
+    "duration": "one_shot",
+    "interaction": "stateless",
+    "asynchronous": true,
+    "supports_cancellation": true,
+    "supports_checkpointing": false
+  },
+  "interaction_surfaces": {
+    "local_compute": true,
+    "target_network": false,
+    "internet_access": true,
+    "active_session": false,
+    "managed_resource": false
+  },
+  "side_effects": [
+    {
+      "category": "external_network",
+      "level": "read",
+      "description": "The future provider retrieves one bounded public source archive."
+    },
+    {
+      "category": "local_filesystem",
+      "level": "write",
+      "description": "The future provider stages bytes in a managed Workspace and Artifact spool."
+    }
+  ],
+  "dependencies": []
+}

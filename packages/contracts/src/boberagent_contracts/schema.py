@@ -22,6 +22,7 @@ from .finding import Finding
 from .interaction import InteractionRequest, InteractionResponse
 from .invocation import CapabilityInvocation
 from .observation import Observation
+from .poc_acquisition import PoCSourceAcquisitionInput, PoCSourceAcquisitionReceipt
 from .resource import ResourceDescriptor
 from .result import CapabilityOutcome, CapabilityResult
 from .run import CapabilityRun
@@ -47,6 +48,8 @@ EXCHANGED_MODEL_TYPES: tuple[type[BaseModel], ...] = (
     InteractionResponse,
     Checkpoint,
     ExecutionPlan,
+    PoCSourceAcquisitionInput,
+    PoCSourceAcquisitionReceipt,
 )
 
 

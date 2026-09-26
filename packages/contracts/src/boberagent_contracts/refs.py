@@ -128,6 +128,10 @@ class ExecutionPlanRef(DomainRef):
     """Reference to structured execution intent."""
 
 
+class PoCAcquisitionRef(DomainRef):
+    """Core-owned acquisition identity used for cross-machine correlation."""
+
+
 class EventRef(DomainRef):
     """Reference to an Event envelope."""
 

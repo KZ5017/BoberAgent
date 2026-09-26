@@ -1,8 +1,8 @@
 # Milestone 20 — Generic Unknown PoC Pipeline
 
-**Status:** Normative implementation plan; M20-A bounded research is implemented. M20-B
-architecture decisions are accepted in ADR 0014, while M20-B implementation and M20-C through
-M20-H remain planned. This plan refines
+**Status:** Normative implementation plan; M20-A research and the offline M20-B1 acquisition
+foundation are implemented. ADR 0014 fixes M20-B architecture; B2–B5 and M20-C through M20-H
+remain planned. This plan refines
 `09_BOOTSTRAP_PLAN.md` §100 without changing the Capability, Core, or Execution Node ownership
 rules. Implement M20-A through M20-H incrementally, but judge M20 as one milestone.
 

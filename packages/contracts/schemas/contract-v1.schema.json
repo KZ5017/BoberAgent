@@ -9,6 +9,12 @@
       "title": "AccessMode",
       "type": "string"
     },
+    "AcquisitionName": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._-]+$",
+      "type": "string"
+    },
     "ArtifactDescriptor": {
       "additionalProperties": false,
       "description": "Logical metadata for persistent evidence or generated non-secret data.",
@@ -1200,6 +1206,10 @@
       "title": "Finding",
       "type": "object"
     },
+    "FullGitCommitSha": {
+      "pattern": "^[0-9a-f]{40}$",
+      "type": "string"
+    },
     "InteractionOption": {
       "additionalProperties": false,
       "description": "One safe, stable operator choice; values are data, never executable input.",
@@ -1655,6 +1665,260 @@
       "minLength": 1,
       "pattern": "^[a-z][a-z0-9_-]*$",
       "type": "string"
+    },
+    "PoCAcquisitionBounds": {
+      "additionalProperties": false,
+      "description": "Every security-critical acquisition limit is explicit; no unbounded default exists.",
+      "properties": {
+        "max_compression_ratio": {
+          "maximum": 10000,
+          "minimum": 1,
+          "title": "Max Compression Ratio",
+          "type": "number"
+        },
+        "max_directory_depth": {
+          "maximum": 256,
+          "minimum": 1,
+          "title": "Max Directory Depth",
+          "type": "integer"
+        },
+        "max_download_bytes": {
+          "maximum": 17179869184,
+          "minimum": 1,
+          "title": "Max Download Bytes",
+          "type": "integer"
+        },
+        "max_file_count": {
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Max File Count",
+          "type": "integer"
+        },
+        "max_outbound_requests": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Max Outbound Requests",
+          "type": "integer"
+        },
+        "max_path_length": {
+          "maximum": 4096,
+          "minimum": 1,
+          "title": "Max Path Length",
+          "type": "integer"
+        },
+        "max_redirects": {
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Max Redirects",
+          "type": "integer"
+        },
+        "max_single_file_bytes": {
+          "maximum": 17179869184,
+          "minimum": 1,
+          "title": "Max Single File Bytes",
+          "type": "integer"
+        },
+        "max_uncompressed_bytes": {
+          "maximum": 68719476736,
+          "minimum": 1,
+          "title": "Max Uncompressed Bytes",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "exclusiveMinimum": 0,
+          "maximum": 3600,
+          "title": "Timeout Seconds",
+          "type": "number"
+        }
+      },
+      "required": [
+        "max_download_bytes",
+        "max_uncompressed_bytes",
+        "max_single_file_bytes",
+        "max_file_count",
+        "max_directory_depth",
+        "max_path_length",
+        "max_compression_ratio",
+        "max_outbound_requests",
+        "max_redirects",
+        "timeout_seconds"
+      ],
+      "title": "PoCAcquisitionBounds",
+      "type": "object"
+    },
+    "PoCSourceAcquisitionInput": {
+      "additionalProperties": false,
+      "description": "Only the bounded source claim needed by the future Node operation.",
+      "properties": {
+        "acquisition_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Acquisition Ref",
+          "type": "string"
+        },
+        "bounds": {
+          "$ref": "#/$defs/PoCAcquisitionBounds"
+        },
+        "historical_ref": {
+          "maxLength": 247,
+          "minLength": 8,
+          "title": "Historical Ref",
+          "type": "string"
+        },
+        "provider_repository_id": {
+          "minimum": 1,
+          "title": "Provider Repository Id",
+          "type": "integer"
+        },
+        "repository_uri": {
+          "maxLength": 255,
+          "minLength": 1,
+          "title": "Repository Uri",
+          "type": "string"
+        },
+        "source_kind": {
+          "const": "github_repository",
+          "title": "Source Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "acquisition_ref",
+        "source_kind",
+        "repository_uri",
+        "provider_repository_id",
+        "historical_ref",
+        "bounds"
+      ],
+      "title": "PoCSourceAcquisitionInput",
+      "type": "object"
+    },
+    "PoCSourceAcquisitionReceipt": {
+      "additionalProperties": false,
+      "description": "Typed provenance claim, not proof of Core Artifact availability or source safety.",
+      "properties": {
+        "acquisition_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Acquisition Ref",
+          "type": "string"
+        },
+        "adapter_id": {
+          "$ref": "#/$defs/AcquisitionName"
+        },
+        "adapter_version": {
+          "$ref": "#/$defs/AcquisitionName"
+        },
+        "archive_representation": {
+          "const": "github_zip",
+          "title": "Archive Representation",
+          "type": "string"
+        },
+        "final_archive_uri": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Final Archive Uri",
+          "type": "string"
+        },
+        "historical_ref": {
+          "maxLength": 247,
+          "minLength": 8,
+          "title": "Historical Ref",
+          "type": "string"
+        },
+        "manifest": {
+          "$ref": "#/$defs/ArtifactDescriptor"
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "provider_repository_id": {
+          "minimum": 1,
+          "title": "Provider Repository Id",
+          "type": "integer"
+        },
+        "raw_archive_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "raw_archive_size_bytes": {
+          "minimum": 0,
+          "title": "Raw Archive Size Bytes",
+          "type": "integer"
+        },
+        "raw_source": {
+          "$ref": "#/$defs/ArtifactDescriptor"
+        },
+        "redirect_count": {
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Redirect Count",
+          "type": "integer"
+        },
+        "repository_uri": {
+          "maxLength": 255,
+          "minLength": 1,
+          "title": "Repository Uri",
+          "type": "string"
+        },
+        "request_count": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Request Count",
+          "type": "integer"
+        },
+        "resolution_uri": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Resolution Uri",
+          "type": "string"
+        },
+        "resolved_at": {
+          "format": "date-time",
+          "title": "Resolved At",
+          "type": "string"
+        },
+        "resolved_commit_sha": {
+          "$ref": "#/$defs/FullGitCommitSha"
+        },
+        "run_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Run Ref",
+          "type": "string"
+        },
+        "source_kind": {
+          "const": "github_repository",
+          "title": "Source Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "acquisition_ref",
+        "run_ref",
+        "source_kind",
+        "repository_uri",
+        "provider_repository_id",
+        "historical_ref",
+        "resolved_commit_sha",
+        "resolved_at",
+        "resolution_uri",
+        "final_archive_uri",
+        "archive_representation",
+        "adapter_id",
+        "adapter_version",
+        "request_count",
+        "redirect_count",
+        "raw_source",
+        "raw_archive_sha256",
+        "raw_archive_size_bytes",
+        "manifest",
+        "manifest_sha256"
+      ],
+      "title": "PoCSourceAcquisitionReceipt",
+      "type": "object"
     },
     "ResourceDescriptor": {
       "additionalProperties": false,

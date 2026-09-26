@@ -33,6 +33,7 @@ testpaths = [
     "capabilities/browser-interaction/tests",
     "capabilities/network-listener/tests",
     "capabilities/network-service-discovery/tests",
+    "capabilities/poc-source-acquisition/tests",
     "tests/architecture",
     "tests/integration",
     "tests/end_to_end",
@@ -67,4 +68,5 @@ mypy_path = [
     "capabilities/browser-interaction/src",
     "capabilities/network-listener/src",
     "capabilities/network-service-discovery/src",
+    "capabilities/poc-source-acquisition/src",
 ]

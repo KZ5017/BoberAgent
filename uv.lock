@@ -13,6 +13,7 @@ members = [
     "boberagent-capability-browser-interaction",
     "boberagent-capability-network-listener",
     "boberagent-capability-network-service-discovery",
+    "boberagent-capability-poc-source-acquisition",
     "boberagent-cli",
     "boberagent-contracts",
     "boberagent-core",
@@ -106,6 +107,23 @@ requires-dist = [
 name = "boberagent-capability-network-service-discovery"
 version = "0.1.0"
 source = { editable = "capabilities/network-service-discovery" }
+dependencies = [
+    { name = "boberagent-contracts" },
+    { name = "boberagent-sdk" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "boberagent-contracts", editable = "packages/contracts" },
+    { name = "boberagent-sdk", editable = "packages/sdk" },
+    { name = "pydantic", specifier = ">=2.12,<3" },
+]
+
+[[package]]
+name = "boberagent-capability-poc-source-acquisition"
+version = "0.1.0"
+source = { editable = "capabilities/poc-source-acquisition" }
 dependencies = [
     { name = "boberagent-contracts" },
     { name = "boberagent-sdk" },

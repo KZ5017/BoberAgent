@@ -1,0 +1,15 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "boberagent-capability-poc-source-acquisition"
+version = "0.1.0"
+description = "Fixture-only bounded PoC source acquisition proof"
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dependencies = ["boberagent-contracts", "boberagent-sdk", "pydantic>=2.12,<3"]
+
+[tool.uv.sources]
+boberagent-contracts = { workspace = true }
+boberagent-sdk = { workspace = true }

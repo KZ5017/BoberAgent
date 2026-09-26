@@ -111,7 +111,7 @@ def test_input_is_typed_and_excludes_core_research_objects() -> None:
         bounds=bounds(),
     )
     assert PoCSourceAcquisitionInput.model_validate_json(value.model_dump_json()) == value
-    assert set(value.model_dump()) == {
+    assert set(value.model_dump(exclude_none=True)) == {
         "acquisition_ref",
         "source_kind",
         "repository_uri",
@@ -159,3 +159,49 @@ def test_static_planned_definition_is_valid_without_a_live_provider() -> None:
     assert definition.operations[0].output_schema is not None
     assert "PoCSourceAcquisitionInput" in contract_schema_bundle()["$defs"]
     assert "PoCSourceAcquisitionReceipt" in contract_schema_bundle()["$defs"]
+
+
+def test_loopback_fixture_mode_is_explicit_and_does_not_relax_github_validation() -> None:
+    base = PoCSourceAcquisitionInput(
+        acquisition_ref=PoCAcquisitionRef("poc-acquisition-fixture"),
+        source_kind="loopback_fixture",
+        repository_uri="https://github.com/example/repo",
+        provider_repository_id=42,
+        historical_ref="branch:main",
+        bounds=bounds(),
+        fixture_port=43210,
+    )
+    assert PoCSourceAcquisitionInput.model_validate_json(base.model_dump_json()) == base
+    for update in (
+        {"fixture_port": None},
+        {"fixture_port": 0},
+        {"repository_uri": "http://127.0.0.1:43210/revision"},
+    ):
+        with pytest.raises(ValidationError):
+            PoCSourceAcquisitionInput.model_validate({**base.model_dump(), **update})
+    github = PoCSourceAcquisitionInput.model_validate(
+        {**base.model_dump(), "source_kind": "github_repository", "fixture_port": None}
+    )
+    assert github.fixture_port is None
+    with pytest.raises(ValidationError):
+        PoCSourceAcquisitionInput.model_validate({**github.model_dump(), "fixture_port": 43210})
+    raw = receipt().model_dump(mode="json")
+    fixture = PoCSourceAcquisitionReceipt.model_validate(
+        {
+            **raw,
+            "source_kind": "loopback_fixture",
+            "fixture_port": 43210,
+            "resolution_uri": "http://127.0.0.1:43210/revision",
+            "final_archive_uri": "http://127.0.0.1:43210/archive.zip",
+        }
+    )
+    assert PoCSourceAcquisitionReceipt.model_validate_json(fixture.model_dump_json()) == fixture
+    for bad_uri in ("http://example.invalid/archive.zip", "http://127.0.0.1:43211/archive.zip"):
+        with pytest.raises(ValidationError):
+            PoCSourceAcquisitionReceipt.model_validate(
+                {**fixture.model_dump(mode="json"), "final_archive_uri": bad_uri}
+            )
+    with pytest.raises(ValidationError):
+        PoCSourceAcquisitionReceipt.model_validate(
+            {**fixture.model_dump(mode="json"), "source_kind": "github_repository"}
+        )

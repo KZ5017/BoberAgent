@@ -342,3 +342,21 @@ available, and reopens Core to confirm provenance. The provider registration is 
 fixture, not an advertised live acquisition capability. No GitHub request, download, ZIP
 inventory, Kali Node, API token, or target interaction occurs. See
 [the B1 implementation note](../../docs/m20/M20B_IMPLEMENTATION.md).
+
+## M20-B2 bounded acquisition smoke (offline)
+
+From the repository root, with managed `curl >=8.4,<9` installed:
+
+```bash
+uv run python scripts/manual-smoke/m20b2_bounded_acquisition_smoke_test.py
+```
+
+The script creates a disposable Execution Node and a loopback-only HTTP fixture. The fixture
+serves one deterministic synthetic revision and one GitHub-style ZIP. The real Node Capability
+Runtime loads the fixture-only `poc.source_acquisition` manifest, runs curl through
+`ProcessService`, preserves exact raw ZIP bytes in its Artifact spool, inventories the ZIP
+without extraction, and prints the synthetic revision, raw/manifest ArtifactRefs, hashes, size,
+entry count, and uncompressed total. It then serves a traversal ZIP and verifies rejection with
+raw evidence only. All Workspace files are cleaned; no repository code runs. This smoke uses no
+Core→Node transport, no public network, no GitHub token, and no Kali VM. B3 owns the later
+cross-component Artifact/finalization proof.

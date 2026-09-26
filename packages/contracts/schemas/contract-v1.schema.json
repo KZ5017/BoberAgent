@@ -1760,6 +1760,20 @@
         "bounds": {
           "$ref": "#/$defs/PoCAcquisitionBounds"
         },
+        "fixture_port": {
+          "anyOf": [
+            {
+              "maximum": 65535,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fixture Port"
+        },
         "historical_ref": {
           "maxLength": 247,
           "minLength": 8,
@@ -1778,7 +1792,10 @@
           "type": "string"
         },
         "source_kind": {
-          "const": "github_repository",
+          "enum": [
+            "github_repository",
+            "loopback_fixture"
+          ],
           "title": "Source Kind",
           "type": "string"
         }
@@ -1821,6 +1838,20 @@
           "minLength": 1,
           "title": "Final Archive Uri",
           "type": "string"
+        },
+        "fixture_port": {
+          "anyOf": [
+            {
+              "maximum": 65535,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fixture Port"
         },
         "historical_ref": {
           "maxLength": 247,
@@ -1890,7 +1921,10 @@
           "type": "string"
         },
         "source_kind": {
-          "const": "github_repository",
+          "enum": [
+            "github_repository",
+            "loopback_fixture"
+          ],
           "title": "Source Kind",
           "type": "string"
         }

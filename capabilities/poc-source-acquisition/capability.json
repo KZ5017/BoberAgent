@@ -1,0 +1,45 @@
+{
+  "definition": {
+    "capability_id": "poc.source_acquisition",
+    "contract_version": "1.0",
+    "implementation_version": "0.1.0",
+    "title": "PoC source acquisition (loopback fixture only)",
+    "description": "Prove bounded ZIP acquisition from an explicit loopback fixture; public GitHub sources are unsupported.",
+    "operations": [{
+      "name": "acquire",
+      "title": "Acquire loopback fixture source",
+      "description": "Retrieve one deterministic fixture ZIP, preserve raw bytes, and inventory its structure without extraction.",
+      "input_schema": {"ref": "boberagent-contracts:PoCSourceAcquisitionInput"},
+      "output_schema": {"ref": "boberagent-contracts:PoCSourceAcquisitionReceipt"},
+      "required_references": ["acquisition_ref"],
+      "result_types": ["artifact", "diagnostic"],
+      "retry_semantics": "CONDITIONAL",
+      "execution_requirements": {
+        "source_kind": "loopback_fixture",
+        "target_interaction": false,
+        "bounded_acquisition": true
+      }
+    }],
+    "execution": {
+      "duration": "one_shot",
+      "interaction": "stateless",
+      "asynchronous": true,
+      "supports_cancellation": true,
+      "supports_checkpointing": false
+    },
+    "interaction_surfaces": {
+      "local_compute": true,
+      "target_network": false,
+      "internet_access": false,
+      "active_session": false,
+      "managed_resource": false
+    },
+    "side_effects": [
+      {"category": "external_network", "level": "read", "description": "Contacts only the explicitly selected 127.0.0.1 fixture port."},
+      {"category": "local_filesystem", "level": "write", "description": "Stages bounded responses in a managed Workspace and spools raw/manifest Artifacts."}
+    ],
+    "dependencies": [{"dependency_type": "tool", "identifier": "curl", "version_spec": ">=8.4,<9", "required": true}]
+  },
+  "implementation": "boberagent_capability_poc_source_acquisition:PoCSourceAcquisitionCapability",
+  "input_models": {"acquire": "boberagent_contracts:PoCSourceAcquisitionInput"}
+}

@@ -49,11 +49,18 @@ class PoCSourceAcquisitionInput(ContractModel):
     """Only the bounded source claim needed by the future Node operation."""
 
     acquisition_ref: PoCAcquisitionRef
-    source_kind: Literal["github_repository"]
+    source_kind: Literal["github_repository", "loopback_fixture"]
     repository_uri: str = Field(min_length=1, max_length=255)
     provider_repository_id: int = Field(ge=1)
     historical_ref: str = Field(min_length=8, max_length=247)
     bounds: PoCAcquisitionBounds
+    fixture_port: int | None = Field(default=None, ge=1, le=65535)
+
+    @model_validator(mode="after")
+    def fixture_mode(self) -> Self:
+        if (self.source_kind == "loopback_fixture") != (self.fixture_port is not None):
+            raise ValueError("fixture port is required only for loopback fixture mode")
+        return self
 
     @field_validator("repository_uri")
     @classmethod
@@ -85,10 +92,11 @@ class PoCSourceAcquisitionReceipt(ContractModel):
 
     acquisition_ref: PoCAcquisitionRef
     run_ref: CapabilityRunRef
-    source_kind: Literal["github_repository"]
+    source_kind: Literal["github_repository", "loopback_fixture"]
     repository_uri: str = Field(min_length=1, max_length=255)
     provider_repository_id: int = Field(ge=1)
     historical_ref: str = Field(min_length=8, max_length=247)
+    fixture_port: int | None = Field(default=None, ge=1, le=65535)
     resolved_commit_sha: FullGitCommitSha
     resolved_at: AwareDatetime
     resolution_uri: str = Field(min_length=1, max_length=2048)
@@ -103,20 +111,6 @@ class PoCSourceAcquisitionReceipt(ContractModel):
     raw_archive_size_bytes: int = Field(ge=0)
     manifest: ArtifactDescriptor
     manifest_sha256: Sha256Digest
-
-    @field_validator("resolution_uri", "final_archive_uri")
-    @classmethod
-    def github_provenance_uri(cls, value: str) -> str:
-        parsed = urlsplit(value)
-        if (
-            parsed.scheme != "https"
-            or parsed.netloc not in {"api.github.com", "codeload.github.com"}
-            or parsed.query
-            or parsed.fragment
-            or not parsed.path.startswith("/")
-        ):
-            raise ValueError("acquisition provenance URI must be a bounded GitHub API/archive URL")
-        return value
 
     @model_validator(mode="after")
     def consistent_artifacts(self) -> Self:
@@ -143,6 +137,35 @@ class PoCSourceAcquisitionReceipt(ContractModel):
             raise ValueError("receipt hashes and sizes must agree with Artifact descriptors")
         PoCSourceAcquisitionInput.github_repository_uri(self.repository_uri)
         PoCSourceAcquisitionInput.mutable_branch_claim(self.historical_ref)
+        if self.source_kind == "github_repository":
+            if self.fixture_port is not None:
+                raise ValueError("GitHub receipt cannot carry a fixture port")
+            for uri in (self.resolution_uri, self.final_archive_uri):
+                parsed = urlsplit(uri)
+                if (
+                    parsed.scheme != "https"
+                    or parsed.netloc not in {"api.github.com", "codeload.github.com"}
+                    or parsed.query
+                    or parsed.fragment
+                    or not parsed.path.startswith("/")
+                ):
+                    raise ValueError("GitHub provenance URI must use approved API/archive hosts")
+        else:
+            if self.fixture_port is None:
+                raise ValueError("fixture receipt requires a loopback port")
+            for uri in (self.resolution_uri, self.final_archive_uri):
+                parsed = urlsplit(uri)
+                if (
+                    parsed.scheme != "http"
+                    or parsed.hostname != "127.0.0.1"
+                    or parsed.port != self.fixture_port
+                    or parsed.username is not None
+                    or parsed.password is not None
+                    or parsed.query
+                    or parsed.fragment
+                    or not parsed.path.startswith("/")
+                ):
+                    raise ValueError("fixture provenance URI must remain on its loopback port")
         if self.redirect_count > self.request_count:
             raise ValueError("redirect count cannot exceed request count")
         return self

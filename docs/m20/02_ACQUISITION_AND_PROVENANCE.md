@@ -89,8 +89,9 @@ adapter with mocked network tests; **B5** opt-in public-repository provenance/re
 stopping at acquired evidence. Exact numeric limits and downloader/version remain implementation
 choices. M20-C semantic inspection, M20-D policy/plan, M20-E/F runtime/staging, and private,
 submodule or LFS acquisition remain deferred.
-**B1 foundation implemented:** Core now persists the explicit selected hit and acquisition
-lifecycle, validates bounded input/receipt types, builds an invocation without dispatch, and
-reconciles a synthetic processed Result against verified Core Artifact availability. See the
-[B1 implementation note](M20B_IMPLEMENTATION.md). There is no live acquisition provider,
-downloader, ZIP inventory, public network call, or M20-C inspection yet.
+**B1 and fixture-only B2 implemented:** Core persists explicit selected-hit acquisition history
+and reconciles typed receipts against verified Artifacts. The separate Node B2 provider uses a
+version-gated managed curl against a fixed loopback fixture route, preserves exact ZIP bytes,
+and emits a deterministic structural manifest without extraction. See the
+[M20-B implementation note](M20B_IMPLEMENTATION.md). There is no public GitHub provider,
+Core↔Node acquisition sync proof, public network call, or M20-C inspection yet.

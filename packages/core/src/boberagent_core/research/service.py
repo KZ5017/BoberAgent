@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import urlsplit, urlunsplit
 from uuid import uuid4
 
@@ -30,8 +30,11 @@ from .models import (
     VulnerabilityHypothesis,
     VulnerabilityHypothesisRef,
 )
-from .provider import ResearchProvider
+from .provider import ResearchProvider, ResearchProviderFailure
 from .repository import ResearchRepository
+
+MAX_RESEARCH_TIMEOUT = timedelta(seconds=120)
+DEFAULT_RECOVERY_GRACE = timedelta(seconds=30)
 
 
 class ResearchError(ValueError):
@@ -187,6 +190,21 @@ class CoreResearchService:
         with self._database.unit_of_work() as work:
             work.research.retire_hypothesis(hypothesis_ref)
 
+    def reconcile_abandoned_attempts(self, *, grace: timedelta = DEFAULT_RECOVERY_GRACE) -> int:
+        """Mark old STARTED attempts interrupted, never retrying them.
+
+        Call explicitly at a single-active-Core-owner startup. Multiple concurrent owners
+        require a stronger lease/owner protocol before automatic reconciliation is safe.
+        """
+
+        if grace <= timedelta(0):
+            raise ResearchError("research recovery grace must be positive")
+        now = self._clock()
+        with self._database.unit_of_work() as work:
+            return work.research.interrupt_stale_attempts(
+                cutoff=now - MAX_RESEARCH_TIMEOUT - grace, finished_at=now
+            )
+
     async def research(
         self,
         hypothesis_ref: VulnerabilityHypothesisRef,
@@ -198,7 +216,7 @@ class CoreResearchService:
         published_after: datetime | None = None,
         published_before: datetime | None = None,
     ) -> ResearchAttempt:
-        if not 0 < timeout_seconds <= 120:
+        if not 0 < timeout_seconds <= MAX_RESEARCH_TIMEOUT.total_seconds():
             raise ResearchError("research timeout must be positive and at most 120 seconds")
         if not provider.provider_id or len(provider.provider_id) > 128:
             raise ResearchError("provider identity is invalid")
@@ -230,12 +248,19 @@ class CoreResearchService:
             )
             if len(response.hits) > request.result_limit:
                 raise ResearchError("provider exceeded research result limit")
-        except Exception:  # provider errors are safe, durable outcomes
+        except Exception as error:  # provider errors are safe, durable outcomes
+            diagnostic = (
+                str(error)
+                if isinstance(error, ResearchProviderFailure)
+                else "research provider timed out"
+                if isinstance(error, TimeoutError)
+                else "provider failed or returned an invalid bounded response"
+            )
             failed = attempt.model_copy(
                 update={
                     "status": ResearchStatus.PROVIDER_ERROR,
                     "finished_at": self._clock(),
-                    "diagnostic": "provider failed or returned an invalid bounded response",
+                    "diagnostic": diagnostic,
                 }
             )
             with self._database.unit_of_work() as work:

@@ -31,6 +31,7 @@ class HypothesisStatus(StrEnum):
 
 class ResearchStatus(StrEnum):
     STARTED = "STARTED"
+    INTERRUPTED = "INTERRUPTED"
     FOUND = "FOUND"
     NO_MATCH = "NO_MATCH"
     PARTIAL = "PARTIAL"

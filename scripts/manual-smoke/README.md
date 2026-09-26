@@ -7,15 +7,39 @@ Do not execute them automatically from CI or normal test runs.
 
 ## M20-A deterministic research smoke (offline)
 
-From the repository root run:
-
-```shell
-
 It creates a temporary Core database and verifies bounded hypothesis research, two candidates,
 a duplicate revision hit, no-match, and provider-error history. No internet, token, LM Studio,
-Kali Node, PoC download, or execution is used.
+Kali Node, PoC download, or execution is used. From the repository root:
+
+```shell
 uv run python scripts/manual-smoke/m20a_research_smoke_test.py
 ```
+
+## M20-A2 live GitHub repository metadata smoke (opt-in)
+
+This is the only M20-A smoke that contacts the public internet. Choose an explicit public CVE
+identifier for a harmless research query; the synthetic Mission Asset uses a reserved
+documentation address and is never contacted. The script makes one bounded GitHub repository
+search, admits only metadata-supported leads through Core, closes/reopens a fresh Core database,
+and prints safe attempt/hit/candidate provenance. It never clones or downloads source.
+
+From the repository root, choose a new database path whose parent already exists. Set
+`PUBLIC_CVE_ID` to a public CVE identifier you choose; no target or PoC is selected by the
+repository.
+
+```shell
+uv run python scripts/manual-smoke/m20a_live_github_smoke_test.py \
+  --live-network --database /tmp/boberagent-m20a-live.sqlite3 \
+  --cve-id "$PUBLIC_CVE_ID" --result-limit 5
+```
+
+Optional: set `GITHUB_TOKEN` in process environment or the ignored project-local `.env.local`.
+Unauthenticated public search works at a lower rate limit. No token is placed on the command
+line or printed. A previously existing database path is rejected; use a new path for each run.
+Expected results include FOUND, NO_MATCH or PARTIAL. Safe environmental failures are reported
+as PROVIDER_ERROR without upstream bodies; malformed provider data or unsupported queries fail
+the smoke. Research is not vulnerability proof, acquisition authorization, or execution.
+
 ## M16 Secret resolution smoke test
 
 This harmless fixture proves a Core-owned Secret can be granted to one Run, resolved through

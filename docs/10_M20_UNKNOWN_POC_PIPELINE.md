@@ -1,6 +1,7 @@
 # Milestone 20 — Generic Unknown PoC Pipeline
 
-**Status:** Normative implementation plan; no M20 implementation is present. This plan refines
+**Status:** Normative implementation plan; M20-A bounded research is implemented, while M20-B
+through M20-H remain planned. This plan refines
 `09_BOOTSTRAP_PLAN.md` §100 without changing the Capability, Core, or Execution Node ownership
 rules. Implement M20-A through M20-H incrementally, but judge M20 as one milestone.
 

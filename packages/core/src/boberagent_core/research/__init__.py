@@ -17,7 +17,12 @@ from .models import (
     VulnerabilityHypothesis,
     VulnerabilityHypothesisRef,
 )
-from .provider import DeterministicResearchProvider, ResearchProvider
+from .provider import (
+    DeterministicResearchProvider,
+    ResearchProvider,
+    ResearchProviderFailure,
+    ResearchProviderFailureCode,
+)
 from .service import (
     CoreResearchService,
     ResearchError,
@@ -36,6 +41,8 @@ __all__ = [
     "ResearchAttemptRef",
     "ResearchError",
     "ResearchProvider",
+    "ResearchProviderFailure",
+    "ResearchProviderFailureCode",
     "ResearchRequest",
     "ResearchResponseStatus",
     "ResearchResult",

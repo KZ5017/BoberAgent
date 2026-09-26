@@ -5,7 +5,8 @@
 Start from a **specific** Core-owned `VulnerabilityHypothesis`, not an open-ended search for a
 compromisable target. M20-A precedes acquisition; it must be independently useful when no PoC is
 found. Existing Core Mission/Asset/Service/Observation state and M17/18 Knowledge are read-only
-inputs. No actual research provider is selected or implemented by this document.
+inputs. This source-neutral plan did not select a provider; the implemented live metadata adapter
+and its limits are documented in [M20-A implementation](M20A_IMPLEMENTATION.md).
 
 ## Typed boundary
 
@@ -78,9 +79,13 @@ The Core ownership, `VulnerabilityHypothesis`, provider port, bounded query/admi
 candidate logical-identity semantics are accepted in
 [ADR 0013](../adr/0013-m20-research-ownership-and-candidate-identity.md). Exact model fields,
 identity generation, dedup normalization, and lifecycle schema remain M20-A implementation
-details. **Deferred to M20-A live integration:** first external provider, concrete adapter
-location/configuration, and operational egress/rate limits. Do not make the domain GitHub-specific
-or bypass Mission ownership.
+details. The first external provider, concrete adapter location/configuration, and operational
+egress/rate limits are now documented in the M20-A implementation note. The domain remains
+source-neutral and Mission ownership is not bypassed.
 
 The deterministic M20-A foundation is implemented. Its concrete lifecycle, request/admission
 rules, source normalization and smoke command are recorded in [M20-A implementation](M20A_IMPLEMENTATION.md).
+
+The M20-A2 live integration selects GitHub **repository metadata search only**. It does not
+change hypothesis/candidate identity or admission. Explicit stale-attempt reconciliation and an
+opt-in live smoke complete the bounded research phase; acquisition is still M20-B.

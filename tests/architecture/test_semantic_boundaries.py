@@ -1,4 +1,4 @@
-"""Derived-index, embedding, and Reasoner HTTP details stay adapter-local."""
+"""External HTTP dependencies stay in approved Core-owned adapters."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ def test_qdrant_and_embedding_http_dependencies_are_adapter_local() -> None:
         "httpx": {
             ("knowledge", "openai_embeddings.py"),
             ("reasoning", "provider.py"),
+            ("providers", "github.py"),
         },
         "jsonschema": {("reasoning", "service.py")},
     }

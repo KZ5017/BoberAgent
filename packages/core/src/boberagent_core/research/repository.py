@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from boberagent_contracts import AssetRef, MissionRef, ObservationRef, ServiceRef
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from boberagent_core.persistence.orm import (
@@ -101,6 +101,23 @@ class ResearchRepository:
         row.finished_at = attempt.finished_at
         row.diagnostic = attempt.diagnostic
         self._session.flush()
+
+    def interrupt_stale_attempts(self, *, cutoff: datetime, finished_at: datetime) -> int:
+        """Terminalize only rows still STARTED at or before the safe cutoff."""
+
+        result = self._session.connection().execute(
+            update(ResearchAttemptRow)
+            .where(
+                ResearchAttemptRow.status == ResearchStatus.STARTED.value,
+                ResearchAttemptRow.started_at <= cutoff,
+            )
+            .values(
+                status=ResearchStatus.INTERRUPTED.value,
+                finished_at=finished_at,
+                diagnostic="Core research attempt interrupted before a result was recorded",
+            )
+        )
+        return result.rowcount
 
     def get_attempt(self, attempt_ref: ResearchAttemptRef) -> ResearchAttempt | None:
         row = self._session.get(ResearchAttemptRow, str(attempt_ref))

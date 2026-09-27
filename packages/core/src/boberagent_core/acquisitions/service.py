@@ -68,6 +68,7 @@ class CorePoCAcquisitionService:
         candidate_ref: PoCCandidateRef,
         selected_hit_id: int,
         bounds: PoCAcquisitionBounds,
+        fixture_port: int | None = None,
     ) -> PoCAcquisition:
         """Bind one admitted historical hit; never select a newer hit implicitly."""
 
@@ -113,11 +114,14 @@ class CorePoCAcquisitionService:
                 repository_id = int(source.provider_result_id)
                 typed_input = PoCSourceAcquisitionInput(
                     acquisition_ref=PoCAcquisitionRef(f"poc-acquisition-{uuid4().hex}"),
-                    source_kind="github_repository",
+                    source_kind="loopback_fixture"
+                    if fixture_port is not None
+                    else "github_repository",
                     repository_uri=source.repository_identity,
                     provider_repository_id=repository_id,
                     historical_ref=source.revision_claim,
                     bounds=bounds,
+                    fixture_port=fixture_port,
                 )
             except (ValueError, ValidationError) as error:
                 raise PoCAcquisitionError(
@@ -138,6 +142,8 @@ class CorePoCAcquisitionService:
                 repository_uri=typed_input.repository_uri,
                 provider_repository_id=repository_id,
                 historical_ref=typed_input.historical_ref,
+                source_kind=typed_input.source_kind,
+                fixture_port=typed_input.fixture_port,
                 bounds=bounds,
                 status=PoCAcquisitionStatus.REQUESTED,
                 created_at=now,
@@ -157,7 +163,7 @@ class CorePoCAcquisitionService:
     def build_invocation(
         self, acquisition_ref: PoCAcquisitionRef, run_ref: CapabilityRunRef
     ) -> CapabilityInvocation:
-        """Build typed intent only. B1 has no live provider and does not submit transport."""
+        """Build typed intent only; dispatch remains the Router's responsibility."""
 
         acquisition = self._required(acquisition_ref)
         if (
@@ -172,11 +178,12 @@ class CorePoCAcquisitionService:
             mission_ref=acquisition.mission_ref,
             inputs=PoCSourceAcquisitionInput(
                 acquisition_ref=acquisition.acquisition_ref,
-                source_kind="github_repository",
+                source_kind=acquisition.source_kind,
                 repository_uri=acquisition.repository_uri,
                 provider_repository_id=acquisition.provider_repository_id,
                 historical_ref=acquisition.historical_ref,
                 bounds=acquisition.bounds,
+                fixture_port=acquisition.fixture_port,
             ).model_dump(mode="json"),
         )
 
@@ -228,13 +235,18 @@ class CorePoCAcquisitionService:
         if (
             receipt.acquisition_ref != acquisition.acquisition_ref
             or receipt.run_ref != acquisition.run_ref
-            or receipt.source_kind != "github_repository"
+            or receipt.source_kind != acquisition.source_kind
+            or receipt.fixture_port != acquisition.fixture_port
             or receipt.repository_uri != acquisition.repository_uri
             or receipt.provider_repository_id != acquisition.provider_repository_id
             or receipt.historical_ref != acquisition.historical_ref
             or receipt.request_count > acquisition.bounds.max_outbound_requests
             or receipt.redirect_count > acquisition.bounds.max_redirects
             or receipt.raw_archive_size_bytes > acquisition.bounds.max_download_bytes
+            or receipt.raw_source.created_by_run != acquisition.run_ref
+            or receipt.manifest.created_by_run != acquisition.run_ref
+            or receipt.raw_source.artifact_type != "poc.source.raw"
+            or receipt.manifest.artifact_type != "poc.source.manifest"
         ):
             raise PoCAcquisitionError(
                 "acquisition receipt conflicts with selected source or bounds"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from typing import Literal, cast
 from uuid import UUID
 
 from boberagent_contracts import CapabilityRunRef, MissionRef, PoCAcquisitionRef
@@ -69,6 +70,8 @@ class PoCAcquisitionRepository:
                 repository_uri=acquisition.repository_uri,
                 provider_repository_id=acquisition.provider_repository_id,
                 historical_ref=acquisition.historical_ref,
+                source_kind=acquisition.source_kind,
+                fixture_port=acquisition.fixture_port,
                 bounds_json=acquisition.bounds.model_dump(mode="json"),
                 status=acquisition.status.value,
                 created_at=acquisition.created_at,
@@ -119,6 +122,8 @@ class PoCAcquisitionRepository:
             or old.repository_uri != acquisition.repository_uri
             or old.provider_repository_id != acquisition.provider_repository_id
             or old.historical_ref != acquisition.historical_ref
+            or old.source_kind != acquisition.source_kind
+            or old.fixture_port != acquisition.fixture_port
             or old.bounds != acquisition.bounds
             or (old.run_ref is not None and old.run_ref != acquisition.run_ref)
             or (
@@ -172,6 +177,8 @@ def _from_row(row: PoCAcquisitionRow) -> PoCAcquisition:
         repository_uri=row.repository_uri,
         provider_repository_id=row.provider_repository_id,
         historical_ref=row.historical_ref,
+        source_kind=cast(Literal["github_repository", "loopback_fixture"], row.source_kind),
+        fixture_port=row.fixture_port,
         bounds=PoCAcquisitionBounds.model_validate(deepcopy(row.bounds_json)),
         status=PoCAcquisitionStatus(row.status),
         run_ref=None if row.run_id is None else CapabilityRunRef(row.run_id),

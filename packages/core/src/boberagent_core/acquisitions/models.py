@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Self
+from typing import Literal, Self
 from uuid import UUID
 
 from boberagent_contracts import CapabilityRunRef, MissionRef, PoCAcquisitionRef
@@ -55,6 +55,8 @@ class PoCAcquisition(CoreModel):
     repository_uri: str = Field(min_length=1, max_length=255)
     provider_repository_id: int = Field(ge=1)
     historical_ref: str = Field(min_length=8, max_length=247)
+    source_kind: Literal["github_repository", "loopback_fixture"] = "github_repository"
+    fixture_port: int | None = Field(default=None, ge=1, le=65535)
     bounds: PoCAcquisitionBounds
     status: PoCAcquisitionStatus
     run_ref: CapabilityRunRef | None = None
@@ -67,6 +69,8 @@ class PoCAcquisition(CoreModel):
 
     @model_validator(mode="after")
     def lifecycle_fields(self) -> Self:
+        if (self.source_kind == "loopback_fixture") != (self.fixture_port is not None):
+            raise ValueError("fixture port is required only for loopback fixture mode")
         if self.status is PoCAcquisitionStatus.REQUESTED and (
             self.run_ref is not None or self.receipt is not None
         ):

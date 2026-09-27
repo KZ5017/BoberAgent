@@ -399,6 +399,10 @@ class PoCAcquisitionRow(Base):
     repository_uri: Mapped[str] = mapped_column(String(255), nullable=False)
     provider_repository_id: Mapped[int] = mapped_column(Integer, nullable=False)
     historical_ref: Mapped[str] = mapped_column(String(247), nullable=False)
+    source_kind: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="github_repository"
+    )
+    fixture_port: Mapped[int | None] = mapped_column(Integer)
     bounds_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False)
     run_id: Mapped[str | None] = mapped_column(ForeignKey("capability_runs.run_id"), unique=True)

@@ -358,5 +358,21 @@ Runtime loads the fixture-only `poc.source_acquisition` manifest, runs curl thro
 without extraction, and prints the synthetic revision, raw/manifest ArtifactRefs, hashes, size,
 entry count, and uncompressed total. It then serves a traversal ZIP and verifies rejection with
 raw evidence only. All Workspace files are cleaned; no repository code runs. This smoke uses no
-Core→Node transport, no public network, no GitHub token, and no Kali VM. B3 owns the later
-cross-component Artifact/finalization proof.
+Core→Node transport, no public network, no GitHub token, and no Kali VM. The separate B3
+cross-component Artifact/finalization proof is described below.
+
+## M20-B3 acquisition sync and finalization smoke (offline)
+
+From the repository root, with managed `curl >=8.4,<9` installed:
+
+```bash
+uv run python scripts/manual-smoke/m20b3_acquisition_sync_smoke_test.py
+```
+
+This validation-only runner reuses the automated B3 integration harness. It creates disposable
+Core and Node databases, a loopback fixture, selected historical research hit, and a normal
+Router-dispatched acquisition Run. The Result is ingested first; a deliberately interrupted
+chunk transfer resumes, both real Node-produced Artifacts synchronize to Core, and durable
+`PoCAcquisition` finalization is replayed after Core and Node reopen. It prints only refs, hashes,
+selected hit, revision, provider/Node, and status. Transport is in-memory across the existing
+neutral protocol—not MCP. No public network, GitHub acquisition, or source execution occurs.

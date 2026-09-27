@@ -20,6 +20,8 @@ _LFS_PREFIX = b"version https://git-lfs.github.com/spec/v1\n"
 _ZIP_END = b"PK\x05\x06"
 _READ_SIZE = 64 * 1024
 _MAX_MANIFEST_BYTES = 16 * 1024 * 1024
+_MAX_ZIP_EXTRA_BYTES = 1024
+_EXTENDED_TIMESTAMP_ID = 0x5455
 
 
 class ManifestEntry(TypedDict):
@@ -62,6 +64,7 @@ def inventory_zip(
             total = 0
             manifest_estimate = 0
             for name, info in parsed:
+                _validate_zip_extra(info.extra)
                 if root is not None:
                     if name == root and info.is_dir():
                         continue
@@ -71,10 +74,6 @@ def inventory_zip(
                 if manifest_estimate > _MAX_MANIFEST_BYTES:
                     raise AcquisitionRejected(
                         "ARCHIVE_LIMIT_EXCEEDED", "structural manifest exceeds bound"
-                    )
-                if info.extra:
-                    raise AcquisitionRejected(
-                        "ARCHIVE_UNSUPPORTED", "ZIP extra metadata is unsupported"
                     )
                 entry_type, mode = _entry_type(info)
                 if info.flag_bits & 1:
@@ -187,6 +186,29 @@ def inventory_zip(
         total_uncompressed_bytes=total,
         archive_root_prefix=None if root is None else root + "/",
     )
+
+
+def _validate_zip_extra(extra: bytes) -> None:
+    """Accept only one central-directory UT modification timestamp; ignore its value."""
+
+    if len(extra) > _MAX_ZIP_EXTRA_BYTES:
+        raise AcquisitionRejected("ARCHIVE_UNSUPPORTED", "ZIP extra metadata exceeds bound")
+    offset = 0
+    seen_timestamp = False
+    while offset < len(extra):
+        if len(extra) - offset < 4:
+            raise AcquisitionRejected("ARCHIVE_UNSUPPORTED", "ZIP extra header is truncated")
+        field_id, payload_length = struct.unpack_from("<HH", extra, offset)
+        offset += 4
+        if payload_length > len(extra) - offset:
+            raise AcquisitionRejected("ARCHIVE_UNSUPPORTED", "ZIP extra payload is truncated")
+        payload = extra[offset : offset + payload_length]
+        offset += payload_length
+        if field_id != _EXTENDED_TIMESTAMP_ID:
+            raise AcquisitionRejected("ARCHIVE_UNSUPPORTED", "ZIP extra field is unsupported")
+        if seen_timestamp or len(payload) != 5 or payload[0] != 0x01:
+            raise AcquisitionRejected("ARCHIVE_UNSUPPORTED", "ZIP timestamp metadata is invalid")
+        seen_timestamp = True
 
 
 def _preflight_central_directory(path: Path, maximum_entries: int) -> None:

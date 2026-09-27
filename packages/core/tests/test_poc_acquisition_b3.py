@@ -8,6 +8,7 @@ import io
 import json
 import shutil
 import stat
+import struct
 import zipfile
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -70,17 +71,20 @@ NOW = datetime(2026, 9, 27, tzinfo=UTC)
 SHA = "a" * 40
 
 
-def _zip(name: str = "fixture-sha/README.md") -> bytes:
+def _zip(name: str = "fixture-sha/README.md", *, github_ut: bool = False) -> bytes:
     output = io.BytesIO()
+    timestamp_extra = struct.pack("<HHBI", 0x5455, 5, 1, 1_700_000_000) if github_ut else b""
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         root = zipfile.ZipInfo("fixture-sha/")
         root.create_system = 3
         root.external_attr = (stat.S_IFDIR | 0o755) << 16
+        root.extra = timestamp_extra
         archive.writestr(root, b"")
         item = zipfile.ZipInfo(name)
         item.create_system = 3
         item.external_attr = (stat.S_IFREG | 0o644) << 16
         item.compress_type = zipfile.ZIP_DEFLATED
+        item.extra = timestamp_extra
         archive.writestr(item, b"source evidence only\n")
     return output.getvalue()
 

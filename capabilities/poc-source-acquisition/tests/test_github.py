@@ -6,6 +6,7 @@ import asyncio
 import io
 import json
 import stat
+import struct
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -50,6 +51,7 @@ def _archive(entries: list[tuple[str, bytes, int]] | None = None) -> bytes:
             info.create_system = 3
             info.external_attr = mode << 16
             info.compress_type = zipfile.ZIP_DEFLATED
+            info.extra = struct.pack("<HHBI", 0x5455, 5, 1, 1_700_000_000)
             archive.writestr(info, data)
     return output.getvalue()
 

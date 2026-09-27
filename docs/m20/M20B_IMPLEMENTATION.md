@@ -82,5 +82,22 @@ real MCP, Node acquisition provider, Result inbox/ingestion, and chunked Artifac
 requires `AWAITING_ARTIFACT` after the Result, then `COMPLETED` only after both verified Core
 Artifacts arrive. A durable reopen verifies source/Run/provider/revision identity and exact
 Artifact hashes without re-fetch. The operator procedure, Kali startup, egress and failure
-categories are in `scripts/manual-smoke/README.md`. No live public run is claimed by this
-implementation note; M20-B remains open until one such run passes.
+categories are in `scripts/manual-smoke/README.md`. No completed live public run is
+claimed by this implementation note; M20-B remains open until one such run passes.
+
+### First real B5 compatibility finding
+
+The first opt-in public run selected historical hit 4 for
+`https://github.com/CERTCC/CVE-2021-44228_scanner` and resolved commit
+`042e5d9c15fe8312492d2f08063631be58486830`. Real GitHub acquisition retained the
+305,188-byte raw ZIP Artifact before inventory, but produced `ARCHIVE_UNSUPPORTED` because
+every observed entry carried the standard 9-byte `0x5455` Extended Timestamp ZIP extra
+record. That first acquisition (`poc-acquisition-23c700c90f304899ae306dbf4361425f`)
+remains `REJECTED` historical evidence; it was not modified or replayed.
+
+Inventory now accepts only one structurally valid `0x5455` modification-time record per
+entry (flags `0x01`, exactly four timestamp bytes), without using the timestamp in
+manifest paths, content hashes, or source identity. Unknown, duplicate, oversized, or
+malformed extra records remain fail-closed. The B4 mocked GitHub archive and B5 offline
+mock smoke now carry this exact field and pass through Core finalization. A **new** explicit
+PoCAcquisition/Run and real public smoke are still required before M20-B can be closed.

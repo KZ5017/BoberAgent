@@ -146,7 +146,9 @@ def test_mocked_github_core_node_core(
 ) -> None:
     """Historical hit stays unchanged while current main/old resolves to pinned SHA B."""
 
-    archive = _zip() if case != "hostile" else _zip("fixture-sha/../escape")
+    archive = (
+        _zip(github_ut=case == "success") if case != "hostile" else _zip("fixture-sha/../escape")
+    )
     if case == "lfs":
 
         def _archive(entries: list[tuple[str, bytes, int]]) -> bytes:

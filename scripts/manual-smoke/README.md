@@ -459,3 +459,14 @@ truncated trees, Gitlinks, LFS pointers, unsafe/oversized ZIPs, and Artifact syn
 automatically retry a possibly state-changing Run. This manual smoke is not collected by pytest
 and has not been declared successful merely because its offline preflight passes. M20-C
 semantic inspection, repository execution, and private GitHub authentication remain deferred.
+
+The first real public B5 run against `CERTCC/CVE-2021-44228_scanner` reached a retained
+raw ZIP but stopped as `ARCHIVE_UNSUPPORTED`: normal GitHub ZIP entries contained the
+standard `0x5455` Extended Timestamp extra field. The original
+`poc-acquisition-23c700c90f304899ae306dbf4361425f` remains rejected and must not
+be changed or retried as the same Run. The inventory parser now accepts only a
+structurally valid 5-byte UT modification-time payload; unknown/malformed extras
+still stop. Offline mocks with that field pass. To finish B5, rerun the documented
+`--check-config` and then `--live-network` with the same explicitly selected
+candidate and hit, which creates **new** PoCAcquisitionRef and CapabilityRunRef values.
+Do not declare M20-B closed until the new real run reaches durable `COMPLETED`.

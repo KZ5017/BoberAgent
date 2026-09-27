@@ -26,7 +26,7 @@ def test_acquisition_migration_from_research_preserves_history(database_path: Pa
             )
         assert current_revision(database) == "0009_m20_research"
         upgrade_database(database)
-        assert current_revision(database) == "0011_m20_b3_fixture_mode"
+        assert current_revision(database) == "0012_m20_c1_inspection"
         assert "poc_acquisitions" in inspect(database._migration_engine).get_table_names()
         columns = {
             column["name"]
@@ -53,12 +53,12 @@ def test_fresh_migration_and_reopen(database_path: Path) -> None:
     database = CoreDatabase(DatabaseConfig.sqlite(database_path))
     try:
         upgrade_database(database)
-        assert current_revision(database) == "0011_m20_b3_fixture_mode"
+        assert current_revision(database) == "0012_m20_c1_inspection"
     finally:
         database.dispose()
     reopened = CoreDatabase(DatabaseConfig.sqlite(database_path))
     try:
-        assert current_revision(reopened) == "0011_m20_b3_fixture_mode"
+        assert current_revision(reopened) == "0012_m20_c1_inspection"
         assert "poc_acquisitions" in inspect(reopened._migration_engine).get_table_names()
     finally:
         reopened.dispose()

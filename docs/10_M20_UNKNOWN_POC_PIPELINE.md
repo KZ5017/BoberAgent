@@ -3,7 +3,8 @@
 **Status:** Normative implementation plan; M20-A is implemented and **M20-B — Acquisition +
 Immutable Provenance is CLOSED**. B1–B4 established the bounded acquisition path; B5 validated
 it against real public GitHub through a Kali Execution Node, TLS/MCP, Node→Core Artifact sync,
-Core finalization, and Core reopen without re-fetch. M20-C through M20-H remain planned.
+Core finalization, and Core reopen without re-fetch. M20-C1 evidence foundation is implemented;
+C2–C5 and M20-D through M20-H remain planned.
 ADR 0014 fixes M20-B architecture; [ADR 0015](adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md)
 fixes M20-C inspection ownership, evidence, and authority before implementation.
 This plan refines `09_BOOTSTRAP_PLAN.md` §100 without changing the Capability, Core, or Execution Node ownership

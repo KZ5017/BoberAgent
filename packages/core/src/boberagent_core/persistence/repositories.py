@@ -721,6 +721,7 @@ class CoreUnitOfWork:
             CoreEventRepository,
             CredentialRepository,
         )
+        from boberagent_core.inspections.repository import PoCInspectionRepository
         from boberagent_core.interactions.repository import InteractionRepository
         from boberagent_core.research.repository import ResearchRepository
         from boberagent_core.results.repository import ResultIngestionRepository
@@ -746,6 +747,7 @@ class CoreUnitOfWork:
         self.core_events = CoreEventRepository(session)
         self.research = ResearchRepository(session)
         self.acquisitions = PoCAcquisitionRepository(session)
+        self.inspections = PoCInspectionRepository(session)
 
 
 def _flush_identity(session: Session, logical_ref: DomainRef) -> None:

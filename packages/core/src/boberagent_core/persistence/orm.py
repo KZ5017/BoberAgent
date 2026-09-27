@@ -424,6 +424,49 @@ class PoCAcquisitionRow(Base):
     diagnostic: Mapped[str | None] = mapped_column(String(512))
 
 
+class PoCInspectionRow(Base):
+    """Core-private M20-C1 inspection attempt."""
+
+    __tablename__ = "poc_inspections"
+    __table_args__: tuple[Index, Index] = (
+        Index("ix_poc_inspections_acquisition_id", "acquisition_id"),
+        Index("ix_poc_inspections_status", "status"),
+    )
+
+    inspection_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    mission_id: Mapped[str] = mapped_column(ForeignKey("missions.mission_id"), nullable=False)
+    hypothesis_id: Mapped[str] = mapped_column(
+        ForeignKey("vulnerability_hypotheses.hypothesis_id"), nullable=False
+    )
+    candidate_id: Mapped[str] = mapped_column(
+        ForeignKey("poc_candidates.candidate_id"), nullable=False
+    )
+    acquisition_id: Mapped[str] = mapped_column(
+        ForeignKey("poc_acquisitions.acquisition_id"), nullable=False
+    )
+    raw_artifact_id: Mapped[str] = mapped_column(
+        ForeignKey("artifacts.artifact_id"), nullable=False
+    )
+    raw_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    raw_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    manifest_artifact_id: Mapped[str] = mapped_column(
+        ForeignKey("artifacts.artifact_id"), nullable=False
+    )
+    manifest_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    resolved_commit_sha: Mapped[str] = mapped_column(String(40), nullable=False)
+    profile_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    profile_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    config_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    limits_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
+    selected_paths_json: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    started_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    document_json: Mapped[JsonObject | None] = mapped_column(JSON)
+    diagnostic: Mapped[str | None] = mapped_column(String(512))
+
+
 class TransportInboxRow(Base):
     __tablename__ = "transport_inbox"
     __table_args__: tuple[Index, Index] = (

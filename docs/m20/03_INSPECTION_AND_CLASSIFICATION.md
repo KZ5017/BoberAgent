@@ -1,7 +1,8 @@
 # M20-C — Inspection and execution classification
 
-**Status:** Architecture accepted in [ADR 0015](../adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md);
-implementation not started. M20-C stops before `ExecutionPlan`, preparation, or execution.
+**Status:** Architecture accepted in [ADR 0015](../adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md).
+C1 evidence foundation implemented; C2–C5 remain planned. M20-C stops before
+`ExecutionPlan`, preparation, or execution. See [M20-C implementation](M20C_IMPLEMENTATION.md).
 
 ## Goal and dependency
 

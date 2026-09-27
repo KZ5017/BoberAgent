@@ -1,6 +1,6 @@
 # ADR 0015: M20-C source inspection ownership, evidence, and authority
 
-**Status:** Accepted for M20-C design; implementation pending.
+**Status:** Accepted for M20-C design; C1 evidence foundation implemented, C2–C5 pending.
 
 ## Context
 

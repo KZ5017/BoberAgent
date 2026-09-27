@@ -472,3 +472,19 @@ parser compatibility changed without changing source identity. Both raw and mani
 synchronized over TLS/MCP; Core reached `COMPLETED` and retained it after reopen without
 re-fetch. **M20-B — Acquisition + Immutable Provenance is CLOSED.** See the
 [B5 validation record](../../docs/m20/M20B_IMPLEMENTATION.md) for identifiers and hashes.
+
+## M20-C1 exact source-evidence smoke (offline)
+
+Run from the repository root:
+
+```bash
+uv run python scripts/manual-smoke/m20c1_inspection_evidence_smoke_test.py
+```
+
+This manual wrapper runs the focused migration-backed synthetic integration scenario: a fresh
+Core DB and managed Artifact root, a completed synthetic acquisition with raw ZIP and
+`poc-source-manifest-v1` Artifacts, independent rehash/reconciliation, one verified file-byte
+citation, and Core reopen. It needs no GitHub, Kali, MCP, or network. It does **not** inspect
+the real B5 Artifact, infer source semantics, classify execution support, extract or execute
+repository code, or build an ExecutionPlan. See
+[the C1 implementation note](../../docs/m20/M20C_IMPLEMENTATION.md).

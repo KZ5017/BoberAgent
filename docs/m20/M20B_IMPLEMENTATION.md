@@ -72,7 +72,7 @@ enough for the five API/archive requests and one codeload redirect, and Core Art
 B4 did not include a B5 live-smoke command or public repository selection; the separately
 opted-in B5 harness below adds that validation surface without changing the B4 adapter.
 
-## B5 live validation harness (prepared; public run pending)
+## B5 live validation — M20-B CLOSED
 
 The manual-only B5 script consumes a previously persisted M20-A GitHub candidate plus one
 operator-selected historical source-hit ID. It never reruns research or selects a latest hit.
@@ -82,8 +82,7 @@ real MCP, Node acquisition provider, Result inbox/ingestion, and chunked Artifac
 requires `AWAITING_ARTIFACT` after the Result, then `COMPLETED` only after both verified Core
 Artifacts arrive. A durable reopen verifies source/Run/provider/revision identity and exact
 Artifact hashes without re-fetch. The operator procedure, Kali startup, egress and failure
-categories are in `scripts/manual-smoke/README.md`. No completed live public run is
-claimed by this implementation note; M20-B remains open until one such run passes.
+categories are in `scripts/manual-smoke/README.md`.
 
 ### First real B5 compatibility finding
 
@@ -92,12 +91,45 @@ The first opt-in public run selected historical hit 4 for
 `042e5d9c15fe8312492d2f08063631be58486830`. Real GitHub acquisition retained the
 305,188-byte raw ZIP Artifact before inventory, but produced `ARCHIVE_UNSUPPORTED` because
 every observed entry carried the standard 9-byte `0x5455` Extended Timestamp ZIP extra
-record. That first acquisition (`poc-acquisition-23c700c90f304899ae306dbf4361425f`)
+record. Its raw ZIP SHA-256 was
+`033fc4b983cff57b9a0debb3491e2638e6598800eb8ae96802021ef7edb232d6`.
+That first acquisition (`poc-acquisition-23c700c90f304899ae306dbf4361425f`)
 remains `REJECTED` historical evidence; it was not modified or replayed.
 
 Inventory now accepts only one structurally valid `0x5455` modification-time record per
 entry (flags `0x01`, exactly four timestamp bytes), without using the timestamp in
 manifest paths, content hashes, or source identity. Unknown, duplicate, oversized, or
 malformed extra records remain fail-closed. The B4 mocked GitHub archive and B5 offline
-mock smoke now carry this exact field and pass through Core finalization. A **new** explicit
-PoCAcquisition/Run and real public smoke are still required before M20-B can be closed.
+mock smoke now carry this exact field and pass through Core finalization. The successful new
+acquisition retrieved the **same** raw ZIP SHA-256; the correction changed parser compatibility,
+not upstream source identity.
+
+### Successful real B5 validation
+
+The opt-in retry selected historical hit `4` and candidate
+`poc-candidate-5b2ead4a9b3847e4a2cf28d50b65a54b` for
+`https://github.com/CERTCC/CVE-2021-44228_scanner`. On Kali Node
+`node-71d6ddaf-2cbe-4d74-b751-4042898e20f4`, acquisition
+`poc-acquisition-65dd487d65864967be3498f52e6c8038` used CapabilityRun
+`run-m20b5-9313d1b8cade4372977bdd41df2c7d3a`. The historical `branch:main`
+claim resolved to commit `042e5d9c15fe8312492d2f08063631be58486830` and Git tree
+`f7f9c58d621e09542d1d9d14f7b3174a40de18ba`. The tree was complete and validated,
+with no Gitlink. Bounded managed curl made six requests and followed one validated
+GitHub→codeload redirect to retrieve the SHA-addressed archive.
+
+The raw ZIP Artifact `artifact-c432aa44-d24e-4e53-98ba-8b64cef3973e` retained 305,188
+bytes with SHA-256 `033fc4b983cff57b9a0debb3491e2638e6598800eb8ae96802021ef7edb232d6`.
+Structural validation produced manifest Artifact
+`artifact-0ba70bf4-9503-4b00-bc22-7398b3dfd4c1` with SHA-256
+`e9e517244eecdedfdb5df9dce43f4792ea5eb1fb763f3e7d48ba5611d229cfe0`:
+eight entries, 351,930 uncompressed bytes, archive root
+`CERTCC-CVE-2021-44228_scanner-042e5d9/`. Both Artifacts synchronized from the real
+Kali Node to Core over TLS/MCP (`attempted=2`, `synchronized=2`, `failed=0`). The durable
+sequence was `DISPATCHED → successful CapabilityResult → AWAITING_ARTIFACT → both Artifacts
+synchronized → COMPLETED`. Core reopen still reported `COMPLETED` and verified provenance
+without a GitHub re-fetch.
+
+This proves the B5 public acquisition, immutable resolution, structural ZIP safety, Artifact
+sync, and Core finalization path. M20-B acquires and structurally validates source; it does
+**not** inspect PoC behavior, determine entrypoints or dependencies, build an ExecutionPlan,
+or execute source. Those boundaries remain M20-C+.

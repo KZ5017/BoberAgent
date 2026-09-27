@@ -1,6 +1,6 @@
 # ADR 0014: M20 acquisition ownership and immutable source representation
 
-**Status:** Accepted; M20-B1–B4 implemented (B4 offline/mock validated), M20-B5 live validation pending.
+**Status:** Accepted; M20-B CLOSED after successful real M20-B5 public GitHub acquisition, TLS/MCP Artifact synchronization, Core finalization, and restart/reopen validation.
 
 ## Context
 

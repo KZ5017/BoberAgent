@@ -1,9 +1,11 @@
 # Milestone 20 — Generic Unknown PoC Pipeline
 
-**Status:** Normative implementation plan; M20-A research and M20-B1–B3 acquisition
-foundation, bounded fixture retrieval, Artifact synchronization, and Core finalization are
-implemented. M20-B4 adds an offline/mock-validated GitHub identity/SHA/tree/archive adapter.
-B5 live validation and M20-C through M20-H remain planned. ADR 0014 fixes M20-B architecture.
+**Status:** Normative implementation plan; M20-A is implemented and **M20-B — Acquisition +
+Immutable Provenance is CLOSED**. B1–B4 established the bounded acquisition path; B5 validated
+it against real public GitHub through a Kali Execution Node, TLS/MCP, Node→Core Artifact sync,
+Core finalization, and Core reopen without re-fetch. M20-C through M20-H remain planned.
+ADR 0014 fixes M20-B architecture; [ADR 0015](adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md)
+fixes M20-C inspection ownership, evidence, and authority before implementation.
 This plan refines `09_BOOTSTRAP_PLAN.md` §100 without changing the Capability, Core, or Execution Node ownership
 rules. Implement M20-A through M20-H incrementally, but judge M20 as one milestone.
 
@@ -50,7 +52,7 @@ hypothesis; scope and the selected target never expand implicitly.
 | --- | --- | --- |
 | Research | `VulnerabilityHypothesis` → bounded `ResearchRequest` → sourced hits / `PoCCandidate`s | Core-owned `ResearchProvider` port and admission; no download-as-execution |
 | Acquire | selected candidate + historical source hit → Core `PoCAcquisition`, full-SHA GitHub ZIP Artifact + structural manifest Artifact | Core authorizes/routes/finalizes only after both Artifacts sync and verify; Node resolves/retrieves/inventories without execution |
-| Inspect | acquired Artifact → `PoCInspection` + classification and reasons | deterministic inspection, optionally bounded advisory Reasoner; no PoC execution |
+| Inspect | completed acquisition's exact Core-retained raw ZIP + structural manifest → versioned `PoCInspection` + conditional classification and reasons | Core-owned, read-only, deterministic-first; rehash and cite verified bytes; optional later advisory Reasoner; no PoC execution or plan |
 | Plan | inspection + selected target → proposed Contract `ExecutionPlan` and explicit bindings | Core validates against authoritative refs, source, scope and policy |
 | Validate | draft plan → validated plan / rejection / assistance or approval requirement | deterministic Core gate; Node revalidates enforceable constraints |
 | Prepare | validated/approved plan → isolated attacker-side runtime Resource + Workspace | Node; pinned source/dependencies, no README install command |
@@ -102,7 +104,7 @@ bindings, resources, outcomes/effects, uncertainty, status, and provenance; it d
 encode every proposed target/network/secret/cleanup constraint as explicit fields. The production
 Node's `execute_plan()` currently denies execution. Current M11 Workflow is static and sequential;
 M19 Reasoner validates proposals but has no PoC inspector or executor. A complete PoC policy
-approval engine, runtime confinement, and PoC Candidate/Inspection persistence are not present.
+approval engine, runtime confinement, and PoC Inspection persistence are not present.
 Do not hide these gaps in opaque `metadata` or call existing local process execution a sandbox.
 
 The accepted M15 implementation cannot reconstruct a waiting Python continuation after a Node
@@ -133,4 +135,7 @@ with this plan. Accepted ADRs [0005](adr/0005-durable-sequential-workflow-execut
 [ADR 0013](adr/0013-m20-research-ownership-and-candidate-identity.md) fixes M20-A research
 ownership, hypothesis, query and candidate identity. [ADR 0014](adr/0014-m20-acquisition-ownership-and-immutable-source-representation.md)
 fixes M20-B acquisition ownership, selected-hit binding, immutable source representation,
-provenance and finalization. M20-C and later-phase architecture decisions remain open.
+provenance and finalization. [ADR 0015](adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md)
+fixes M20-C inspection ownership, exact source binding, citations, fact authority, durable
+history, and conditional classification. M20-C implementation and later-phase architecture
+decisions remain open.

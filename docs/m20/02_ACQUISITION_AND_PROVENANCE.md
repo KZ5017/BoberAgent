@@ -1,5 +1,9 @@
 # M20-B — Immutable acquisition and provenance
 
+**Status: CLOSED.** The opt-in B5 public GitHub run completed durably; acquisition stops at
+structurally validated source evidence. Semantic inspection, entrypoint/dependency discovery,
+ExecutionPlan construction, and source execution remain M20-C+ work.
+
 ## Goal and dependency
 
 Turn **one selected M20-A candidate and one specific historical source hit** into a reproducible
@@ -95,8 +99,8 @@ and structural-manifest Artifacts. Normal Router/transport/Result-ingestion and 
 Node→Core Artifact synchronization deliver both; Core remains `AWAITING_ARTIFACT` until verified
 content is available and then replays finalization across restarts. See the
 [M20-B implementation note](M20B_IMPLEMENTATION.md). B3 used in-memory transport for offline
-validation. B4 now provides the GitHub adapter, tested with an offline managed-tool shim; no
-public GitHub request or M20-C inspection has occurred.
+validation. B4 provides the GitHub adapter, tested with an offline managed-tool shim; B5 then
+validated that adapter against public GitHub. No M20-C inspection has occurred.
 
 ## B4 GitHub adapter (offline-validated)
 
@@ -134,5 +138,7 @@ historical hit ID, a real MCP Node advertising `poc.source_acquisition`, and man
 `--check-config` is read-only/offline; `--live-network` is required to dispatch. The harness
 checks Result-before-Artifact `AWAITING_ARTIFACT`, both real Node→Core synchronized Artifacts,
 hashes, structural manifest, provenance and Core reopen. See the manual-smoke README for exact
-commands and bounds. **Offline preparation is not B5 live success**: M20-B remains open until
-one explicitly opted-in public run reaches durable `COMPLETED`. No M20-C behavior is included.
+commands and bounds. The selected public run reached durable `COMPLETED` after both Artifacts
+were verified in Core, and remained so after Core reopen without a GitHub re-fetch. This closes
+M20-B; no M20-C behavior is included. The exact validation record, including the prior safely
+rejected attempt, is in the [implementation note](M20B_IMPLEMENTATION.md).

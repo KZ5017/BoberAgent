@@ -125,3 +125,14 @@ adapter/version, counts, and both Artifact descriptors. The B2 inventory and B3 
 Artifact sync, `AWAITING_ARTIFACT`, and replayable Core finalization are unchanged. The B4 tests
 and manual smoke are entirely offline with a managed-tool response shim. **B5**, not B4, owns
 opt-in real public GitHub validation; M20-C inspection and source execution remain absent.
+
+## B5 opt-in real-service validation
+
+The B5 operator harness is `scripts/manual-smoke/m20b5_live_github_acquisition_smoke_test.py`.
+It requires an existing M20-A Core database, an explicitly selected `PoCCandidateRef` and
+historical hit ID, a real MCP Node advertising `poc.source_acquisition`, and managed curl 8.4–8.x.
+`--check-config` is read-only/offline; `--live-network` is required to dispatch. The harness
+checks Result-before-Artifact `AWAITING_ARTIFACT`, both real Node→Core synchronized Artifacts,
+hashes, structural manifest, provenance and Core reopen. See the manual-smoke README for exact
+commands and bounds. **Offline preparation is not B5 live success**: M20-B remains open until
+one explicitly opted-in public run reaches durable `COMPLETED`. No M20-C behavior is included.

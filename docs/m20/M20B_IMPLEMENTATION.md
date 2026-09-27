@@ -69,4 +69,18 @@ The ordinary MCP Node startup must configure both `--tool curl=/path/to/curl` an
 advertised unavailable. B5 additionally needs explicit public egress to `api.github.com` and
 `codeload.github.com`, a persisted M20-A candidate plus selected historical hit, bounds large
 enough for the five API/archive requests and one codeload redirect, and Core Artifact sync.
-There is no B5 live-smoke command or public repository selection in B4.
+B4 did not include a B5 live-smoke command or public repository selection; the separately
+opted-in B5 harness below adds that validation surface without changing the B4 adapter.
+
+## B5 live validation harness (prepared; public run pending)
+
+The manual-only B5 script consumes a previously persisted M20-A GitHub candidate plus one
+operator-selected historical source-hit ID. It never reruns research or selects a latest hit.
+An offline `--check-config` validates the explicit Core database, selection, MCP settings and
+fixed bounds without dispatch or network. `--live-network` uses the normal Core Registry/Router,
+real MCP, Node acquisition provider, Result inbox/ingestion, and chunked Artifact sync. It
+requires `AWAITING_ARTIFACT` after the Result, then `COMPLETED` only after both verified Core
+Artifacts arrive. A durable reopen verifies source/Run/provider/revision identity and exact
+Artifact hashes without re-fetch. The operator procedure, Kali startup, egress and failure
+categories are in `scripts/manual-smoke/README.md`. No live public run is claimed by this
+implementation note; M20-B remains open until one such run passes.

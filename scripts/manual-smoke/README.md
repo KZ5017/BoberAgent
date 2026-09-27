@@ -392,3 +392,70 @@ Result ingestion, Artifact synchronization and Core finalization run. Output inc
 and fresh repository identities, the historical branch, resolved full SHA, raw/manifest
 ArtifactRefs and hashes, and terminal status. No GitHub token, Internet, Kali VM, repository
 execution, or M20-C inspection is involved. B5 live validation is a separate opt-in step.
+
+## M20-B5 real public GitHub acquisition (opt-in, not automated)
+
+This is the final **live validation**, not another acquisition implementation. It requires a
+previous M20-A **persisted, admitted public GitHub** candidate and an explicit historical hit
+ID. The M20-A2 live smoke above prints both (`Candidates:` and `Hit: id=...`). Choose a small,
+harmless public research repository yourself; a search lead is not vulnerability proof. B5
+does not select the first/latest hit, contact a target, inspect source meaning, or execute source.
+
+On Kali, from the repository root, use a **dedicated fresh Node runtime** (so the pending
+Artifact list contains only this smoke's Artifacts). Ensure `/usr/bin/curl` is version 8.4–8.x
+and only `api.github.com` and `codeload.github.com` are permitted public egress. The two hosts
+are enforced by the production adapter; no GitHub token/private-repository support is added.
+
+```shell
+export BOBERAGENT_MCP_TOKEN='<dedicated-test-token>'
+uv run boberagent-node-mcp \
+  --runtime-directory /var/lib/boberagent-m20b5-smoke \
+  --bind-host 0.0.0.0 --port 8443 \
+  --tls-certificate /etc/boberagent/node.crt \
+  --tls-private-key /etc/boberagent/node.key \
+  --capability-path capabilities/poc-source-acquisition \
+  --tool curl=/usr/bin/curl --tool-version-arg curl=--version
+```
+
+Use the Node ID printed at startup. On WSL/Core, first run the **offline, read-only** preflight
+with your actual persisted M20-A database, selected candidate/hit, explicit Core Artifact root,
+and MCP endpoint. The script reads `BOBERAGENT_MCP_TOKEN` from the process or ignored
+`.env.local` using the normal operator loader; it never prints it. The token must match Kali.
+
+```shell
+export BOBERAGENT_MCP_TOKEN='<same-dedicated-test-token>'
+export BOBERAGENT_MCP_ENDPOINT='https://kali.example.test:8443/mcp'
+export BOBERAGENT_NODE_ID='node-from-Kali-startup'
+export POC_CANDIDATE_REF='poc-candidate-from-M20-A'
+export SOURCE_HIT_ID='positive-hit-id-from-M20-A'
+uv run python scripts/manual-smoke/m20b5_live_github_acquisition_smoke_test.py \
+  --check-config \
+  --database /absolute/path/to/m20a-core.sqlite3 \
+  --artifact-root /absolute/path/to/m20b5-core-artifacts \
+  --candidate-ref "$POC_CANDIDATE_REF" --hit-id "$SOURCE_HIT_ID" \
+  --endpoint "$BOBERAGENT_MCP_ENDPOINT" --node-id "$BOBERAGENT_NODE_ID" \
+  --ca-file /absolute/path/to/lab-ca.pem
+```
+
+After reviewing the printed repository, historical branch and explicit bounds, repeat the
+command replacing `--check-config` with `--live-network`. No public request is made without
+that flag. For an isolated plaintext lab only, replace `--ca-file` with
+`--allow-insecure-remote-transport` and use an `http://` endpoint. Do not use plaintext MCP
+over an untrusted network.
+
+The fixed bounds are 32 MiB total downloaded bytes, 128 MiB uncompressed ZIP content, 32 MiB
+per file, 2,500 entries, depth 32, 512-byte paths, 200:1 compression ratio, eight outbound
+requests, one redirect, and 180 seconds acquisition time. This covers the five GitHub API/
+archive requests plus one codeload request without allowing unbounded retrieval. The script
+uses a 240-second Result wait and a 64 KiB Artifact transfer chunk. Choose a repository that
+fits these limits; do not bypass them. A successful run must show real MCP registration/routing,
+`DISPATCHED → AWAITING_ARTIFACT → COMPLETED`, both Artifacts synchronized, SHA-256/size
+verification through Core storage, and `COMPLETED` after Core database reopen. Reopen does not
+contact GitHub again.
+
+Provider unavailability, API rate limits, repository identity changes, missing branches,
+truncated trees, Gitlinks, LFS pointers, unsafe/oversized ZIPs, and Artifact sync failure are
+**non-successful safe stops**. Inspect the retained Core database and Node diagnostics; do not
+automatically retry a possibly state-changing Run. This manual smoke is not collected by pytest
+and has not been declared successful merely because its offline preflight passes. M20-C
+semantic inspection, repository execution, and private GitHub authentication remain deferred.

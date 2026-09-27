@@ -113,7 +113,7 @@ async def _run(args: argparse.Namespace) -> None:
         print(f"Outbound metadata query: {github_repository_query(attempt.request)}")
         for hit in hits:
             print(
-                f"Hit: {hit.decision.value} {hit.source.source_uri} "
+                f"Hit: id={hit.hit_id} {hit.decision.value} {hit.source.source_uri} "
                 f"provider_result_id={hit.source.provider_result_id or '-'} "
                 f"candidate={hit.candidate_ref or '-'}"
             )

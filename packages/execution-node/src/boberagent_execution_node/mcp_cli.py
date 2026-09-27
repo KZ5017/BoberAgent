@@ -29,6 +29,13 @@ def _parser() -> argparse.ArgumentParser:
         metavar="NAME=EXECUTABLE",
         help="register a logical tool executable",
     )
+    parser.add_argument(
+        "--tool-version-arg",
+        action="append",
+        default=[],
+        metavar="NAME=ARG",
+        help="configure one version-probe argument for a registered tool",
+    )
     parser.add_argument("--tls-certificate", type=Path)
     parser.add_argument("--tls-private-key", type=Path)
     parser.add_argument("--allow-insecure-remote-transport", action="store_true")
@@ -40,13 +47,26 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _tools(values: list[str]) -> dict[str, ToolConfiguration]:
+def _tools(
+    values: list[str], version_args: list[str] | None = None
+) -> dict[str, ToolConfiguration]:
     tools: dict[str, ToolConfiguration] = {}
     for value in values:
         name, separator, executable = value.partition("=")
         if not separator or not name or not executable:
             raise ValueError("--tool must use NAME=EXECUTABLE")
+        if name in tools:
+            raise ValueError(f"duplicate tool name: {name}")
         tools[name] = ToolConfiguration(executable=executable)
+    configured: set[str] = set()
+    for value in version_args or []:
+        name, separator, argument = value.partition("=")
+        if not separator or not name or not argument:
+            raise ValueError("--tool-version-arg must use NAME=ARG")
+        if name not in tools or name in configured:
+            raise ValueError("version probe must name one registered tool exactly once")
+        configured.add(name)
+        tools[name] = tools[name].model_copy(update={"version_args": (argument,)})
     return tools
 
 
@@ -59,7 +79,7 @@ async def _run(arguments: argparse.Namespace) -> None:
     node_configuration = NodeConfiguration.for_runtime_directory(
         arguments.runtime_directory,
         capability_paths=tuple(arguments.capability_path),
-        tools=_tools(arguments.tool),
+        tools=_tools(arguments.tool, arguments.tool_version_arg),
     )
     node = ExecutionNode(node_configuration)
     await node.initialize()

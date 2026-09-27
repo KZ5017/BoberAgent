@@ -1,6 +1,6 @@
 # ADR 0014: M20 acquisition ownership and immutable source representation
 
-**Status:** Accepted; M20-B1–B3 fixture-only acquisition and finalization implemented, M20-B4–B5 pending.
+**Status:** Accepted; M20-B1–B4 implemented (B4 offline/mock validated), M20-B5 live validation pending.
 
 ## Context
 

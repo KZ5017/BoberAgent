@@ -237,10 +237,16 @@ def _receipt(invocation: CapabilityInvocation) -> PoCSourceAcquisitionReceipt:
         repository_uri=inputs.repository_uri,
         provider_repository_id=inputs.provider_repository_id,
         historical_ref=inputs.historical_ref,
+        validated_repository_uri=inputs.repository_uri,
+        validated_provider_repository_id=inputs.provider_repository_id,
+        repository_validation_uri="https://api.github.com/repos/example/repo-main",
         resolved_commit_sha="a" * 40,
+        resolved_tree_sha="b" * 40,
         resolved_at=NOW,
-        resolution_uri="https://api.github.com/repos/example/repo/commits/old",
-        final_archive_uri="https://codeload.github.com/example/repo/zip/sha",
+        resolution_uri="https://api.github.com/repos/example/repo-main/branches/old",
+        tree_uri=f"https://api.github.com/repos/example/repo-main/git/trees/{'b' * 40}?recursive=1",
+        archive_request_uri=f"https://api.github.com/repos/example/repo-main/zipball/{'a' * 40}",
+        final_archive_uri=f"https://codeload.github.com/example/repo-main/zip/{'a' * 40}",
         archive_representation="github_zip",
         adapter_id="offline-fixture",
         adapter_version="1.0",
@@ -472,9 +478,9 @@ def test_receipt_binding_and_terminal_failure_are_conservative(
         {"provider_repository_id": 777},
         {"request_count": 4},
     ):
-        wrong = PoCSourceAcquisitionReceipt.model_validate(
-            {**receipt.model_dump(mode="json"), **update}
-        )
+        wrong = receipt.model_copy(
+            update=update
+        )  # exercise Core binding beyond Contract validation
         with pytest.raises(PoCAcquisitionError):
             persisted = service.get(acquisition.acquisition_ref)
             assert persisted is not None

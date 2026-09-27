@@ -16,19 +16,19 @@ Core reconciliation reads a persisted, processed CapabilityResult, validates the
 
 The offline smoke is `uv run python scripts/manual-smoke/m20b1_acquisition_foundation_smoke_test.py`. It uses only a temporary Core database, deterministic research hits, synthetic receipt, and local verified Artifact bytes. No internet, GitHub request, Kali Node, downloader, ZIP inventory, or source execution is used.
 
-B2's downloader feasibility, local fixture acquisition, structural ZIP inventory, and hostile archive tests are described below. B3's Artifact integration/reconciliation follows; B4 owns real GitHub identity/SHA/archive retrieval. M20-C inspection and later PoC execution remain out of scope.
+B2's downloader feasibility, local fixture acquisition, structural ZIP inventory, and hostile archive tests are described below. B3 adds Artifact integration/reconciliation; B4 adds offline-tested GitHub identity/SHA/tree/archive retrieval. M20-C inspection and later PoC execution remain out of scope.
 
 ## B2 local bounded-acquisition proof
 
-The installable `poc.source_acquisition:acquire` provider under `capabilities/poc-source-acquisition` is **fixture-only**. Its static manifest declares `source_kind=loopback_fixture`, `internet_access=false`, and required managed `curl >=8.4,<9`. GitHub/public acquisition inputs fail closed; the B1 planned GitHub definition remains documentation, not a live provider. The shared input/receipt now have a source-kind-discriminated loopback fixture variant with an explicit port and truthful loopback provenance URIs. GitHub URI/ref/provenance validation remains strict and unchanged. B1 Core creation and receipt reconciliation still accept only GitHub selections; B3/B4 must review any Core fixture integration separately.
+At B2, the installable `poc.source_acquisition:acquire` provider was **fixture-only** and rejected GitHub/public inputs. B4 extends that same provider and static manifest to public GitHub mode. The shared input/receipt retain the source-kind-discriminated loopback fixture variant with explicit port and truthful loopback provenance URIs. Core's B3 fixture integration remains separate from the historical GitHub research claim.
 
 The selected downloader is curl 8.4+ because `--max-filesize` enforces a ceiling **during** an unknown-length transfer in that version. The local proof used curl 8.5.0 and observed an exact-boundary response succeed and an oversized response stop with exit 63 after exactly the allowed bytes. The adapter invokes only SDK `ProcessService.run_tool(tool="curl", args=...)`, never shell or direct HTTP. The Node's ProcessService sanitizes environment; `-q` first disables .curlrc, `--proxy "" --noproxy "*"` disables ambient proxy routing, `--proto =http` restricts this fixture route, `--max-time` plus ProcessService timeout bounds each request, `--max-filesize` bounds arriving bytes, and `--output` writes only under a managed Workspace. No `--location` is used. The adapter validates each curl-reported redirect before issuing the next request; scheme, literal 127.0.0.1 host, same port, credentials, query/fragment, control characters, path traversal, redirect count, total request count, remaining aggregate byte budget, and total elapsed deadline are checked. The revision response has an additional 4 KiB in-transfer ceiling. Only fixed `/revision` and `/archive.zip` initial routes exist. The fixture revision JSON must repeat the authorized repository URI, provider repository ID, and historical ref, and supplies a synthetic full 40-hex SHA. That SHA is not the archive SHA-256.
 
 The raw response is copied unchanged to a `poc.source.raw` ZIP Artifact **before** inventory. Trusted code inventories the ZIP without extraction. It preflights the central directory/count/raw NUL names, then accepts only regular files and directories. Names use POSIX separators, NFC normalization and case-fold collision detection (including implicit parent directories); one unambiguous common archive root is recorded and stripped once from manifest paths. Entry count includes the archive's root directory and all other explicit entries; manifest `entry_count` excludes only the stripped root. Each file is streamed under actual per-file/total decompressed byte and compression-ratio bounds, CRC checked, and SHA-256 hashed. Paths are bounded by UTF-8 byte length and component depth. A hard 16 MiB structural-manifest ceiling is enforced before and after JSON serialization. A versioned, sorted, canonical JSON `poc.source.manifest` Artifact contains structural paths, types, size/hash, mode/executable when reliable, root prefix, revision, and raw hash/size. It contains no semantic source interpretation.
 
-Traversal, absolute/drive/UNC-like/backslash paths, duplicate/case/Unicode collisions, special entries and symlinks, encrypted/unsupported compression, unreviewed ZIP extra fields, corruption, limits, `.gitmodules`, and canonical Git LFS pointers reject completion. LFS/submodule detection from ZIP alone is incomplete: definitive Gitlink/tree checks remain B4. A rejected archive may leave only the raw Artifact as evidence and yields `COMPLETED + UNKNOWN` with a bounded reason code; no successful receipt or manifest is produced. Managed Workspace files are cleaned after success and rejection; spooled Artifacts remain. An uncertain Node crash still follows existing conservative Run recovery, with no automatic reacquisition.
+Traversal, absolute/drive/UNC-like/backslash paths, duplicate/case/Unicode collisions, special entries and symlinks, encrypted/unsupported compression, unreviewed ZIP extra fields, corruption, limits, and canonical Git LFS pointers reject completion. Fixture mode rejects `.gitmodules` because it has no complete Gitlink check; B4 GitHub mode accepts that file only after a complete Gitlink-free tree check and never fetches its references. A rejected archive may leave only the raw Artifact as evidence and yields `COMPLETED + UNKNOWN` with a bounded reason code; no successful receipt or manifest is produced. Managed Workspace files are cleaned after success and rejection; spooled Artifacts remain. An uncertain Node crash still follows existing conservative Run recovery, with no automatic reacquisition.
 
-Run `uv run python scripts/manual-smoke/m20b2_bounded_acquisition_smoke_test.py` for the entirely offline loopback proof. It exercises real Node loading, managed curl, exact-byte raw Artifact, manifest, and a traversal rejection. B4 owns fresh public GitHub identity/SHA/tree/archive requests and any public egress allowlist. No M20-C inspection or PoC execution exists.
+Run `uv run python scripts/manual-smoke/m20b2_bounded_acquisition_smoke_test.py` for the entirely offline loopback proof. It exercises real Node loading, managed curl, exact-byte raw Artifact, manifest, and a traversal rejection. B4's fixed-host GitHub adapter is documented below. No M20-C inspection or PoC execution exists.
 
 ## B3 Artifact synchronization and Core finalization
 
@@ -36,4 +36,37 @@ B3 persists an explicit `source_kind=loopback_fixture` and fixture port on a Cor
 
 The normal Core transport receiver durably accepts and processes the Result. A successful typed receipt binds the selected acquisition, Run, source claim, fixture port, raw ZIP descriptor, and manifest descriptor. `AWAITING_ARTIFACT` is durable even when the Result arrives first; neither Artifact alone suffices. Existing Node `ArtifactSyncCoordinator` and Core `CoreArtifactReceiver` transfer each Artifact independently with chunked offset resume, SHA-256/size verification, and unchanged `ArtifactRef`. Core finalization reads the Artifact catalog and verified bytes through `CoreArtifactService`; it never reads Node Workspace/spool paths. Reconciliation can run again after Core restart without redispatch, redownload, or a new Run. Generic Node restart recovery leaves unproven in-flight Runs interrupted and retains spooled Artifact metadata for pending sync.
 
-The offline integration and `uv run python scripts/manual-smoke/m20b3_acquisition_sync_smoke_test.py` use the in-memory **neutral protocol** with a real Node runtime, managed curl, loopback HTTP fixture, normal Result ingestion, partial transfer/reconnect, Node/Core reopen, and both arrival orders. This is not a real MCP cross-machine test; generic MCP Artifact transport remains unchanged. Hostile ZIPs produce no successful receipt or completion-ready manifest. B4 alone owns live GitHub identity/SHA/tree/archive retrieval and public egress policy. No semantic source inspection or repository execution is added.
+The offline integration and `uv run python scripts/manual-smoke/m20b3_acquisition_sync_smoke_test.py` use the in-memory **neutral protocol** with a real Node runtime, managed curl, loopback HTTP fixture, normal Result ingestion, partial transfer/reconnect, Node/Core reopen, and both arrival orders. This is not a real MCP cross-machine test; generic MCP Artifact transport remains unchanged. Hostile ZIPs produce no successful receipt or completion-ready manifest. B4's GitHub identity/SHA/tree/archive adapter is offline-tested below; B5 owns live-service validation. No semantic source inspection or repository execution is added.
+
+## B4 fixed-host GitHub mode (offline/mock validated)
+
+The production `poc.source_acquisition` manifest now advertises both `github_repository` and
+`loopback_fixture`; required `curl >=8.4,<9` is unchanged. Core still selects one historical
+hit, persists a normal acquisition, and routes a normal Run. The Node validates public repository
+ID/owner/name/URL, resolves only the selected historical branch to a full commit SHA, obtains its
+tree SHA, and rejects incomplete trees, Gitlinks, symlinks and unsupported Git modes. A
+`.gitmodules` file with a complete Gitlink-free tree remains inert evidence; no submodule URL is
+fetched. Canonical LFS pointers are rejected by the shared ZIP inventory without LFS hydration.
+
+Exactly constructed endpoints use `api.github.com` for repository, branch, commit, recursive
+tree, and SHA-addressed zipball metadata; only a validated `codeload.github.com` legacy.zip/zip
+redirect for the same owner/repo/full SHA may deliver bytes. No arbitrary URL, generic web fetch,
+ambient proxy/config, automatic redirect, retry, private-repository token, or public request in
+tests. Managed curl enforces streaming size and timeout; one acquisition-wide request, byte,
+redirect and deadline budget covers metadata and archive. GitHub response bodies are never copied
+into Diagnostics. The receipt records fresh identity and endpoints separately from the unchanged
+historical claim, plus the exact ZIP hash and both Artifact descriptors. The ZIP is a GitHub
+archive export, not proof of native Git object-byte equivalence.
+
+The offline Core→Router→Node integration test uses a test-owned curl executable that only writes
+scripted local responses. It exercises real Node runtime, B2 Artifacts/inventory, B3 neutral
+in-memory Result delivery, Artifact synchronization, and Core finalization. No public GitHub call
+has been made; B5 must opt in to live public validation. M20-C semantic source inspection and
+repository-controlled execution remain deferred.
+
+The ordinary MCP Node startup must configure both `--tool curl=/path/to/curl` and
+`--tool-version-arg curl=--version`; otherwise the version-gated capability is correctly
+advertised unavailable. B5 additionally needs explicit public egress to `api.github.com` and
+`codeload.github.com`, a persisted M20-A candidate plus selected historical hit, bounds large
+enough for the five API/archive requests and one codeload redirect, and Core Artifact sync.
+There is no B5 live-smoke command or public repository selection in B4.

@@ -232,6 +232,10 @@ class CorePoCAcquisitionService:
     ) -> None:
         """Check the typed Node claim against Core's immutable selection and routing."""
 
+        try:
+            receipt = PoCSourceAcquisitionReceipt.model_validate(receipt.model_dump(mode="json"))
+        except ValidationError as error:
+            raise PoCAcquisitionError("acquisition receipt is invalid") from error
         if (
             receipt.acquisition_ref != acquisition.acquisition_ref
             or receipt.run_ref != acquisition.run_ref

@@ -353,7 +353,7 @@ uv run python scripts/manual-smoke/m20b2_bounded_acquisition_smoke_test.py
 
 The script creates a disposable Execution Node and a loopback-only HTTP fixture. The fixture
 serves one deterministic synthetic revision and one GitHub-style ZIP. The real Node Capability
-Runtime loads the fixture-only `poc.source_acquisition` manifest, runs curl through
+Runtime loads the `poc.source_acquisition` manifest with explicit fixture-mode input, runs curl through
 `ProcessService`, preserves exact raw ZIP bytes in its Artifact spool, inventories the ZIP
 without extraction, and prints the synthetic revision, raw/manifest ArtifactRefs, hashes, size,
 entry count, and uncompressed total. It then serves a traversal ZIP and verifies rejection with
@@ -376,3 +376,19 @@ chunk transfer resumes, both real Node-produced Artifacts synchronize to Core, a
 `PoCAcquisition` finalization is replayed after Core and Node reopen. It prints only refs, hashes,
 selected hit, revision, provider/Node, and status. Transport is in-memory across the existing
 neutral protocol—not MCP. No public network, GitHub acquisition, or source execution occurs.
+
+## M20-B4 GitHub acquisition smoke (fully offline)
+
+From the repository root:
+
+```bash
+uv run python scripts/manual-smoke/m20b4_github_acquisition_mock_smoke_test.py
+```
+
+This reuses the B4 integration harness and creates disposable Core/Node stores. A test-owned
+executable substitutes for managed curl and maps the **production fixed GitHub URLs** to local
+metadata and a small ZIP; it has no network code. The normal Router, Node Capability Runtime,
+Result ingestion, Artifact synchronization and Core finalization run. Output includes historical
+and fresh repository identities, the historical branch, resolved full SHA, raw/manifest
+ArtifactRefs and hashes, and terminal status. No GitHub token, Internet, Kali VM, repository
+execution, or M20-C inspection is involved. B5 live validation is a separate opt-in step.

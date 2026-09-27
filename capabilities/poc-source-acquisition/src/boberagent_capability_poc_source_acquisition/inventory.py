@@ -45,6 +45,7 @@ def inventory_zip(
     resolved_commit_sha: str,
     raw_archive_sha256: str,
     raw_archive_size_bytes: int,
+    gitlinks_verified_absent: bool = False,
 ) -> InventoryResult:
     """Inventory regular entries under actual-byte, path, and collision limits."""
 
@@ -98,9 +99,11 @@ def inventory_zip(
                         )
                     )
                     continue
-                if name == ".gitmodules" or name.endswith("/.gitmodules"):
+                if not gitlinks_verified_absent and (
+                    name == ".gitmodules" or name.endswith("/.gitmodules")
+                ):
                     raise AcquisitionRejected(
-                        "SUBMODULE_UNSUPPORTED", "submodule metadata is unsupported"
+                        "SUBMODULE_UNSUPPORTED", "submodule metadata requires a complete Git tree"
                     )
                 if info.file_size > bounds.max_single_file_bytes:
                     raise AcquisitionRejected(

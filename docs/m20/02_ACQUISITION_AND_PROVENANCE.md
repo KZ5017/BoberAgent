@@ -94,5 +94,34 @@ durable fixture-mode acquisition. The Node's bounded loopback provider produces 
 and structural-manifest Artifacts. Normal Router/transport/Result-ingestion and existing chunked
 Node→Core Artifact synchronization deliver both; Core remains `AWAITING_ARTIFACT` until verified
 content is available and then replays finalization across restarts. See the
-[M20-B implementation note](M20B_IMPLEMENTATION.md). This uses in-memory transport for offline
-validation; no public GitHub provider, public network call, or M20-C inspection exists yet.
+[M20-B implementation note](M20B_IMPLEMENTATION.md). B3 used in-memory transport for offline
+validation. B4 now provides the GitHub adapter, tested with an offline managed-tool shim; no
+public GitHub request or M20-C inspection has occurred.
+
+## B4 GitHub adapter (offline-validated)
+
+The same acquisition Capability now accepts Core-authorized public `github_repository` input.
+It revalidates exact GitHub repository ID, owner/name, public flag, and canonical URL; it never
+follows repository aliases or switches to a current default branch. The historical
+`branch:<name>` claim stays on the selected research hit. A fresh branch response yields a
+full commit SHA, a commit response yields the tree SHA, and a complete recursive tree is checked
+for Gitlinks and unsupported object modes before any archive request. Truncation is not treated
+as proof of Gitlink absence. A `.gitmodules` file without Gitlinks remains inert source data;
+its references are not fetched.
+
+The adapter requests `api.github.com/repos/<owner>/<repo>/zipball/<commit-sha>` and accepts at
+most one explicit, SHA-bound HTTPS redirect to `codeload.github.com`. It does not use arbitrary
+candidate URLs. Managed curl retains B2's disabled ambient configuration/proxies and automatic
+redirects, streaming byte ceiling, finite time, request/redirect budgets, and Workspace output.
+API JSON is byte/depth/entry bounded and validated narrowly. Rate limits, transient errors,
+missing branches, identity changes, and unsupported trees stop without retry. The raw GitHub
+ZIP is an **archive export of commit SHA**, not a native Git checkout; its SHA-256 is the exact
+retained-byte identity, distinct from the upstream commit SHA. Canonical LFS pointers remain
+unsupported and trigger no LFS requests.
+
+The typed receipt binds historical and freshly validated identity, selected branch, commit/tree
+SHA, resolution time, validation/resolution/tree/archive endpoints, final codeload URI,
+adapter/version, counts, and both Artifact descriptors. The B2 inventory and B3 Result ingestion,
+Artifact sync, `AWAITING_ARTIFACT`, and replayable Core finalization are unchanged. The B4 tests
+and manual smoke are entirely offline with a managed-tool response shim. **B5**, not B4, owns
+opt-in real public GitHub validation; M20-C inspection and source execution remain absent.

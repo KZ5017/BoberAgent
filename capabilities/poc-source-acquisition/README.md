@@ -1,7 +1,19 @@
-# `poc.source_acquisition` — M20-B2 fixture provider
+# `poc.source_acquisition` — bounded source acquisition
 
-This provider is deliberately **loopback-fixture only**. It exercises the normal Node Capability Runtime, managed `curl >=8.4,<9`, Workspace, and Artifact spool without contacting GitHub or executing repository code. Its manifest advertises only `source_kind=loopback_fixture`; `github_repository` inputs fail closed. B4 will own a separately reviewed public GitHub adapter.
+The single `acquire` operation supports explicit `loopback_fixture` and public
+`github_repository` modes. Core selects one historical research hit; the Node cannot accept an
+arbitrary URL. The GitHub adapter freshly validates repository ID and owner/name, resolves the
+selected historical branch to a full commit SHA, checks the complete recursive Git tree for
+Gitlinks/special objects, and requests a ZIP by that SHA. Only fixed `api.github.com` endpoints
+and a validated SHA-bound `codeload.github.com` redirect are allowed. No token, proxy,
+automatic redirect, retry, Git checkout, submodule/LFS hydration, extraction, import, build,
+install, or repository-code execution occurs.
 
-The input uses the shared bounded acquisition contract with a synthetic canonical repository claim and an explicit loopback fixture port. The provider requests fixed `/revision` and `/archive.zip` routes on `127.0.0.1:<port>`. It checks the fixture's full-SHA revision claim against the selected repository/ref, preserves the exact ZIP bytes, inventories only structure, and emits a typed receipt plus raw/manifest Artifacts. A rejected ZIP may leave a raw evidence Artifact but never a successful receipt or completion-ready manifest.
+Both modes use SDK-managed `curl >=8.4,<9`, Workspace, raw ZIP Artifact, and one shared
+bounded structural ZIP inventory/manifest. A rejected ZIP may preserve raw evidence but never a
+successful receipt. The Node result uses the existing Result and Artifact-sync path; Core
+finalization waits for both verified Artifacts. The GitHub implementation is **mock-tested only**;
+B5 owns opt-in live public validation.
 
-See [M20-B implementation notes](../../docs/m20/M20B_IMPLEMENTATION.md) for limits and deferred B3/B4 integration.
+See [M20-B implementation notes](../../docs/m20/M20B_IMPLEMENTATION.md) for precise limits and
+provenance semantics.

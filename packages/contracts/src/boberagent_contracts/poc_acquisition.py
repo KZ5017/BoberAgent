@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 from typing import Annotated, Literal, Self
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 from pydantic import AwareDatetime, Field, StringConstraints, field_validator, model_validator
 
@@ -73,7 +73,9 @@ class PoCSourceAcquisitionInput(ContractModel):
             or parsed.query
             or parsed.fragment
             or len(parts) != 2
-            or any(_REPOSITORY_PART.fullmatch(part) is None for part in parts)
+            or any(
+                part in {".", ".."} or _REPOSITORY_PART.fullmatch(part) is None for part in parts
+            )
             or parsed.path != f"/{parts[0]}/{parts[1]}"
         ):
             raise ValueError("repository URI must be a canonical public GitHub repository URL")
@@ -97,9 +99,15 @@ class PoCSourceAcquisitionReceipt(ContractModel):
     provider_repository_id: int = Field(ge=1)
     historical_ref: str = Field(min_length=8, max_length=247)
     fixture_port: int | None = Field(default=None, ge=1, le=65535)
+    validated_repository_uri: str | None = Field(default=None, max_length=255)
+    validated_provider_repository_id: int | None = Field(default=None, ge=1)
+    repository_validation_uri: str | None = Field(default=None, max_length=2048)
     resolved_commit_sha: FullGitCommitSha
+    resolved_tree_sha: FullGitCommitSha | None = None
     resolved_at: AwareDatetime
     resolution_uri: str = Field(min_length=1, max_length=2048)
+    tree_uri: str | None = Field(default=None, max_length=2048)
+    archive_request_uri: str | None = Field(default=None, max_length=2048)
     final_archive_uri: str = Field(min_length=1, max_length=2048)
     archive_representation: Literal["github_zip"]
     adapter_id: AcquisitionName
@@ -140,19 +148,40 @@ class PoCSourceAcquisitionReceipt(ContractModel):
         if self.source_kind == "github_repository":
             if self.fixture_port is not None:
                 raise ValueError("GitHub receipt cannot carry a fixture port")
-            for uri in (self.resolution_uri, self.final_archive_uri):
-                parsed = urlsplit(uri)
-                if (
-                    parsed.scheme != "https"
-                    or parsed.netloc not in {"api.github.com", "codeload.github.com"}
-                    or parsed.query
-                    or parsed.fragment
-                    or not parsed.path.startswith("/")
-                ):
-                    raise ValueError("GitHub provenance URI must use approved API/archive hosts")
+            parts = urlsplit(self.repository_uri).path[1:].split("/")
+            owner, repo = parts
+            root = f"https://api.github.com/repos/{owner}/{repo}"
+            branch = self.historical_ref.removeprefix("branch:")
+            if (
+                self.validated_repository_uri != self.repository_uri
+                or self.validated_provider_repository_id != self.provider_repository_id
+                or self.repository_validation_uri != root
+                or self.resolution_uri != f"{root}/branches/{quote(branch, safe='')}"
+                or self.resolved_tree_sha is None
+                or self.tree_uri != f"{root}/git/trees/{self.resolved_tree_sha}?recursive=1"
+                or self.archive_request_uri != f"{root}/zipball/{self.resolved_commit_sha}"
+                or self.final_archive_uri
+                not in {
+                    f"https://codeload.github.com/{owner}/{repo}/legacy.zip/{self.resolved_commit_sha}",
+                    f"https://codeload.github.com/{owner}/{repo}/zip/{self.resolved_commit_sha}",
+                }
+            ):
+                raise ValueError("GitHub receipt identity or endpoint provenance is invalid")
         else:
             if self.fixture_port is None:
                 raise ValueError("fixture receipt requires a loopback port")
+            if any(
+                value is not None
+                for value in (
+                    self.validated_repository_uri,
+                    self.validated_provider_repository_id,
+                    self.repository_validation_uri,
+                    self.resolved_tree_sha,
+                    self.tree_uri,
+                    self.archive_request_uri,
+                )
+            ):
+                raise ValueError("fixture receipt cannot claim GitHub validation")
             for uri in (self.resolution_uri, self.final_archive_uri):
                 parsed = urlsplit(uri)
                 if (

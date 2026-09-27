@@ -1,4 +1,4 @@
-"""M20-B2 fixture acquisition stays behind SDK and never advertises public fetch."""
+"""M20-B4 acquisition stays behind SDK and advertises only bounded source modes."""
 
 from __future__ import annotations
 
@@ -40,12 +40,15 @@ def test_fixture_provider_uses_sdk_not_core_node_or_direct_network() -> None:
     assert violations == []
 
 
-def test_advertised_provider_is_only_loopback_and_version_gated() -> None:
+def test_advertised_provider_modes_are_explicit_and_version_gated() -> None:
     raw = json.loads(MANIFEST.read_text(encoding="utf-8"))
     definition = CapabilityDefinition.model_validate(raw["definition"])
     assert definition.capability_id == "poc.source_acquisition"
-    assert definition.interaction_surfaces.internet_access is False
-    assert definition.operations[0].execution_requirements["source_kind"] == "loopback_fixture"
+    assert definition.interaction_surfaces.internet_access is True
+    assert definition.operations[0].execution_requirements["source_kinds"] == [
+        "github_repository",
+        "loopback_fixture",
+    ]
     assert tuple((item.identifier, item.version_spec) for item in definition.dependencies) == (
         ("curl", ">=8.4,<9"),
     )
@@ -71,5 +74,7 @@ def test_inventory_never_extracts_or_executes_repository_bytes() -> None:
     production_source = "\\n".join(
         path.read_text(encoding="utf-8") for path in SOURCE.rglob("*.py")
     )
-    assert "api.github.com" not in production_source
-    assert "codeload.github.com" not in production_source
+    assert "api.github.com" in production_source
+    assert "codeload.github.com" in production_source
+    assert "urllib.request" not in production_source
+    assert "shell=True" not in production_source

@@ -10,7 +10,7 @@ import zipfile
 from pathlib import Path
 
 import pytest
-from boberagent_contracts import PoCSourceAcquisitionReceipt
+from boberagent_contracts import PoCAcquisitionBounds, PoCSourceAcquisitionReceipt
 from boberagent_core import (
     ArtifactStorageConfiguration,
     CoreArtifactService,
@@ -95,6 +95,7 @@ def _setup(
     raw: bytes | None = None,
     manifest_change: dict[str, object] | None = None,
     files: dict[str, bytes] | None = None,
+    bounds: PoCAcquisitionBounds | None = None,
 ) -> tuple[CorePoCInspectionService, PoCInspection, FilesystemArtifactStorage]:
     raw = raw if raw is not None else _zip(files)
     manifest = _manifest(raw, files)
@@ -109,7 +110,7 @@ def _setup(
         hypothesis_ref=hypothesis.hypothesis_ref,
         candidate_ref=candidate_ref,
         selected_hit_id=hit_ids[0],
-        bounds=_bounds(),
+        bounds=bounds or _bounds(),
     )
     invocation = _dispatch(database, acquisition_service, acquisition.acquisition_ref)
     original = _receipt(invocation)

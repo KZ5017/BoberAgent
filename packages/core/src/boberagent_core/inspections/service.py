@@ -1,4 +1,4 @@
-"""Core-owned C1 inspection lifecycle; evidence is read only from Core Artifacts."""
+"""Core-owned versioned inspection; evidence is read only from Core Artifacts."""
 
 from __future__ import annotations
 
@@ -28,6 +28,17 @@ from .models import (
     PoCInspectionRef,
     SourceCitation,
 )
+from .semantic_analysis import analyze_semantics
+from .semantic_models import (
+    PROFILE_ID as SEMANTIC_PROFILE_ID,
+)
+from .semantic_models import (
+    PROFILE_VERSION as SEMANTIC_PROFILE_VERSION,
+)
+from .semantic_models import (
+    SemanticInspectionDocument,
+    SemanticInspectionLimits,
+)
 
 PROFILE_ID = "m20-c1-evidence"
 PROFILE_VERSION = "1"
@@ -48,7 +59,7 @@ class CitationSpan(CoreModel):
 
 
 class CorePoCInspectionService:
-    """Explicitly pumped, restart-safe C1 structural evidence validation."""
+    """Explicitly pumped, restart-safe C1 evidence and C2 semantic profiles."""
 
     def __init__(
         self,
@@ -68,7 +79,7 @@ class CorePoCInspectionService:
         hypothesis_ref: VulnerabilityHypothesisRef,
         candidate_ref: PoCCandidateRef,
         acquisition_ref: PoCAcquisitionRef,
-        limits: InspectionLimits | None = None,
+        limits: InspectionLimits | SemanticInspectionLimits | None = None,
         selected_paths: tuple[str, ...] = (),
         profile_id: str = PROFILE_ID,
         profile_version: str = PROFILE_VERSION,
@@ -77,6 +88,10 @@ class CorePoCInspectionService:
         """Bind only a completed, correctly owned acquisition and its two Artifacts."""
 
         limits = limits or InspectionLimits()
+        if isinstance(limits, SemanticInspectionLimits) != (profile_id == SEMANTIC_PROFILE_ID):
+            raise InspectionError("INSPECTION_CONFIG_INVALID")
+        if profile_id == SEMANTIC_PROFILE_ID and profile_version != SEMANTIC_PROFILE_VERSION:
+            raise InspectionError("INSPECTION_CONFIG_INVALID")
         if (
             len(selected_paths) > limits.max_zip_entries
             or len(selected_paths) != len(set(selected_paths))
@@ -164,6 +179,30 @@ class CorePoCInspectionService:
             work.inspections.add(inspection)
             return inspection
 
+    def create_semantic(
+        self,
+        *,
+        mission_ref: MissionRef,
+        hypothesis_ref: VulnerabilityHypothesisRef,
+        candidate_ref: PoCCandidateRef,
+        acquisition_ref: PoCAcquisitionRef,
+        limits: SemanticInspectionLimits | None = None,
+        selected_paths: tuple[str, ...] = (),
+        force_new: bool = False,
+    ) -> PoCInspection:
+        """Create a distinct C2 attempt; empty selection means bounded manifest selection."""
+        return self.create(
+            mission_ref=mission_ref,
+            hypothesis_ref=hypothesis_ref,
+            candidate_ref=candidate_ref,
+            acquisition_ref=acquisition_ref,
+            limits=limits or SemanticInspectionLimits(),
+            selected_paths=selected_paths,
+            profile_id=SEMANTIC_PROFILE_ID,
+            profile_version=SEMANTIC_PROFILE_VERSION,
+            force_new=force_new,
+        )
+
     def get(self, inspection_ref: PoCInspectionRef) -> PoCInspection | None:
         with self._database.unit_of_work() as work:
             return work.inspections.get(inspection_ref)
@@ -175,7 +214,7 @@ class CorePoCInspectionService:
     def inspect(
         self, inspection_ref: PoCInspectionRef, *, spans: tuple[CitationSpan, ...] = ()
     ) -> PoCInspection:
-        """Validate exact bytes and persist C1 structure; never interpret source semantics."""
+        """Validate exact bytes and persist the selected deterministic profile output."""
 
         with self._database.unit_of_work() as work:
             current = work.inspections.get(inspection_ref)
@@ -193,6 +232,11 @@ class CorePoCInspectionService:
         try:
             deadline = time.monotonic() + current.limits.max_wall_seconds
             source = VerifiedSource(current, self._artifacts, deadline=deadline)
+            if current.profile_id == SEMANTIC_PROFILE_ID:
+                if current.profile_version != SEMANTIC_PROFILE_VERSION or spans:
+                    raise InspectionError("INSPECTION_CONFIG_INVALID")
+                semantic = analyze_semantics(source)
+                return self._finish(current, InspectionStatus.COMPLETED, document=semantic)
             if len(spans) > current.limits.max_citations:
                 raise InspectionError("INSPECTION_LIMIT_EXCEEDED")
             if any(span.path not in current.selected_paths for span in spans):
@@ -240,6 +284,11 @@ class CorePoCInspectionService:
             )
         except InspectionError as error:
             return self._finish(current, InspectionStatus.FAILED, diagnostic=error.code)
+        except Exception:
+            # Internal extractor defects are NOT coverage gaps. Never serialize
+            # exception text (which could contain hostile source or credentials).
+            self._finish(current, InspectionStatus.FAILED, diagnostic="INSPECTOR_INTERNAL_ERROR")
+            raise InspectionError("INSPECTOR_INTERNAL_ERROR") from None
         return self._finish(current, InspectionStatus.COMPLETED, document=document)
 
     def validate_citation(self, inspection_ref: PoCInspectionRef, citation: SourceCitation) -> None:
@@ -304,7 +353,7 @@ class CorePoCInspectionService:
         current: PoCInspection,
         status: InspectionStatus,
         *,
-        document: InspectionDocument | None = None,
+        document: InspectionDocument | SemanticInspectionDocument | None = None,
         diagnostic: str | None = None,
     ) -> PoCInspection:
         with self._database.unit_of_work() as work:

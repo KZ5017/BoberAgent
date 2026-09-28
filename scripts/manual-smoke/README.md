@@ -488,3 +488,18 @@ citation, and Core reopen. It needs no GitHub, Kali, MCP, or network. It does **
 the real B5 Artifact, infer source semantics, classify execution support, extract or execute
 repository code, or build an ExecutionPlan. See
 [the C1 implementation note](../../docs/m20/M20C_IMPLEMENTATION.md).
+
+## M20-C2 offline deterministic inspection
+
+From the repository root with the dev environment synced:
+
+```bash
+uv run python scripts/manual-smoke/m20c2_deterministic_inspection_smoke_test.py
+```
+
+This thin runner reuses the migration-backed synthetic fixture suite: README, Python,
+PowerShell, shell, pyproject/requirements and binary entries are retained as Core ZIP/manifest
+Artifacts. C1 validates exact evidence, C2 records bounded typed observations/citations, then
+Core reopens. Output is safe metadata/counts/indicator codes only, not source or string defaults.
+No Internet, GitHub, Node, MCP or real B5 Artifact access is required. This is not a classification,
+plan or execution smoke; C3+ remains deferred.

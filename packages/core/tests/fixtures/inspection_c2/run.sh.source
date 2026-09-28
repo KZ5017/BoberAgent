@@ -1,0 +1,7 @@
+#!/bin/sh
+# rm in a comment is not a code token.
+target="$1"
+while getopts "t:p:" option; do :; done
+curl "$target"
+nc "$target" 80
+echo example > evidence.txt

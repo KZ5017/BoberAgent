@@ -1,0 +1,5 @@
+requests>=2.31
+aiohttp==3.9
+-r other.txt
+-e git+https://controlled.invalid/repo
+pkg; python_version > "3"

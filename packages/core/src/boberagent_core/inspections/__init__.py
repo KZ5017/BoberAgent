@@ -8,14 +8,40 @@ from .models import (
     PoCInspectionRef,
     SourceCitation,
 )
+from .semantic_models import (
+    BehaviorIndicator,
+    CoverageStatus,
+    DependencyObservation,
+    EntrypointCandidate,
+    EpistemicState,
+    FileCoverage,
+    ParameterCandidate,
+    Requirement,
+    RiskIndicator,
+    SemanticInspectionDocument,
+    SemanticInspectionLimits,
+    SourceOrigin,
+)
 from .service import CorePoCInspectionService
 
 __all__ = [
+    "BehaviorIndicator",
     "CorePoCInspectionService",
+    "CoverageStatus",
+    "DependencyObservation",
+    "EntrypointCandidate",
+    "EpistemicState",
+    "FileCoverage",
     "InspectionError",
     "InspectionLimits",
     "InspectionStatus",
+    "ParameterCandidate",
     "PoCInspection",
     "PoCInspectionRef",
+    "Requirement",
+    "RiskIndicator",
+    "SemanticInspectionDocument",
+    "SemanticInspectionLimits",
     "SourceCitation",
+    "SourceOrigin",
 ]

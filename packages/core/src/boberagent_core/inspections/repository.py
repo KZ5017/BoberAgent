@@ -5,6 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 
 from boberagent_contracts import ArtifactRef, MissionRef, PoCAcquisitionRef
+from pydantic import TypeAdapter
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -18,6 +19,7 @@ from .models import (
     PoCInspection,
     PoCInspectionRef,
 )
+from .semantic_models import SemanticInspectionDocument, SemanticInspectionLimits
 
 _NEXT = {
     InspectionStatus.REQUESTED: {InspectionStatus.INSPECTING},
@@ -126,7 +128,9 @@ def _from_row(row: PoCInspectionRow) -> PoCInspection:
         profile_id=row.profile_id,
         profile_version=row.profile_version,
         config_fingerprint=row.config_fingerprint,
-        limits=InspectionLimits.model_validate(deepcopy(row.limits_json)),
+        limits=TypeAdapter(InspectionLimits | SemanticInspectionLimits).validate_python(
+            deepcopy(row.limits_json)
+        ),
         selected_paths=tuple(row.selected_paths_json),
         status=InspectionStatus(row.status),
         created_at=row.created_at,
@@ -135,7 +139,11 @@ def _from_row(row: PoCInspectionRow) -> PoCInspection:
         document=(
             None
             if row.document_json is None
-            else InspectionDocument.model_validate(deepcopy(row.document_json))
+            else (
+                SemanticInspectionDocument
+                if row.document_json.get("document_version") == "m20-c2-deterministic-v1"
+                else InspectionDocument
+            ).model_validate(deepcopy(row.document_json))
         ),
         diagnostic=row.diagnostic,
     )

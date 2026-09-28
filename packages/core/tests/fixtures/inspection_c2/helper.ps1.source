@@ -1,0 +1,8 @@
+param(
+    [string]$Target,
+    [int]$Port
+)
+# Invoke-Expression in a comment is not a code token.
+Invoke-WebRequest -Uri $Target
+Start-Process test-tool
+Set-Content evidence "example"

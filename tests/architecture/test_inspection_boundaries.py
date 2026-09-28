@@ -18,6 +18,12 @@ FORBIDDEN_IMPORTS = (
     "boberagent_transport_mcp",
     "boberagent_capability_",
     "boberagent_core.knowledge",
+    "boberagent_core.reasoning",
+    "boberagent_core.llm",
+    "boberagent_core.capabilities.router",
+    "requests",
+    "importlib",
+    "runpy",
     "boberagent_core.research.providers",
     "boberagent_sdk",
     "subprocess",
@@ -37,6 +43,13 @@ FORBIDDEN_CALLS = frozenset(
         "dispatch",
         "submit_invocation",
         "urlopen",
+        "__import__",
+        "ExecutionPlan",
+        "system",
+        "popen",
+        "Popen",
+        "run_path",
+        "run_module",
     }
 )
 
@@ -67,7 +80,16 @@ def test_core_inspection_is_read_only_and_offline() -> None:
                     if isinstance(node.func, ast.Name)
                     else ""
                 )
-                if name in FORBIDDEN_CALLS:
+                literal_regex = (
+                    name == "compile"
+                    and isinstance(node.func, ast.Attribute)
+                    and isinstance(node.func.value, ast.Name)
+                    and node.func.value.id == "re"
+                    and node.args
+                    and isinstance(node.args[0], ast.Constant)
+                    and isinstance(node.args[0].value, str)
+                )
+                if name in FORBIDDEN_CALLS and not literal_regex:
                     violations.append(f"{path}: call {name}")
     assert not violations, violations
 

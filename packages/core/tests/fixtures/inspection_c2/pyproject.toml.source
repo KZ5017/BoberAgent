@@ -1,0 +1,7 @@
+[project]
+name = "synthetic-inspection"
+requires-python = ">=3.11"
+dependencies = ["requests>=2.31", "aiohttp==3.9"]
+
+[project.scripts]
+synthetic = "poc:main"

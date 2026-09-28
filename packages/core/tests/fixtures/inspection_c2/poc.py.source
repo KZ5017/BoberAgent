@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+import argparse
+import os
+import requests
+import socket
+import subprocess
+from pathlib import Path
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--target", required=True)
+parser.add_argument("--port", type=int, default=80)
+parser.add_argument("--username")
+parser.add_argument("--password", default="synthetic-do-not-copy")
+parser.add_argument("--timeout", default=30)
+parser.add_argument("--mystery")
+
+def main():
+    requests.get("http://controlled.invalid/")
+    connection = socket.socket()
+    connection.connect(("controlled.invalid", 80))
+    connection.bind(("127.0.0.1", 0))
+    connection.listen(1)
+    socket.gethostbyname("controlled.invalid")
+    subprocess.run(["test-tool"])
+    os.getenv("BOBERAGENT_MCP_TOKEN")
+    os.environ["OTHER_VARIABLE"]
+    os.geteuid()
+    open("evidence", "w")
+    Path("data").write_text("example")
+    os.unlink("data")
+    eval("hostile_data")
+
+if __name__ == "__main__":
+    main()

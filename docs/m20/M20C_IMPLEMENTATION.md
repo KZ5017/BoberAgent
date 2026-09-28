@@ -1,6 +1,6 @@
 # M20-C1 exact source-evidence foundation
 
-**Status:** C1–C3 implemented. C4/C5 remain unimplemented. Inspection is Core-owned and offline;
+**Status:** C1–C3 implemented; C4 retained-source harness implemented, real operator validation pending. C5 remains deferred. Inspection is Core-owned and offline;
 it reads only retained Core Artifacts from a `COMPLETED` `PoCAcquisition`. It does not import,
 extract, compile for execution, execute, or re-fetch acquired source. C1 does not interpret semantics;
 C2 adds the bounded deterministic profile described below.
@@ -238,6 +238,94 @@ Tests separately cover authority, severity, precedence, exact reason binding, in
 determinism, strict serialization, coverage relevance, reuse/config/parent history and recovery.
 Architecture guards forbid C3 source readers/extractors, execution, network, Knowledge and LLM.
 
-**Next: C4**, manual read-only inspection of the retained real B5 Core Artifacts; not run here.
+**C4:** the offline retained-source harness below is ready; historical B5 bytes have not been inspected here.
 C5 advisory LLM, M20-D final entrypoint/runtime/target/secret bindings and policy/ExecutionPlan,
 and M20-E+ preparation, installation, staging, allocation and execution remain unimplemented.
+
+## C4 real retained-source validation harness
+
+**Harness ready; real validation pending. M20-C is not CLOSED.** This manual-only Core
+composition uses existing production services, not synthetic replacement acquisition data:
+`scripts/manual-smoke/m20c4_real_retained_source_inspection_smoke_test.py`.
+Supply an existing absolute `--database`, existing absolute `--artifact-root`, and explicit
+`--acquisition-ref`. Optional `--expected-raw-artifact-ref`,
+`--expected-manifest-artifact-ref`, `--expected-raw-sha256`,
+`--expected-manifest-sha256`, and `--expected-commit` fail on mismatched retained identity.
+The exact operator commands are in [the manual-smoke guide](../../scripts/manual-smoke/README.md#m20-c4-real-retained-source-inspection-offline-opt-in).
+
+The intended B5 source is `CERTCC/CVE-2021-44228_scanner`:
+
+- candidate `poc-candidate-5b2ead4a9b3847e4a2cf28d50b65a54b`, historical hit 4;
+- acquisition `poc-acquisition-65dd487d65864967be3498f52e6c8038`;
+- Run `run-m20b5-9313d1b8cade4372977bdd41df2c7d3a`;
+- commit `042e5d9c15fe8312492d2f08063631be58486830`;
+- Git tree `f7f9c58d621e09542d1d9d14f7b3174a40de18ba`;
+- raw Artifact `artifact-c432aa44-d24e-4e53-98ba-8b64cef3973e`,
+  SHA-256 `033fc4b983cff57b9a0debb3491e2638e6598800eb8ae96802021ef7edb232d6`,
+  305188 bytes;
+- manifest Artifact `artifact-0ba70bf4-9503-4b00-bc22-7398b3dfd4c1`,
+  SHA-256 `e9e517244eecdedfdb5df9dce43f4792ea5eb1fb763f3e7d48ba5611d229cfe0`;
+- structural manifest: 8 entries, 351930 uncompressed bytes, root
+  `CERTCC-CVE-2021-44228_scanner-042e5d9/`.
+
+Those identifiers are historical validation bindings, **not** default filesystem paths.
+The harness can inspect another explicitly selected completed acquisition; the documented expected
+bindings pin this particular B5 validation. It does not search `/tmp`, re-fetch GitHub, create a
+candidate/acquisition, contact Kali/MCP, or read provider/token/environment configuration.
+
+### Preflight, production flow, and safe output
+
+`--check-config` uses SQLite URI `mode=ro` with an escaped absolute path. It checks
+COMPLETED acquisition, Mission/hypothesis/candidate ownership, receipt/catalog consistency,
+expected identity and existing Artifact root, then prints bounded identity and C1/C2/C3 profiles.
+It does not initialize filesystem storage, upgrade migrations, read Artifact content/ZIP entries,
+or create attempts. Catalog existence is not proof of available or verified bytes; the real
+run must establish that separately. Missing retained state stops with a bounded prerequisite
+diagnostic; nothing is recreated.
+
+Only `--real-retained-source` permits existing Core migrations to upgrade the selected DB and
+new inspection history to be written. No C4 schema/dependency/production-service change is needed.
+The harness rehashes both current Artifact streams against their receipts even when completed
+history is reusable. C1 `create/inspect` verifies manifest and ZIP reconciliation with empty
+entry selection; its verified-entry count is honestly zero. C2 `create_semantic/inspect`
+independently verifies bounded selected entry bytes and records semantic coverage/citations.
+C3 `create/classify` consumes that completed persisted C2, not source bytes.
+
+Output includes all coverage statuses and per-file normalized paths/reasons/extractor versions,
+typed collection counts, entrypoint candidates and derived line locations, parameter roles/
+required flags and redacted string defaults, safe identifier-like dependency names, actual typed
+requirements/behavior/risk codes, unknowns and conflicts with cited refs. It prints
+CODE / DECLARATIVE_METADATA / DOCUMENTATION authority and OBSERVED / INFERRED / UNKNOWN separately;
+an observed documentation claim is not a runtime fact. Terminal-control characters are escaped,
+display strings bounded, arbitrary names redacted, and source excerpts never printed.
+
+Up to five citation spot checks prioritize Python, PowerShell, shell and documentation if present.
+Each goes through the production C1 citation validator, exact-byte reader and line mapper.
+Only span length/SHA-256 and byte/line locator are displayed, never source/default/secret contents.
+Classification prints C3 profile/document/digest, all reason codes, dispositions (including
+blockers and assistance), linked C2 item/conflict/coverage refs and unknown/conflict blockers.
+AUTOMATIC, ASSISTED and UNSUPPORTED are all honest completed inspection outcomes; none is
+hardcoded as expected or translated into execution permission.
+
+### Acceptance and durability
+
+The harness disposes Core, reopens the same database/root, compares the whole immutable
+acquisition and C1/C2/C3 records (including profile/version, source hashes, digest/classification),
+and checks Artifact availability. It repeats the production create/inspect/classify flow and
+requires identical attempt records and unchanged history. Rerunning the identical command
+also reuses completed history. No force-new/reinspection mode or automatic interrupted-attempt
+recovery is added.
+
+Automated C4 tests use temporary synthetic persisted acquisitions only: read-only preflight,
+missing/wrong/non-completed prerequisites, expected hash/ref/commit mismatch, all three honest
+support classes through production services, citation and redaction output, changed cached bytes,
+reopen mismatch, and history-growth rejection. Static and behavioral guards forbid network,
+extraction, source execution, package installation, direct extractor/classifier invocation,
+Secret resolution, Knowledge and LLM use. Existing C1–C3 tests retain exact-byte and migration
+coverage. Real acceptance requires the operator to run the documented opted-in command on retained
+B5 state and confirm complete integrity, durable/reusable history, and an honest classification.
+Missing historical files require a separate operator decision, not automatic B5 acquisition.
+
+C4 always stops after reporting. C5 and M20-D+ remain untouched: no final entrypoint, argv,
+target/callback/secret bindings, plan, policy approval, runtime preparation, source staging,
+installation, allocation or execution.

@@ -1,7 +1,7 @@
 # M20-C — Inspection and execution classification
 
 **Status:** Architecture accepted in [ADR 0015](../adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md).
-C1 evidence, C2 bounded deterministic observations and C3 conditional support classification implemented; C4/C5 remain planned. M20-C stops before
+C1 evidence, C2 bounded deterministic observations and C3 conditional support classification implemented. C4 offline retained-source harness is ready; real operator validation is pending. C5 remains deferred. M20-C stops before
 `ExecutionPlan`, preparation, or execution. See [M20-C implementation](M20C_IMPLEMENTATION.md).
 
 ## Goal and dependency
@@ -146,5 +146,28 @@ the rules: C3 does not add source detectors or rescan Artifacts.
 
 See [implementation rules and limitations](M20C_IMPLEMENTATION.md#c3-deterministic-conditional-support)
 for the bounded reason vocabulary, authority handling, runtime/parameter/dependency gates and
-restart/reuse semantics. C4 retained real-source validation and C5 optional advisory reasoning
-are still deferred, as are all M20-D+ plan/policy/runtime actions.
+restart/reuse semantics. C4 real operator validation and C5 optional advisory reasoning
+are still pending, as are all M20-D+ plan/policy/runtime actions.
+
+## C4 retained real-source smoke
+
+The manual-only C4 harness composes production C1→C2→C3 against an explicitly selected,
+existing COMPLETED acquisition and Core Artifact root. It does not replace the acquisition or
+contact GitHub/Node/MCP. `--check-config` is SQLite read-only metadata preflight;
+`--real-retained-source` explicitly permits existing migration upgrades and inspection-history
+writes, still entirely offline. Optional expected raw/manifest refs/hashes/commit bind the
+historical B5 evidence above. Missing retained files stop; no re-fetch or automatic recreation.
+
+See [C4 design and acceptance](M20C_IMPLEMENTATION.md#c4-real-retained-source-validation-harness)
+and [exact operator commands](../../scripts/manual-smoke/README.md#m20-c4-real-retained-source-inspection-offline-opt-in).
+Output shows bounded coverage, typed evidence/authority, candidates, redacted defaults, unknowns/
+conflicts, citation span hashes/line locators, and C3 reasons linked to C2 evidence. It prints no
+source excerpts or executable command. Classification is discovered from actual production rules,
+not fixed to AUTOMATIC or any other class. Reopen compares immutable histories and source bindings;
+an immediate second invocation checks reuse without duplicate histories. Any class is structurally
+valid when integrity and classification are honest.
+
+**C4 real validation has not been run by the implementation session. M20-C is not CLOSED.**
+Operator acceptance requires the retained B5 run to finish C1/C2/C3, verify citations, preserve
+classification/digest/source hashes after reopen, and reuse history. No C5 or M20-D+ action follows,
+even when classification is AUTOMATIC.

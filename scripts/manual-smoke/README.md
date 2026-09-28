@@ -523,3 +523,72 @@ no source excerpts or sensitive values. Classification is conditional compatibil
 No Internet/GitHub, Kali, MCP, live B5 Artifacts, LLM or Knowledge is used. No source executes,
 dependencies install, parameters bind or Resources/Secrets resolve. C4 will separately inspect
 retained real B5 source; C5 and M20-D+ are not part of this smoke.
+
+## M20-C4 real retained-source inspection (offline, opt-in)
+
+This manual harness inspects **only already-retained Core evidence**, not GitHub or Kali.
+It needs no MCP endpoint, Node ID, token, TLS configuration, Internet, LLM or Knowledge.
+It writes inspection history, not source bytes, only after the explicit real-data opt-in.
+**Harness ready; historical B5 validation still pending. M20-C is not CLOSED.**
+
+Set `DB` and `ARTIFACT_ROOT` to the actual **existing absolute** B5 Core SQLite file and
+managed Core Artifact directory. Do not guess stale `/tmp` paths. If either has disappeared,
+stop: C4 does not re-fetch or reconstruct acquisitions. From the repository root in Bash:
+
+```bash
+DB=/absolute/path/to/retained-m20b5-core.sqlite3
+ARTIFACT_ROOT=/absolute/path/to/retained-m20b5-core-artifacts
+C4_ARGS=(
+  --database "$DB"
+  --artifact-root "$ARTIFACT_ROOT"
+  --acquisition-ref 'poc-acquisition-65dd487d65864967be3498f52e6c8038'
+  --expected-raw-artifact-ref 'artifact-c432aa44-d24e-4e53-98ba-8b64cef3973e'
+  --expected-raw-sha256 '033fc4b983cff57b9a0debb3491e2638e6598800eb8ae96802021ef7edb232d6'
+  --expected-manifest-artifact-ref 'artifact-0ba70bf4-9503-4b00-bc22-7398b3dfd4c1'
+  --expected-manifest-sha256 'e9e517244eecdedfdb5df9dce43f4792ea5eb1fb763f3e7d48ba5611d229cfe0'
+  --expected-commit '042e5d9c15fe8312492d2f08063631be58486830'
+)
+uv run python scripts/manual-smoke/m20c4_real_retained_source_inspection_smoke_test.py \
+  --check-config "${C4_ARGS[@]}"
+```
+
+Preflight checks acquisition/Mission/hypothesis/candidate identity, COMPLETED status, Artifact
+catalog/receipt metadata, explicit expected bindings and root existence. SQLite is opened
+`mode=ro`; storage is not initialized, bytes/ZIP entries are not opened, and no attempts or
+migrations are written. Expect `OFFLINE RETAINED-SOURCE CONFIGURATION VALID`.
+This is metadata validation, not yet an Artifact integrity/availability proof.
+
+After reviewing that identity, authorize the fully offline C1→C2→C3 run:
+
+```bash
+uv run python scripts/manual-smoke/m20c4_real_retained_source_inspection_smoke_test.py \
+  --real-retained-source "${C4_ARGS[@]}"
+```
+
+It upgrades **existing** Core migrations if needed, rehashes both retained Artifacts, and
+uses production C1 manifest/ZIP verification, C2 deterministic inspection and C3 classification.
+C1 has empty selected-entry verification; C2 independently verifies bounded selected files
+before interpreting them. Source is never extracted, imported, executed, repaired or installed.
+
+Output includes coverage/counts/per-file reasons, entrypoint/parameter/dependency candidates,
+typed requirements/behaviors/risks, unknowns/conflicts, and evidence-linked C3 reasons.
+CODE/metadata/documentation and OBSERVED/INFERRED/UNKNOWN stay distinct. String defaults and
+non-identifier names are redacted. Citation spot checks across available extractors show exact
+byte spans, derived lines, length and SHA-256 only; no raw source/secret excerpts are displayed.
+
+**Do not expect a predetermined classification.** AUTOMATIC, ASSISTED and UNSUPPORTED are all
+valid completed inspection outcomes. Classification is conditional support, not safety,
+authorization, runtime readiness or permission to execute. Missing state, integrity failures,
+inconsistent output or reopen/reuse failure return a nonzero safe stop, not successful validation.
+
+The run closes/reopens Core, compares acquisition and C1/C2/C3 histories including source hashes,
+profile versions, semantic digest and class, then repeats production APIs to prove history reuse.
+Repeat the exact `--real-retained-source` command to check cross-invocation reuse too; the refs
+must remain the same. No automatic force-new/retry mode is added. Record actual output before
+closing M20-C; this implementation session did not inspect the historical B5 source.
+
+Offline automated tests use temporary synthetic retained data:
+`uv run pytest packages/core/tests/test_m20c4_manual_smoke_offline.py`.
+They do not require these real paths. See [C4 implementation/acceptance](../../docs/m20/M20C_IMPLEMENTATION.md#c4-real-retained-source-validation-harness).
+C4 stops here: no C5, chosen executable/argv, target/Secret binding, ExecutionPlan, policy approval,
+Node restaging, runtime preparation or execution.

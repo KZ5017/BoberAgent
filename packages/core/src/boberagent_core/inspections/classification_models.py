@@ -17,7 +17,7 @@ from .identity import PoCInspectionRef
 from .semantic_models import SemanticInspectionDocument
 
 CLASSIFIER_PROFILE_ID: Literal["m20-c3-support-classifier"] = "m20-c3-support-classifier"
-CLASSIFIER_PROFILE_VERSION: Literal["1"] = "1"
+CLASSIFIER_PROFILE_VERSION: Literal["2"] = "2"
 
 
 class SupportClassification(StrEnum):
@@ -52,6 +52,7 @@ class ReasonCode(StrEnum):
     UNSUPPORTED_MATERIAL_CONFLICT = "UNSUPPORTED_MATERIAL_CONFLICT"
     UNSUPPORTED_MATERIAL_UNKNOWN = "UNSUPPORTED_MATERIAL_UNKNOWN"
     UNSUPPORTED_UNBOUNDED_EFFECT = "UNSUPPORTED_UNBOUNDED_EFFECT"
+    REQUIRES_FILESYSTEM_REVIEW = "REQUIRES_FILESYSTEM_REVIEW"
     UNSUPPORTED_DEPENDENCY_UNKNOWN = "UNSUPPORTED_DEPENDENCY_UNKNOWN"
 
 
@@ -126,9 +127,11 @@ class ClassificationCoverage(CoreModel):
 
 
 class SupportClassificationDocument(CoreModel):
-    document_version: Literal["m20-c3-support-classifier-v1"] = "m20-c3-support-classifier-v1"
+    document_version: Literal["m20-c3-support-classifier-v1", "m20-c3-support-classifier-v2"] = (
+        "m20-c3-support-classifier-v2"
+    )
     classifier_profile: Literal["m20-c3-support-classifier"] = CLASSIFIER_PROFILE_ID
-    classifier_version: Literal["1"] = CLASSIFIER_PROFILE_VERSION
+    classifier_version: Literal["1", "2"] = CLASSIFIER_PROFILE_VERSION
     semantic_inspection_ref: PoCInspectionRef
     semantic_document_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     classification: SupportClassification
@@ -140,6 +143,8 @@ class SupportClassificationDocument(CoreModel):
 
     @model_validator(mode="after")
     def precedence(self) -> Self:
+        if self.document_version != f"m20-c3-support-classifier-v{self.classifier_version}":
+            raise ValueError("classification document/version mismatch")
         codes = tuple(reason.code.value for reason in self.reasons)
         if codes != tuple(sorted(set(codes))):
             raise ValueError("classification reasons must be unique and sorted")

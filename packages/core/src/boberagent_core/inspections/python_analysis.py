@@ -7,6 +7,7 @@ import sys
 from typing import Literal
 
 from .extraction import FileExtractor, ParserCoverageError, SemanticLimit, parameter_role, safe_name
+from .filesystem_scope import literal_scope
 from .semantic_models import (
     BehaviorKind,
     DependencyKind,
@@ -56,6 +57,7 @@ def analyze_python(extractor: FileExtractor) -> None:
     aliases: dict[str, str] = {}
     sockets: set[str] = set()
     parsers: set[str] = set()
+    paths: set[str] = set()
     local_names = {
         path.rsplit("/", 1)[-1][:-3]
         for path in extractor.items.source.entries
@@ -118,6 +120,8 @@ def analyze_python(extractor: FileExtractor) -> None:
                         sockets.add(target.id)
                     if name == "argparse.ArgumentParser":
                         parsers.add(target.id)
+                    if name == "pathlib.Path":
+                        paths.add(target.id)
 
     if tree.body:
         first = tree.body[0]
@@ -253,6 +257,8 @@ def analyze_python(extractor: FileExtractor) -> None:
                             )
                         )
         behavior: BehaviorKind | None = None
+        file_target: ast.AST | None = node.args[0] if node.args else None
+        recursive = False
         if name.startswith(("requests.", "aiohttp.", "urllib.request.", "http.client.")):
             behavior = BehaviorKind.NETWORK_CONNECT
         elif name in {"socket.getaddrinfo", "socket.gethostbyname", "socket.gethostbyaddr"}:
@@ -288,7 +294,7 @@ def analyze_python(extractor: FileExtractor) -> None:
             behavior = BehaviorKind.PRIVILEGE_CHECK
         elif name in {"os.remove", "os.unlink", "shutil.rmtree"}:
             behavior = BehaviorKind.FILE_DELETE
-            extractor.indicator(fn_start, fn_end, RiskKind.DESTRUCTIVE_FILESYSTEM)
+            recursive = name == "shutil.rmtree"
         elif name == "open":
             mode = (
                 _constant(node.args[1])
@@ -297,9 +303,33 @@ def analyze_python(extractor: FileExtractor) -> None:
             )
             if isinstance(mode, str) and any(char in mode for char in "wax+"):
                 behavior = BehaviorKind.FILE_WRITE
-        elif name.startswith("pathlib.Path") and name.endswith((".write_text", ".write_bytes")):
-            behavior = BehaviorKind.FILE_WRITE
-        if behavior is not None:
+        elif (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr in {"write_text", "write_bytes", "unlink"}
+            and (
+                name.startswith("pathlib.Path().")
+                or (isinstance(node.func.value, ast.Name) and node.func.value.id in paths)
+            )
+        ):
+            behavior = (
+                BehaviorKind.FILE_DELETE if node.func.attr == "unlink" else BehaviorKind.FILE_WRITE
+            )
+            receiver = node.func.value
+            file_target = (
+                receiver.args[0] if isinstance(receiver, ast.Call) and receiver.args else None
+            )
+        if behavior in {BehaviorKind.FILE_WRITE, BehaviorKind.FILE_DELETE}:
+            file_target_value = _constant(file_target)
+            extractor.filesystem_effect(
+                start,
+                end,
+                behavior,
+                literal_scope(
+                    file_target_value if isinstance(file_target_value, str) else None,
+                    recursive=recursive,
+                ),
+            )
+        elif behavior is not None:
             extractor.indicator(fn_start, fn_end, behavior)
         if name in {"exec", "eval", "os.system", "os.popen"}:
             extractor.indicator(fn_start, fn_end, RiskKind.ARBITRARY_COMMAND_EXECUTION)

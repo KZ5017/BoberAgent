@@ -84,8 +84,8 @@ def test_offline_semantic_profile_reopen(
     service, requested = prepare(database, tmp_path, fixture_repository())
     completed, document = completed_document(service, requested)
     assert completed.profile_id == "m20-c2-deterministic"
-    assert completed.profile_version == "1"
-    assert document.document_version == "m20-c2-deterministic-v1"
+    assert completed.profile_version == "2"
+    assert document.document_version == "m20-c2-deterministic-v2"
     assert {entry.runtime for entry in document.entrypoint_candidates} == {"python", "shell"}
     assert {parameter.role for parameter in document.parameter_candidates} >= {
         ParameterRole.TARGET_HOST,
@@ -179,9 +179,9 @@ def test_python_facts_and_exact_citations(database: CoreDatabase, tmp_path: Path
             b"os.getenv",
             b"os.environ",
             b"os.geteuid",
-            b"open",
-            b'Path("data").write_text',
-            b"os.unlink",
+            b'open("evidence", "w")',
+            b'Path("data").write_text("example")',
+            b'os.unlink("data")',
         }
     assert RiskKind.ARBITRARY_COMMAND_EXECUTION in {item.kind for item in document.risk_indicators}
     assert all(item.epistemic_state is EpistemicState.OBSERVED for item in document.facts)

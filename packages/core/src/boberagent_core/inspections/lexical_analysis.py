@@ -3,6 +3,7 @@
 import re
 
 from .extraction import FileExtractor
+from .filesystem_scope import lexical_scope
 from .semantic_models import (
     BehaviorKind,
     DependencyKind,
@@ -139,9 +140,30 @@ def analyze_lexical(extractor: FileExtractor, *, powershell: bool) -> None:
     token_text = _mask_literals(masked, powershell=powershell)
     for pattern, kind in patterns:
         for match in re.finditer(pattern, token_text, re.IGNORECASE if powershell else 0):
-            extractor.indicator(match.start(), match.end(), kind)
-            if kind is BehaviorKind.FILE_DELETE:
-                extractor.indicator(match.start(), match.end(), RiskKind.DESTRUCTIVE_FILESYSTEM)
+            if isinstance(kind, BehaviorKind) and kind in {
+                BehaviorKind.FILE_DELETE,
+                BehaviorKind.FILE_WRITE,
+            }:
+                end = masked.find("\n", match.end())
+                end = len(masked) if end < 0 else end
+                extractor.filesystem_effect(
+                    match.start(),
+                    end,
+                    kind,
+                    lexical_scope(
+                        masked[match.end() : end],
+                        powershell=powershell,
+                        command_position=(
+                            not token_text[
+                                token_text.rfind("\n", 0, match.start()) + 1 : match.start()
+                            ].strip()
+                            or match.group() in {">", ">>"}
+                        ),
+                        deletion=kind is BehaviorKind.FILE_DELETE,
+                    ),
+                )
+            else:
+                extractor.indicator(match.start(), match.end(), kind)
             if not powershell and re.fullmatch(
                 r"curl|wget|nc|netcat|bash|sh|python[0-9.]*|rm|mv|cp|chmod|chown|sudo|su|systemctl|service",
                 match.group(),

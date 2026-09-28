@@ -24,8 +24,9 @@ from boberagent_core.inspections import (
     SupportClassification,
     SupportClassificationDocument,
 )
-from test_poc_inspection_c2 import fixture_repository, prepare
+from test_poc_inspection_c2 import completed_document, fixture_repository, prepare
 from test_poc_inspection_c3 import CHECKER
+from test_poc_inspection_c41_history import seed_legacy_history
 
 
 def _smoke() -> ModuleType:
@@ -66,6 +67,32 @@ def no_execution(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(subprocess, "Popen", _forbidden)
     monkeypatch.setattr(zipfile.ZipFile, "extract", _forbidden)
     monkeypatch.setattr(zipfile.ZipFile, "extractall", _forbidden)
+
+
+@pytest.mark.usefixtures("no_execution")
+def test_current_smoke_preserves_legacy_history(
+    database: CoreDatabase,
+    database_path: Path,
+    tmp_path: Path,
+) -> None:
+    module = _smoke()
+    service, request = prepare(
+        database, tmp_path, {"checker.py": CHECKER + b'\nimport os\nos.unlink("scratch.txt")\n'}
+    )
+    current, _ = completed_document(service, request)
+    old_c2, old_c3 = seed_legacy_history(database, current)
+    before = (old_c2.model_dump_json(), old_c3.model_dump_json())
+    history = module._run(
+        module._parser().parse_args(_arguments(database_path, request.acquisition_ref, real=True))
+    )
+    assert history.c2.profile_version == history.c3.profile_version == "2"
+    assert history.c2.inspection_ref != old_c2.inspection_ref
+    assert history.c3.inspection_ref != old_c3.inspection_ref
+    assert isinstance(history.c3.document, SupportClassificationDocument)
+    assert history.c3.document.classification is SupportClassification.ASSISTED
+    for ref, snapshot in zip((old_c2.inspection_ref, old_c3.inspection_ref), before, strict=True):
+        stored = service.get(ref)
+        assert stored is not None and stored.model_dump_json() == snapshot
 
 
 def test_opt_in_and_help(capsys: pytest.CaptureFixture[str]) -> None:
@@ -112,7 +139,7 @@ def test_preflight_no_mutation_or_source_reads(
     assert service.list_for_acquisition(request.acquisition_ref) == before_history
     output = capsys.readouterr().out
     assert "OFFLINE RETAINED-SOURCE CONFIGURATION VALID" in output
-    assert "m20-c1-evidence@1" in output and "m20-c3-support-classifier@1" in output
+    assert "m20-c1-evidence@1" in output and "m20-c3-support-classifier@2" in output
 
 
 @pytest.mark.parametrize(
@@ -194,8 +221,10 @@ def test_non_completed_acquisition_rejected(
     ("extra", "expected"),
     [
         (b"", SupportClassification.AUTOMATIC),
+        (b'\nopen("report.txt", "w")\n', SupportClassification.ASSISTED),
+        (b"\nimport os\nos.unlink(dynamic_path)\n", SupportClassification.UNSUPPORTED),
         (b'\nparser.add_argument("--password", required=True)\n', SupportClassification.ASSISTED),
-        (b'\nimport os\nos.unlink("evidence-only")\n', SupportClassification.UNSUPPORTED),
+        (b'\nimport shutil\nshutil.rmtree("/")\n', SupportClassification.UNSUPPORTED),
     ],
 )
 def test_production_pipeline_reopen_and_reuse_accepts_all_classifications(

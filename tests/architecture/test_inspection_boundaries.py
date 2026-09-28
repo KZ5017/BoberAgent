@@ -117,6 +117,7 @@ def test_c3_consumes_history_not_source_or_execution_services() -> None:
         "extraction",
         "python_analysis",
         "lexical_analysis",
+        "filesystem_scope",
         "data_analysis",
         "text",
         "boberagent_core.artifacts",

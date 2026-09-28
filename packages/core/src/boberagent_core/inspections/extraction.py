@@ -12,14 +12,17 @@ from .evidence import VerifiedSource
 from .models import SourceCitation
 from .semantic_models import (
     BehaviorIndicator,
+    BehaviorKind,
     DependencyObservation,
     EntrypointCandidate,
     EpistemicState,
+    FileEffectScope,
     InspectionUnknown,
     ParameterCandidate,
     ParameterRole,
     Requirement,
     RiskIndicator,
+    RiskKind,
     SemanticInspectionLimits,
     SemanticItem,
     SourceFact,
@@ -221,7 +224,7 @@ class FileExtractor:
             start=byte_start,
             end=byte_end,
             reader_id=self.extractor_id,
-            reader_version="1",
+            reader_version="2",
         )
         self.items.source.validate_citation(citation, self.content)
         return ItemEvidence(
@@ -248,8 +251,6 @@ class FileExtractor:
             self.items.gap(self.path, self.origin, "AMBIGUOUS_PARAMETER_ROLE")
 
     def indicator(self, start: int, end: int, kind: object) -> None:
-        from .semantic_models import BehaviorKind, RiskKind
-
         if isinstance(kind, BehaviorKind):
             self.items.add(
                 BehaviorIndicator(
@@ -262,6 +263,26 @@ class FileExtractor:
                 RiskIndicator(
                     **self.evidence(start, end, "SOURCE_SYNTAX_RISK", kind.value),
                     kind=kind,
+                )
+            )
+
+    def filesystem_effect(
+        self, start: int, end: int, kind: BehaviorKind, scope: FileEffectScope
+    ) -> None:
+        """Keep the primitive separate from the evidence-backed scope assessment."""
+        self.items.add(
+            BehaviorIndicator(
+                **self.evidence(start, end, f"FILE_EFFECT_SCOPE_{scope.value}", kind.value),
+                kind=kind,
+            )
+        )
+        if scope is FileEffectScope.UNKNOWN:
+            self.unknown(start, end, "FILE_EFFECT_SCOPE_UNKNOWN")
+        elif scope is FileEffectScope.BROAD and kind is BehaviorKind.FILE_DELETE:
+            self.items.add(
+                RiskIndicator(
+                    **self.evidence(start, end, "BROAD_LITERAL_RECURSIVE_DELETE"),
+                    kind=RiskKind.DESTRUCTIVE_FILESYSTEM,
                 )
             )
 

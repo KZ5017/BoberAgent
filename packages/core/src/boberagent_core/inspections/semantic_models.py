@@ -10,7 +10,7 @@ from boberagent_core.models import CoreModel
 from .evidence_models import InspectionLimits, SourceCitation
 
 PROFILE_ID = "m20-c2-deterministic"
-PROFILE_VERSION = "1"
+PROFILE_VERSION = "2"
 
 
 class SemanticInspectionLimits(InspectionLimits):
@@ -180,8 +180,26 @@ class Requirement(SemanticItem):
     name: str = Field(min_length=1, max_length=128)
 
 
+class FileEffectScope(StrEnum):
+    """Syntactic target extent, not runtime confinement or policy approval."""
+
+    BOUNDED = "BOUNDED"
+    UNKNOWN = "UNKNOWN"
+    BROAD = "BROAD"
+
+
 class BehaviorIndicator(SemanticItem):
     kind: BehaviorKind
+
+    @property
+    def file_effect_scope(self) -> FileEffectScope | None:
+        """Scope is explicitly encoded in v2 reason codes, without rewriting v1 JSON."""
+        if self.kind not in {BehaviorKind.FILE_WRITE, BehaviorKind.FILE_DELETE}:
+            return None
+        for scope in FileEffectScope:
+            if self.reason == f"FILE_EFFECT_SCOPE_{scope.value}":
+                return scope
+        return FileEffectScope.UNKNOWN
 
 
 class RiskIndicator(SemanticItem):
@@ -206,12 +224,14 @@ class FileCoverage(CoreModel):
     status: CoverageStatus
     reason: str = Field(pattern=r"^[A-Z][A-Z0-9_]{0,127}$")
     extractor_id: str
-    extractor_version: Literal["1"] = "1"
+    extractor_version: Literal["1", "2"] = "2"
     encoding: Literal["utf-8", "utf-8-bom", "utf-16-le-bom", "utf-16-be-bom"] | None = None
 
 
 class SemanticInspectionDocument(CoreModel):
-    document_version: Literal["m20-c2-deterministic-v1"] = "m20-c2-deterministic-v1"
+    document_version: Literal["m20-c2-deterministic-v1", "m20-c2-deterministic-v2"] = (
+        "m20-c2-deterministic-v2"
+    )
     manifest_validated: Literal[True] = True
     zip_reconciled: Literal[True] = True
     verified_paths: tuple[str, ...]

@@ -312,7 +312,7 @@ def test_profile_version_and_reason_identity_are_closed(
     valid = result(semantic)
     with pytest.raises(ValidationError):
         SupportClassificationDocument.model_validate(
-            valid.model_dump() | {"classifier_version": "2"}
+            valid.model_dump() | {"classifier_version": "3"}
         )
     with pytest.raises(ValidationError):
         ClassifierConfiguration(max_input_items=True)

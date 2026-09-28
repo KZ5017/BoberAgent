@@ -175,7 +175,7 @@ def _preview(selection: Selection) -> None:
     print(
         f"Manifest Artifact: {_display(str(receipt.manifest.artifact_id))} sha256={receipt.manifest_sha256}"
     )
-    print("Profiles: m20-c1-evidence@1 → m20-c2-deterministic@1 → m20-c3-support-classifier@1")
+    print("Profiles: m20-c1-evidence@1 → m20-c2-deterministic@2 → m20-c3-support-classifier@2")
     print("OFFLINE ONLY; no fetch/extraction/execution/install/Secret/LLM/Knowledge/Node/MCP")
 
 

@@ -457,7 +457,8 @@ Provider unavailability, API rate limits, repository identity changes, missing b
 truncated trees, Gitlinks, LFS pointers, unsafe/oversized ZIPs, and Artifact sync failure are
 **non-successful safe stops**. Inspect the retained Core database and Node diagnostics; do not
 automatically retry a possibly state-changing Run. This manual smoke is not collected by pytest.
-M20-C semantic inspection, repository execution, and private GitHub authentication remain deferred.
+M20-C semantic inspection is not part of this B5 smoke; its separate phase is now CLOSED.
+Repository execution and private GitHub authentication remain deferred.
 
 The first real public B5 run against `CERTCC/CVE-2021-44228_scanner` reached a retained
 raw ZIP but stopped as `ARCHIVE_UNSUPPORTED`: normal GitHub ZIP entries contained the
@@ -521,17 +522,31 @@ no source excerpts or sensitive values. Classification is conditional compatibil
 **not authorization, runtime readiness, an ExecutionPlan or permission to execute**.
 
 No Internet/GitHub, Kali, MCP, live B5 Artifacts, LLM or Knowledge is used. No source executes,
-dependencies install, parameters bind or Resources/Secrets resolve. C4 will separately inspect
-retained real B5 source; C5 and M20-D+ are not part of this smoke.
+dependencies install, parameters bind or Resources/Secrets resolve. C4 separately validated
+retained real source; C5 and M20-D+ are not part of this smoke.
 
 ## M20-C4 real retained-source inspection (offline, opt-in)
 
 This manual harness inspects **only already-retained Core evidence**, not GitHub or Kali.
 It needs no MCP endpoint, Node ID, token, TLS configuration, Internet, LLM or Knowledge.
 It writes inspection history, not source bytes, only after the explicit real-data opt-in.
-**Harness ready; historical B5 validation still pending. M20-C is not CLOSED.**
+**M20-C — Source Inspection + Conditional Support Classification is CLOSED.**
+The operator completed the calibrated real C4 rerun with C1@1/C2@2/C3@2: all COMPLETED,
+classification UNSUPPORTED, Core reopen PASS and identical-invocation reuse PASS.
+See the [immutable acceptance record](../../docs/m20/M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
+C5 is optional advisory future work, deferred and not required for closure. M20-D has not begun.
+The @1 run completed C1/C2/C3, reopened Core and reused history without fetch/execution/LLM/plan.
+Its honest UNSUPPORTED outcome exposed primitive-only filesystem overclassification.
+C4.1 preserves observed writes/deletes, requires stronger evidence for destructive/broad scope,
+and keeps unresolved scope explicit and fail-closed. The accepted @2 run retained file-mutation
+observations and removed false destructive/unbounded reasons where scope was not proven.
+Remaining blockers include insufficient coverage, material unknowns and target boundary;
+assistance includes entrypoint selection, manual parameters, runtime confirmation and dependency
+review. The real UNSUPPORTED result is not safety or authorization.
 
-Set `DB` and `ARTIFACT_ROOT` to the actual **existing absolute** B5 Core SQLite file and
+The commands below are retained for explicit operator reproduction only; no further real run
+is required for closure, and none was run during the documentation update.
+Set `DB` and `ARTIFACT_ROOT` to the actual **existing absolute** retained Core SQLite file and
 managed Core Artifact directory. Do not guess stale `/tmp` paths. If either has disappeared,
 stop: C4 does not re-fetch or reconstruct acquisitions. From the repository root in Bash:
 
@@ -541,10 +556,10 @@ ARTIFACT_ROOT=/absolute/path/to/retained-m20b5-core-artifacts
 C4_ARGS=(
   --database "$DB"
   --artifact-root "$ARTIFACT_ROOT"
-  --acquisition-ref 'poc-acquisition-65dd487d65864967be3498f52e6c8038'
-  --expected-raw-artifact-ref 'artifact-c432aa44-d24e-4e53-98ba-8b64cef3973e'
+  --acquisition-ref 'poc-acquisition-2f6a3658a57c42f5ae2252edf1736352'
+  --expected-raw-artifact-ref 'artifact-032c7c87-c1c2-402a-ba2e-269545766f3a'
   --expected-raw-sha256 '033fc4b983cff57b9a0debb3491e2638e6598800eb8ae96802021ef7edb232d6'
-  --expected-manifest-artifact-ref 'artifact-0ba70bf4-9503-4b00-bc22-7398b3dfd4c1'
+  --expected-manifest-artifact-ref 'artifact-463d3e1b-e38a-41ed-afb9-b59fc33bee56'
   --expected-manifest-sha256 'e9e517244eecdedfdb5df9dce43f4792ea5eb1fb763f3e7d48ba5611d229cfe0'
   --expected-commit '042e5d9c15fe8312492d2f08063631be58486830'
 )
@@ -566,7 +581,8 @@ uv run python scripts/manual-smoke/m20c4_real_retained_source_inspection_smoke_t
 ```
 
 It upgrades **existing** Core migrations if needed, rehashes both retained Artifacts, and
-uses production C1 manifest/ZIP verification, C2 deterministic inspection and C3 classification.
+uses production C1@1 manifest/ZIP verification, C2@2 deterministic inspection and C3@2 classification.
+New document versions are `m20-c2-deterministic-v2` and `m20-c3-support-classifier-v2`.
 C1 has empty selected-entry verification; C2 independently verifies bounded selected files
 before interpreting them. Source is never extracted, imported, executed, repaired or installed.
 
@@ -584,8 +600,17 @@ inconsistent output or reopen/reuse failure return a nonzero safe stop, not succ
 The run closes/reopens Core, compares acquisition and C1/C2/C3 histories including source hashes,
 profile versions, semantic digest and class, then repeats production APIs to prove history reuse.
 Repeat the exact `--real-retained-source` command to check cross-invocation reuse too; the refs
-must remain the same. No automatic force-new/retry mode is added. Record actual output before
-closing M20-C; this implementation session did not inspect the historical B5 source.
+must remain the same. New @2 profiles create/reuse separate history; existing completed @1 records
+are readable and immutable, not reinterpreted. No automatic force-new/retry mode is added.
+Historical C1 `poc-inspection-e3bad26d882449e196d9146b841d42e8`, C2@1
+`poc-inspection-f4613eced4a64d339367582978d2ae57` and C3@1
+`poc-inspection-5897302e458a4514a29039b26e6e71fc` must remain unchanged.
+Review scope reasons and citations, especially ordinary mutation vs broad destructive proof;
+UNKNOWN is not safe and unchanged target/runtime/coverage gates may still block support.
+The operator-reported calibrated acceptance is recorded and closes M20-C. Neither calibration
+implementation nor this documentation closure automatically re-inspected the retained source.
+The accepted run involved no network, source execution, extraction, install, Secret resolution,
+LLM, Knowledge/RAG, ExecutionPlan, staging, authorization or runtime preparation.
 
 Offline automated tests use temporary synthetic retained data:
 `uv run pytest packages/core/tests/test_m20c4_manual_smoke_offline.py`.

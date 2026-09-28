@@ -54,8 +54,12 @@ from test_poc_inspection_c2 import completed_document, fixture_repository, prepa
 def test_independent_semantic_limits(
     database: CoreDatabase, tmp_path: Path, limits: dict[str, int], reason: str
 ) -> None:
+    files = fixture_repository()
+    # Ordinary unlink is not a severe risk in v2. Keep the risk-limit fixture
+    # meaningful with explicit broad syntax; this source is inspected, never run.
+    files["poc.py"] += b'\nimport shutil\nshutil.rmtree("/")\n'
     service, requested = prepare(
-        database, tmp_path, fixture_repository(), SemanticInspectionLimits.model_validate(limits)
+        database, tmp_path, files, SemanticInspectionLimits.model_validate(limits)
     )
     _, document = completed_document(service, requested)
     assert reason in document.limit_reasons

@@ -3,8 +3,11 @@
 **Status:** Normative implementation plan; M20-A is implemented and **M20-B — Acquisition +
 Immutable Provenance is CLOSED**. B1–B4 established the bounded acquisition path; B5 validated
 it against real public GitHub through a Kali Execution Node, TLS/MCP, Node→Core Artifact sync,
-Core finalization, and Core reopen without re-fetch. M20-C1 evidence and C2 deterministic source
-observations and C3 conditional support classification are implemented; C4/C5 and M20-D through M20-H remain planned.
+Core finalization, and Core reopen without re-fetch. **M20-C — Source Inspection + Conditional
+Support Classification is CLOSED** following successful operator C4 acceptance with C1@1,
+C2@2 and C3@2. C5 is optional advisory future work, not a closure prerequisite.
+M20-D has not begun; M20-D through M20-H remain planned. See the
+[retained-source acceptance record](m20/M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
 ADR 0014 fixes M20-B architecture; [ADR 0015](adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md)
 fixes M20-C inspection ownership, evidence, and authority before implementation.
 This plan refines `09_BOOTSTRAP_PLAN.md` §100 without changing the Capability, Core, or Execution Node ownership
@@ -89,7 +92,7 @@ be representable in plan intent but have no M20-v1 automatic adapter.
 | --- | --- | --- |
 | M20-A | [Research and candidates](m20/01_RESEARCH_AND_CANDIDATES.md) | bounded, sourced candidates; no acquisition/execution |
 | M20-B | [Acquisition and provenance](m20/02_ACQUISITION_AND_PROVENANCE.md) | pinned, hashed Artifact; no execution |
-| M20-C | [Inspection and classification](m20/03_INSPECTION_AND_CLASSIFICATION.md) | typed facts, explicit reasons, fail-closed uncertainty |
+| M20-C | [Inspection and classification](m20/03_INSPECTION_AND_CLASSIFICATION.md) | **CLOSED:** typed facts, explicit reasons, fail-closed uncertainty; calibrated real C4 accepted |
 | M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | deterministic validation; no model authority |
 | M20-E/F | [Runtime preparation and execution](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | enforceable isolation and managed evidence capture |
 | M20-G | [Interpretation, adaptation, HITL](m20/06_INTERPRETATION_ADAPTATION_AND_HITL.md) | separate outcome, bounded attempts, durable wait/stop |
@@ -139,5 +142,8 @@ ownership, hypothesis, query and candidate identity. [ADR 0014](adr/0014-m20-acq
 fixes M20-B acquisition ownership, selected-hit binding, immutable source representation,
 provenance and finalization. [ADR 0015](adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md)
 fixes M20-C inspection ownership, exact source binding, citations, fact authority, durable
-history, and conditional classification. M20-C implementation and later-phase architecture
-decisions remain open.
+history, and conditional classification. M20-C is CLOSED with authoritative
+`m20-c2-deterministic@2` / `m20-c3-support-classifier@2`; historical @1 results remain
+immutable. The real source classified UNSUPPORTED, not safe or authorized to execute.
+C5 remains optional/deferred and is not required for M20-C closure. M20-D has not begun;
+later-phase architecture decisions remain open.

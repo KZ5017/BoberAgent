@@ -1,4 +1,4 @@
-"""Pure C3-v1 conditional classification of validated, persisted C2 evidence.
+"""Pure C3-v2 conditional classification of validated, persisted C2 evidence.
 
 No source reader, parser, runtime, model, or authorization dependency belongs here.
 Absence of a syntax indicator is not proof of safety; M20-D must separately bind
@@ -25,6 +25,7 @@ from .semantic_models import (
     CoverageStatus,
     DependencyKind,
     EpistemicState,
+    FileEffectScope,
     ImportKind,
     ParameterRole,
     RequirementKind,
@@ -119,6 +120,8 @@ def validate_classification_evidence(
     result: SupportClassificationDocument, source: SemanticInspectionDocument
 ) -> None:
     """Resolve references against exact C2 output, without resolving source bytes."""
+    if source.document_version != f"m20-c2-deterministic-v{result.classifier_version}":
+        raise InspectionError("CLASSIFICATION_INPUT_PROFILE_UNSUPPORTED")
     items = {item.item_id for item in semantic_items(source)}
     unknowns = {item.item_id for item in source.unknowns}
     conflicts = {item.conflict_id for item in source.conflicts}
@@ -146,10 +149,12 @@ def classify_support(
     document: SemanticInspectionDocument,
     config: ClassifierConfiguration,
 ) -> SupportClassificationDocument:
-    """Fixed Python-first v1 policy; classification has no execution authority."""
+    """Fixed Python-first v2 policy; classification has no execution authority."""
     # Revalidate even model_copy()/model_construct() inputs. The service additionally
     # validates the completed C2 envelope, bounds and byte-citation/source binding.
     document = SemanticInspectionDocument.model_validate_json(document.model_dump_json())
+    if document.document_version != "m20-c2-deterministic-v2":
+        raise InspectionError("CLASSIFICATION_INPUT_PROFILE_UNSUPPORTED")
     items = semantic_items(document)
     if (
         len(items) + len(document.conflicts) > config.max_input_items
@@ -279,19 +284,33 @@ def classify_support(
             code = _REQUIREMENT_CODES[requirement.kind]
         reasons.add(code, item=requirement.item_id)
 
-    # Privilege-check syntax is not a privilege requirement. Generic process/file
-    # syntax is not proof of persistence/destruction either, but C2 cannot prove its
-    # boundaries, so it blocks AUTOMATIC rather than inventing severe observed facts.
+    # File mutation is distinct from proven broad extent. Bounded syntax still
+    # needs review, never execution permission. Unknown scope remains a blocker.
+    # Other behavior gates and the target-boundary rule are unchanged.
     for behavior in document.behavior_indicators:
         if behavior.kind is BehaviorKind.NETWORK_BIND_LISTEN:
             reasons.add(ReasonCode.REQUIRES_LISTENER, item=behavior.item_id)
         elif behavior.kind is BehaviorKind.ENVIRONMENT_ACCESS:
             reasons.add(ReasonCode.REQUIRES_BROWSER_OR_ENVIRONMENT, item=behavior.item_id)
+        elif behavior.kind in {BehaviorKind.FILE_WRITE, BehaviorKind.FILE_DELETE}:
+            if (
+                behavior.file_effect_scope is FileEffectScope.BOUNDED
+                and behavior.origin is SourceOrigin.CODE
+                and behavior.epistemic_state is EpistemicState.OBSERVED
+            ):
+                code = ReasonCode.REQUIRES_FILESYSTEM_REVIEW
+            elif (
+                behavior.file_effect_scope is FileEffectScope.BROAD
+                and behavior.origin is SourceOrigin.CODE
+                and behavior.epistemic_state is EpistemicState.OBSERVED
+            ):
+                code = ReasonCode.UNSUPPORTED_UNBOUNDED_EFFECT
+            else:
+                code = ReasonCode.UNSUPPORTED_MATERIAL_UNKNOWN
+            reasons.add(code, item=behavior.item_id)
         elif behavior.kind in {
             BehaviorKind.SUBPROCESS_EXECUTION,
             BehaviorKind.SHELL_EXECUTION,
-            BehaviorKind.FILE_WRITE,
-            BehaviorKind.FILE_DELETE,
             BehaviorKind.SERVICE_CONTROL,
             BehaviorKind.REGISTRY_ACCESS,
         }:

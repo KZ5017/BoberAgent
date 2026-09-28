@@ -1,6 +1,9 @@
 # ADR 0015: M20-C source inspection ownership, evidence, and authority
 
-**Status:** Accepted for M20-C design; C1 evidence, C2 deterministic observations and C3 conditional support implemented; C4/C5 pending.
+**Status:** Accepted. M20-C is CLOSED following operator calibrated C4 acceptance with C1@1,
+C2@2 and C3@2; historical @1 results remain immutable. C5 is optional advisory future work,
+deferred and not required for closure. M20-D has not begun. The accepted decisions below
+are unchanged; see the [acceptance record](../m20/M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
 
 ## Context
 

@@ -142,9 +142,11 @@ def _from_row(row: PoCInspectionRow) -> PoCInspection:
             if row.document_json is None
             else (
                 SupportClassificationDocument
-                if row.document_json.get("document_version") == "m20-c3-support-classifier-v1"
+                if row.document_json.get("document_version")
+                in {"m20-c3-support-classifier-v1", "m20-c3-support-classifier-v2"}
                 else SemanticInspectionDocument
-                if row.document_json.get("document_version") == "m20-c2-deterministic-v1"
+                if row.document_json.get("document_version")
+                in {"m20-c2-deterministic-v1", "m20-c2-deterministic-v2"}
                 else InspectionDocument
             ).model_validate(deepcopy(row.document_json))
         ),

@@ -46,7 +46,7 @@ def codes(document: SupportClassificationDocument) -> set[ReasonCode]:
             ReasonCode.REQUIRES_CREDENTIAL,
         ),
         (
-            b'\nimport os\nos.unlink("retained-data")\n',
+            b'\nimport shutil\nshutil.rmtree("/")\n',
             SupportClassification.UNSUPPORTED,
             ReasonCode.UNSUPPORTED_UNBOUNDED_EFFECT,
         ),

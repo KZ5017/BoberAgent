@@ -1,6 +1,9 @@
-# M20-C1 exact source-evidence foundation
+# M20-C — Source Inspection + Conditional Support Classification
 
-**Status:** C1–C3 implemented; C4 retained-source harness implemented, real operator validation pending. C5 remains deferred. Inspection is Core-owned and offline;
+**Status: CLOSED.** The operator completed calibrated real C4 acceptance with C1@1,
+C2@2 and C3@2: all COMPLETED, final classification UNSUPPORTED, Core reopen PASS and
+identical-invocation reuse PASS. C5 is optional advisory future work, deferred and not
+required for closure. M20-D has not begun. Inspection is Core-owned and offline;
 it reads only retained Core Artifacts from a `COMPLETED` `PoCAcquisition`. It does not import,
 extract, compile for execution, execute, or re-fetch acquired source. C1 does not interpret semantics;
 C2 adds the bounded deterministic profile described below.
@@ -61,8 +64,8 @@ execution. C3 adds classification separately; neither C1 nor C2 implicitly class
 ## C2 deterministic source observations
 
 Use `CorePoCInspectionService.create_semantic(...)` then the existing explicit `inspect(ref)`
-pump. The profile is `m20-c2-deterministic` version `1`; its strict Core-private JSON document
-is `m20-c2-deterministic-v1`. Semantic rules changing materially require a new profile version.
+pump. The profile is `m20-c2-deterministic` version `2`; its strict Core-private JSON document
+is `m20-c2-deterministic-v2`. Semantic rules changing materially require a new profile version.
 The inherited C1 attempt table stores the versioned document; no schema migration, per-fact
 tables, Contract changes or new dependencies are needed. Existing C1 limit JSON/document output
 still decodes as C1 and remains immutable. C2 uses distinct profile/config reuse keys, preserves
@@ -136,13 +139,14 @@ Run the fully offline synthetic smoke (dev/pytest environment):
 `uv run python scripts/manual-smoke/m20c2_deterministic_inspection_smoke_test.py`.
 It uses the shared migration-backed fixture test, completes C2, reopens Core and prints only
 bounded semantic metadata. No GitHub, Kali, MCP, live B5 Artifacts or network is involved.
-C3 classification is described below; C4 retained real-source inspection, C5 advisory LLM and M20-D+ remain deferred.
+C3 classification is described below; calibrated C4.1 real-source acceptance is complete.
+C5 advisory reasoning remains optional/deferred, not a closure prerequisite. M20-D+ has not begun.
 
 
 ## C3 deterministic conditional support
 
-Profile `m20-c3-support-classifier@1` produces the frozen, extra-forbidden Core-private
-`m20-c3-support-classifier-v1` document. **Classification is not authorization, a validated
+Profile `m20-c3-support-classifier@2` produces the frozen, extra-forbidden Core-private
+`m20-c3-support-classifier-v2` document. **Classification is not authorization, a validated
 ExecutionPlan, runtime readiness, a safety guarantee, or permission to execute.**
 A completed C3 attempt means classification was determined from retained C2 evidence;
 `COMPLETED + UNSUPPORTED` is normal.
@@ -162,7 +166,7 @@ SHA-256, with reasons referencing C2 item/conflict IDs and coverage paths. Resol
 IDs leads to the original citations; no source excerpts are duplicated. Attempt timestamps
 are separate from the deterministic result document.
 
-### Fixed v1 rules and precedence
+### Fixed v2 rules and precedence
 
 Hard support blocker wins over an assistance requirement, which wins over AUTOMATIC.
 The classifier emits every applicable reason, not just the first matching rule. Reasons,
@@ -171,17 +175,17 @@ each code is its fixed profile rule identifier, not model-written policy prose. 
 codes explain the conditional Python target/entrypoint/coverage gates; `NON_BLOCKING_UNKNOWN`
 retains nonmaterial gaps without pretending all repository bytes were understood.
 
-| Gate | C3-v1 behavior |
+| Gate | C3-v2 behavior |
 | --- | --- |
 | AUTOMATIC | One code-grounded observed Python entrypoint candidate, exactly one required target-host/URL parameter, adequate material coverage, and no blocker or assistance requirement |
 | Entrypoints | None credible: UNSUPPORTED; multiple credible candidates: ASSISTED operator selection, never a chosen final executable |
-| Runtime | Python is the only initial AUTOMATIC class; shell is ASSISTED; PowerShell/JavaScript are UNSUPPORTED in v1, even though C2 can inspect some syntax |
+| Runtime | Python is the only initial AUTOMATIC class; shell is ASSISTED; PowerShell/JavaScript are UNSUPPORTED in v2, even though C2 can inspect some syntax |
 | Parameters | Credential/username: ASSISTED; callback: ASSISTED listener; input file/mode/unknown required or indeterminate role: ASSISTED manual resolution; explicit optional cosmetic unknown can be nonblocking |
 | Target | Missing or competing Python target parameters block support; explicit mass-target/uncontrolled behavior unknowns block AUTOMATIC, without inventing a mass-target detector |
 | Privilege | Observed code/metadata privilege requirement or privileged-execution risk: UNSUPPORTED; a privilege-check function alone is not a requirement |
 | Authority | Documentation risk/privilege claims require review, not strong observed-risk classification; inferred risk is material uncertainty, not upgraded to OBSERVED |
 | Hard typed risks | Destructive filesystem, arbitrary-command and security-control modification indicators block support and retain cited item refs |
-| Effects | Generic process/shell/file-write/delete/service/registry indicators lack proven bounds in C2: UNSUPPORTED unbounded-effect uncertainty, not an invented persistence/destruction finding |
+| Effects | Process/shell/service/registry gates unchanged. FILE_WRITE/DELETE: literal bounded extent requires filesystem review; unknown extent is material uncertainty; observed broad extent blocks as unbounded. Primitive type alone does not prove destructive risk |
 | Credentials/listeners | ASSISTED explicit prerequisites only; no Secret values, grants, Resource/Session allocation or callback bindings |
 | Browser/build/environment | Representable bounded environment/manual/build/runtime requirements are ASSISTED; no preparation, build, installation or reviewed new runtime adapter |
 | Dependencies | Stdlib-looking imports do not add a requirement; understandable third-party/declared/local/system-tool dependencies require ASSISTED review; unknown dependencies block support; no install commands |
@@ -238,13 +242,16 @@ Tests separately cover authority, severity, precedence, exact reason binding, in
 determinism, strict serialization, coverage relevance, reuse/config/parent history and recovery.
 Architecture guards forbid C3 source readers/extractors, execution, network, Knowledge and LLM.
 
-**C4:** the offline retained-source harness below is ready; historical B5 bytes have not been inspected here.
-C5 advisory LLM, M20-D final entrypoint/runtime/target/secret bindings and policy/ExecutionPlan,
+**C4:** the initial @1 validation and calibrated @2 operator acceptance both completed;
+M20-C is CLOSED. C5 advisory reasoning is optional/deferred and not required for closure.
+M20-D final entrypoint/runtime/target/secret bindings and policy/ExecutionPlan,
 and M20-E+ preparation, installation, staging, allocation and execution remain unimplemented.
 
 ## C4 real retained-source validation harness
 
-**Harness ready; real validation pending. M20-C is not CLOSED.** This manual-only Core
+**Calibrated C4 operator acceptance succeeded with C1@1/C2@2/C3@2; M20-C is CLOSED.**
+See the [acceptance record below](#m20-c-closed-real-retained-source-acceptance).
+This manual-only Core
 composition uses existing production services, not synthetic replacement acquisition data:
 `scripts/manual-smoke/m20c4_real_retained_source_inspection_smoke_test.py`.
 Supply an existing absolute `--database`, existing absolute `--artifact-root`, and explicit
@@ -253,7 +260,7 @@ Supply an existing absolute `--database`, existing absolute `--artifact-root`, a
 `--expected-manifest-sha256`, and `--expected-commit` fail on mismatched retained identity.
 The exact operator commands are in [the manual-smoke guide](../../scripts/manual-smoke/README.md#m20-c4-real-retained-source-inspection-offline-opt-in).
 
-The intended B5 source is `CERTCC/CVE-2021-44228_scanner`:
+The original B5 validation source is `CERTCC/CVE-2021-44228_scanner` (historical bindings):
 
 - candidate `poc-candidate-5b2ead4a9b3847e4a2cf28d50b65a54b`, historical hit 4;
 - acquisition `poc-acquisition-65dd487d65864967be3498f52e6c8038`;
@@ -270,7 +277,8 @@ The intended B5 source is `CERTCC/CVE-2021-44228_scanner`:
 
 Those identifiers are historical validation bindings, **not** default filesystem paths.
 The harness can inspect another explicitly selected completed acquisition; the documented expected
-bindings pin this particular B5 validation. It does not search `/tmp`, re-fetch GitHub, create a
+bindings in the acceptance record below pin the calibrated C4 acquisition, distinct from the
+original B5 attempt listed here. It does not search `/tmp`, re-fetch GitHub, create a
 candidate/acquisition, contact Kali/MCP, or read provider/token/environment configuration.
 
 ### Preflight, production flow, and safe output
@@ -322,10 +330,148 @@ support classes through production services, citation and redaction output, chan
 reopen mismatch, and history-growth rejection. Static and behavioral guards forbid network,
 extraction, source execution, package installation, direct extractor/classifier invocation,
 Secret resolution, Knowledge and LLM use. Existing C1–C3 tests retain exact-byte and migration
-coverage. Real acceptance requires the operator to run the documented opted-in command on retained
-B5 state and confirm complete integrity, durable/reusable history, and an honest classification.
+coverage. The operator met the real acceptance gate on retained state: complete integrity,
+durable/reusable history, and an honest classification, recorded below. Another real rerun is
+not required for this documentation closure.
 Missing historical files require a separate operator decision, not automatic B5 acquisition.
 
 C4 always stops after reporting. C5 and M20-D+ remain untouched: no final entrypoint, argv,
 target/callback/secret bindings, plan, policy approval, runtime preparation, source staging,
 installation, allocation or execution.
+
+
+## C4.1 real-source semantic calibration
+
+The operator's first real C4 inspection of CERTCC/CVE-2021-44228_scanner at
+`042e5d9c15fe8312492d2f08063631be58486830` successfully completed C1/C2/C3,
+reopened Core, and reused identical history without fetching, execution, LLM or a plan.
+The UNSUPPORTED result is not assumed wrong. Its primitive-only filesystem reasons were
+overstated: C2 promoted every recognized delete primitive to DESTRUCTIVE_FILESYSTEM;
+C3 mapped every FILE_WRITE/FILE_DELETE to UNSUPPORTED_UNBOUNDED_EFFECT.
+
+### Calibrated deterministic rules
+
+Current profiles/documents are C2@2/`m20-c2-deterministic-v2` and
+C3@2/`m20-c3-support-classifier-v2`. C1 stays @1. No migration, Contract change,
+dependency or new execution authority is introduced.
+
+- FILE_WRITE/FILE_DELETE remain CODE/OBSERVED syntax, including Python remove/unlink,
+  Path.unlink/write_text/write_bytes, writable open and shutil.rmtree, shell rm/redirection,
+  and PowerShell Remove-Item/content operations.
+- Scope is persisted in the existing behavior `reason` as
+  `FILE_EFFECT_SCOPE_BOUNDED`, `FILE_EFFECT_SCOPE_UNKNOWN` or `FILE_EFFECT_SCOPE_BROAD`.
+  The derived typed `FileEffectScope` view adds no serialized fields to old documents.
+- BOUNDED is deliberately only a nonrecursive, literal single basename
+  (conservative ASCII identifier/file-name grammar). It is not evidence of workspace
+  confinement, symlink safety, resolved runtime effects or approval. C3 emits
+  REQUIRES_FILESYSTEM_REVIEW; it does not silently make mutation AUTOMATIC.
+- Variables, computed/absolute/compound paths, multiple operands, recursive non-root targets
+  and unrecognized syntax stay UNKNOWN, with an UNKNOWN/CODE cited item in addition to the
+  observed primitive. No assignment propagation or filesystem/path resolution is attempted.
+  C3 retains UNSUPPORTED_MATERIAL_UNKNOWN with actual behavior/unknown item refs.
+- BROAD deletion requires literal recursive filesystem root or root wildcard:
+  standalone shell `rm -rf /` / `rm -rf /*`, standalone PowerShell
+  `Remove-Item -Recurse -Force 'C:\*'`, or Python `shutil.rmtree("/")`.
+  Shell/PowerShell lexical scope proof requires command-position syntax; quoted words,
+  echo/Write-Output mentions and unresolved substitutions are not strong destructive proof.
+  Wildcards require language expansion semantics: quoted shell wildcards, Python literal stars,
+  and PowerShell -LiteralPath wildcards remain UNKNOWN rather than broad proof.
+  Broad deletion emits DESTRUCTIVE_FILESYSTEM/CODE/OBSERVED from the whole operation span.
+  C3 retains UNSUPPORTED_DESTRUCTIVE_BEHAVIOR and UNSUPPORTED_UNBOUNDED_EFFECT.
+- Other process, shell, environment, network, dependency, runtime, credential/listener,
+  privilege, binary, coverage/conflict and target-boundary gates are unchanged.
+  In particular, UNSUPPORTED_TARGET_BOUNDARY has no new exceptions.
+
+C2/C3 collection caps, deterministic IDs/sort/dedup, evidence hash/byte binding, and
+UNSUPPORTED > ASSISTED > AUTOMATIC precedence remain. Long/ambiguous syntax is never
+evaluated to obtain a scope. The new filesystem helper is pure lexical/AST support;
+C3 cannot import it or rescan source.
+
+### Historical preservation and real rerun
+
+Historical operator records remain immutable/readable:
+
+- C1 `poc-inspection-e3bad26d882449e196d9146b841d42e8`;
+- C2@1 `poc-inspection-f4613eced4a64d339367582978d2ae57`;
+- C3@1 `poc-inspection-5897302e458a4514a29039b26e6e71fc`.
+
+Completed @1 attempts return their stored documents, preserving JSON and semantic digest.
+New creates only use @2; C3@2 rejects a C2@1 parent instead of reinterpreting old evidence.
+Incomplete retired attempts are not silently executed with new semantics.
+C4 composes current services, producing separate @2 records and reusing them subsequently.
+
+The accepted calibrated acquisition is
+`poc-acquisition-2f6a3658a57c42f5ae2252edf1736352`, raw
+`artifact-032c7c87-c1c2-402a-ba2e-269545766f3a` (SHA-256
+`033fc4b983cff57b9a0debb3491e2638e6598800eb8ae96802021ef7edb232d6`) and manifest
+`artifact-463d3e1b-e38a-41ed-afb9-b59fc33bee56` (SHA-256
+`e9e517244eecdedfdb5df9dce43f4792ea5eb1fb763f3e7d48ba5611d229cfe0`).
+These are operator-supplied bindings, not auto-discovered filesystem locations.
+The command is in the manual-smoke guide; it still requires explicit existing absolute paths.
+
+Offline regressions cover Python/PowerShell/shell bounded, dynamic and root-delete cases,
+non-command mentions, evidence references, precedence, deterministic repeated analysis,
+v1 JSON/digest preservation/reopen, @2 selection/reuse and actual C4 service composition.
+No operator retained source was automatically re-inspected during calibration.
+**M20-C is CLOSED:** calibrated real retained-source operator acceptance succeeded.
+The final real classification is UNSUPPORTED, observed from evidence rather than prescribed.
+C5 is optional/deferred and not required for closure. M20-D has not begun.
+
+
+## M20-C CLOSED: real retained-source acceptance
+
+This closure records the operator-reported successful calibrated C4 rerun; it does not rerun
+or modify retained evidence, classification rules, production code, or historical results.
+
+| Immutable binding | Accepted value |
+| --- | --- |
+| Source | CERTCC/CVE-2021-44228_scanner |
+| PoCAcquisition | `poc-acquisition-2f6a3658a57c42f5ae2252edf1736352` |
+| Commit | `042e5d9c15fe8312492d2f08063631be58486830` |
+| Raw Artifact | `artifact-032c7c87-c1c2-402a-ba2e-269545766f3a` |
+| Raw SHA-256 | `033fc4b983cff57b9a0debb3491e2638e6598800eb8ae96802021ef7edb232d6` |
+| Manifest Artifact | `artifact-463d3e1b-e38a-41ed-afb9-b59fc33bee56` |
+| Manifest SHA-256 | `e9e517244eecdedfdb5df9dce43f4792ea5eb1fb763f3e7d48ba5611d229cfe0` |
+
+| Authoritative profile | Document | Real acceptance |
+| --- | --- | --- |
+| `m20-c1-evidence@1` | `m20-c1-evidence-v1` | COMPLETED |
+| `m20-c2-deterministic@2` | `m20-c2-deterministic-v2` | COMPLETED |
+| `m20-c3-support-classifier@2` | `m20-c3-support-classifier-v2` | COMPLETED; UNSUPPORTED |
+
+**Core reopen: PASS. Identical-invocation reuse: PASS.** Durable inspection and classification
+survived reopen, and the same invocation reused history without duplicate attempts.
+
+C4.1 was necessary because the initial @1 rules promoted ordinary deletion syntax into
+destructive risk and ordinary writes/deletes into unbounded-effect reasons without proven scope.
+The calibrated real run retained FILE_DELETE/FILE_WRITE observations while removing false
+automatic DESTRUCTIVE_FILESYSTEM, UNSUPPORTED_DESTRUCTIVE_BEHAVIOR and
+UNSUPPORTED_UNBOUNDED_EFFECT where destructive/unbounded scope was not proven.
+UNKNOWN file-effect scope remains explicit and fail-closed; genuinely broad/destructive
+evidence still blocks under the unchanged calibrated rules.
+
+Remaining evidence-driven blocker categories include:
+
+- `UNSUPPORTED_INSUFFICIENT_COVERAGE`;
+- `UNSUPPORTED_MATERIAL_UNKNOWN`;
+- `UNSUPPORTED_TARGET_BOUNDARY`.
+
+Assistance reasons include:
+
+- `REQUIRES_ENTRYPOINT_SELECTION`;
+- `REQUIRES_MANUAL_PARAMETER`;
+- `REQUIRES_RUNTIME_CONFIRMATION`;
+- `REQUIRES_DEPENDENCY_REVIEW`.
+
+UNSUPPORTED is the honest conditional-support result, not inspection failure, a safety
+guarantee, target vulnerability confirmation, authorization or permission to execute.
+No gate was weakened to obtain closure.
+
+The accepted run involved **no network, source execution, extraction, installation, Secret
+resolution, LLM, Knowledge/RAG, ExecutionPlan, staging, authorization or runtime preparation**.
+Historical C2@1/C3@1 records listed above remain immutable; @2 output is separate versioned
+history, not a rewrite or reinterpretation of @1.
+
+**C5 is optional advisory future work and remains deferred. It is not required for M20-C
+closure. M20-D has not begun and remains untouched.** Closing this phase does not close the
+overall M20 pipeline or initiate plan/policy/runtime work.

@@ -39,6 +39,8 @@ def _semantic(value: PoCInspection | None) -> tuple[PoCInspection, SemanticInspe
         value.document, SemanticInspectionDocument
     ):
         raise InspectionError("CLASSIFICATION_INPUT_NOT_COMPLETED_C2")
+    if value.profile_version != "2":
+        raise InspectionError("CLASSIFICATION_INPUT_PROFILE_UNSUPPORTED")
     return value, value.document
 
 
@@ -120,10 +122,12 @@ class CorePoCSupportClassificationService:
             current = work.inspections.get(inspection_ref)
             if current is None:
                 raise InspectionError("INSPECTION_NOT_FOUND")
-            if current.profile_id != CLASSIFIER_PROFILE_ID or current.profile_version != "1":
+            if current.profile_id != CLASSIFIER_PROFILE_ID:
                 raise InspectionError("CLASSIFICATION_PROFILE_INVALID")
             if current.status is InspectionStatus.COMPLETED:
                 return current
+            if current.profile_version != CLASSIFIER_PROFILE_VERSION:
+                raise InspectionError("CLASSIFICATION_PROFILE_INVALID")
             if current.status is not InspectionStatus.REQUESTED:
                 raise InspectionError("INSPECTION_NOT_REQUESTED")
             current = work.inspections.update(

@@ -1,8 +1,13 @@
 # M20-C — Inspection and execution classification
 
-**Status:** Architecture accepted in [ADR 0015](../adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md).
-C1 evidence, C2 bounded deterministic observations and C3 conditional support classification implemented. C4 offline retained-source harness is ready; real operator validation is pending. C5 remains deferred. M20-C stops before
-`ExecutionPlan`, preparation, or execution. See [M20-C implementation](M20C_IMPLEMENTATION.md).
+**Status: CLOSED — M20-C Source Inspection + Conditional Support Classification.**
+Architecture remains as accepted in [ADR 0015](../adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md).
+The operator completed calibrated real C4 acceptance with `m20-c1-evidence@1`,
+`m20-c2-deterministic@2` and `m20-c3-support-classifier@2`: all COMPLETED,
+classification UNSUPPORTED, Core reopen PASS and identical-invocation reuse PASS.
+C5 is optional advisory future work, deferred and not required for closure.
+M20-D has not begun; inspection stops before `ExecutionPlan`, preparation or execution.
+See the [immutable acceptance record](M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
 
 ## Goal and dependency
 
@@ -125,18 +130,20 @@ access); **C2** bounded deterministic extractors, typed facts, coverage, require
 unknowns; **C3** conditional classifier, versioned reasons, hostile/prompt-injection/restart
 tests; **C4** manual read-only inspection of the retained real B5 Core Artifacts (no GitHub or
 execution); **C5 only if needed** optional advisory model over bounded verified excerpts.
-The C4 target is `CERTCC/CVE-2021-44228_scanner` commit
+The original M20-B validation bindings (historical) identify `CERTCC/CVE-2021-44228_scanner` commit
 `042e5d9c15fe8312492d2f08063631be58486830`, raw Artifact
 `artifact-c432aa44-d24e-4e53-98ba-8b64cef3973e` (SHA-256
 `033fc4b983cff57b9a0debb3491e2638e6598800eb8ae96802021ef7edb232d6`), and
 manifest Artifact `artifact-0ba70bf4-9503-4b00-bc22-7398b3dfd4c1` (SHA-256
 `e9e517244eecdedfdb5df9dce43f4792ea5eb1fb763f3e7d48ba5611d229cfe0`).
-These bytes have **not** been inspected by this planning work.
+These original B5 ArtifactRefs are historical. The calibrated C4 acceptance uses the retained
+acquisition and current ArtifactRefs recorded in the closure record; commit and content hashes
+remain pinned. No source was rerun during this documentation closure.
 
 
 ## Implemented C3 profile
 
-`m20-c3-support-classifier@1` consumes only persisted, validated C2 output. It creates a
+`m20-c3-support-classifier@2` consumes only persisted, validated C2@2 output. It creates a
 separate immutable PoCInspection document, pinning the C2 attempt/digest and referencing
 its semantic items/conflicts/coverage. Hard UNSUPPORTED reasons precede ASSISTED prerequisites;
 AUTOMATIC is the narrow conditional Python-first class, not execution authority.
@@ -146,8 +153,9 @@ the rules: C3 does not add source detectors or rescan Artifacts.
 
 See [implementation rules and limitations](M20C_IMPLEMENTATION.md#c3-deterministic-conditional-support)
 for the bounded reason vocabulary, authority handling, runtime/parameter/dependency gates and
-restart/reuse semantics. C4 real operator validation and C5 optional advisory reasoning
-are still pending, as are all M20-D+ plan/policy/runtime actions.
+restart/reuse semantics. The calibrated C4.1 real operator rerun is accepted.
+C5 remains optional/deferred and is not required for M20-C closure.
+M20-D+ plan/policy/runtime actions have not begun.
 
 ## C4 retained real-source smoke
 
@@ -167,7 +175,40 @@ not fixed to AUTOMATIC or any other class. Reopen compares immutable histories a
 an immediate second invocation checks reuse without duplicate histories. Any class is structurally
 valid when integrity and classification are honest.
 
-**C4 real validation has not been run by the implementation session. M20-C is not CLOSED.**
-Operator acceptance requires the retained B5 run to finish C1/C2/C3, verify citations, preserve
-classification/digest/source hashes after reopen, and reuse history. No C5 or M20-D+ action follows,
-even when classification is AUTOMATIC.
+**Calibrated real C4 acceptance: PASS; M20-C is CLOSED.** The initial @1 run exposed
+primitive-only filesystem overclassification. After C4.1 calibration, the operator completed
+C1@1/C2@2/C3@2 on `poc-acquisition-2f6a3658a57c42f5ae2252edf1736352`, with immutable
+source hashes, Core reopen and identical-invocation reuse both PASS. The final classification
+remains UNSUPPORTED through evidence-driven coverage, material-unknown and target-boundary
+blockers, with entrypoint/manual-parameter/runtime/dependency assistance reasons. This is a
+successful inspection, not a safety guarantee or execution authorization. No C5 or M20-D+
+action follows from closure.
+
+
+## C4.1 filesystem semantic calibration
+
+C2 current profile is `m20-c2-deterministic@2`, document
+`m20-c2-deterministic-v2`; C3 is `m20-c3-support-classifier@2`,
+document `m20-c3-support-classifier-v2`. Completed @1 documents remain immutable/readable;
+new rules neither rewrite nor reclassify that history. New C3@2 attempts require C2@2.
+
+A file-write/delete primitive is still CODE/OBSERVED behavior, not by itself a destructive or
+unbounded effect. Existing-model-compatible `FILE_EFFECT_SCOPE_BOUNDED/UNKNOWN/BROAD` reason
+codes serialize scope explicitly; the typed `file_effect_scope` view is derived, not an added
+field that changes old JSON/digests. A literal single basename is bounded only in syntactic
+extent, not runtime confinement or policy permission, and requires filesystem review.
+Unresolved/dynamic or recursive non-root targets emit a cited UNKNOWN and block support as
+material uncertainty. Only narrow explicit recursive root/root-wildcard deletion emits
+DESTRUCTIVE_FILESYSTEM with the complete operation citation, never the primitive alone.
+
+C3 no longer maps FILE_WRITE/FILE_DELETE directly to UNSUPPORTED_UNBOUNDED_EFFECT:
+bounded syntax requires review; unknown scope remains fail-closed; broad observed scope remains
+a hard blocker. Non-filesystem gates, especially UNSUPPORTED_TARGET_BOUNDARY, are unchanged.
+See [calibration rules and historical validation](M20C_IMPLEMENTATION.md#c41-real-source-semantic-calibration).
+This calibration was first validated offline with synthetic evidence, then accepted in the
+operator's explicit retained-source rerun. FILE_DELETE/FILE_WRITE remain present; false
+primitive-only DESTRUCTIVE_FILESYSTEM, UNSUPPORTED_DESTRUCTIVE_BEHAVIOR and
+UNSUPPORTED_UNBOUNDED_EFFECT reasons were removed where scope was not proven.
+Unknown scope remains explicit and fail-closed. The resulting real UNSUPPORTED classification
+was observed, not predetermined. Historical C2@1/C3@1 results remain immutable.
+C5 is optional/deferred, not a closure prerequisite; M20-D remains untouched.

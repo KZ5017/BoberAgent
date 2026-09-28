@@ -13,7 +13,6 @@ from boberagent_core.research.models import PoCCandidateRef, VulnerabilityHypoth
 
 from .classification_models import (
     CLASSIFIER_PROFILE_ID,
-    CLASSIFIER_PROFILE_VERSION,
     ClassificationInspectionLimits,
     SupportClassificationDocument,
 )
@@ -95,7 +94,7 @@ class PoCInspection(CoreModel):
             if (
                 not isinstance(limits, SemanticInspectionLimits)
                 or self.profile_id != "m20-c2-deterministic"
-                or self.profile_version != "1"
+                or self.document.document_version != f"m20-c2-deterministic-v{self.profile_version}"
             ):
                 raise ValueError("C2 document requires matching semantic profile and limits")
             document = self.document
@@ -132,7 +131,7 @@ class PoCInspection(CoreModel):
         if self.profile_id == CLASSIFIER_PROFILE_ID:
             limits = self.limits
             if not isinstance(limits, ClassificationInspectionLimits) or (
-                self.profile_version != CLASSIFIER_PROFILE_VERSION
+                self.profile_version not in {"1", "2"}
             ):
                 raise ValueError("C3 requires its fixed profile version and typed configuration")
             if self.document is not None and not isinstance(
@@ -145,7 +144,8 @@ class PoCInspection(CoreModel):
             ):
                 raise ValueError("classification document requires the C3 profile")
             if (
-                self.document.semantic_inspection_ref != self.limits.semantic_inspection_ref
+                self.document.classifier_version != self.profile_version
+                or self.document.semantic_inspection_ref != self.limits.semantic_inspection_ref
                 or self.document.semantic_document_sha256 != self.limits.semantic_document_sha256
             ):
                 raise ValueError("classification document disagrees with persisted C2 input")

@@ -502,4 +502,24 @@ PowerShell, shell, pyproject/requirements and binary entries are retained as Cor
 Artifacts. C1 validates exact evidence, C2 records bounded typed observations/citations, then
 Core reopens. Output is safe metadata/counts/indicator codes only, not source or string defaults.
 No Internet, GitHub, Node, MCP or real B5 Artifact access is required. This is not a classification,
-plan or execution smoke; C3+ remains deferred.
+plan or execution smoke; classification uses the separate C3 smoke below.
+
+
+## M20-C3 offline conditional support classification
+
+From the repository root with the dev environment synced:
+
+```bash
+uv run python scripts/manual-smoke/m20c3_support_classification_smoke_test.py
+```
+
+This small pytest-backed manual runner completes three migration-backed synthetic
+C1 → C2 → C3 histories, then reopens Core to verify persisted AUTOMATIC, ASSISTED
+(credential prerequisite), and UNSUPPORTED (unbounded filesystem effect) results.
+It prints bounded refs, classifier profile/version, status, reason codes and evidence counts;
+no source excerpts or sensitive values. Classification is conditional compatibility only,
+**not authorization, runtime readiness, an ExecutionPlan or permission to execute**.
+
+No Internet/GitHub, Kali, MCP, live B5 Artifacts, LLM or Knowledge is used. No source executes,
+dependencies install, parameters bind or Resources/Secrets resolve. C4 will separately inspect
+retained real B5 source; C5 and M20-D+ are not part of this smoke.

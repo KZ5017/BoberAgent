@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from boberagent_core.persistence.orm import PoCInspectionRow
 from boberagent_core.research.models import PoCCandidateRef, VulnerabilityHypothesisRef
 
+from .classification_models import ClassificationInspectionLimits, SupportClassificationDocument
 from .models import (
     InspectionDocument,
     InspectionLimits,
@@ -128,9 +129,9 @@ def _from_row(row: PoCInspectionRow) -> PoCInspection:
         profile_id=row.profile_id,
         profile_version=row.profile_version,
         config_fingerprint=row.config_fingerprint,
-        limits=TypeAdapter(InspectionLimits | SemanticInspectionLimits).validate_python(
-            deepcopy(row.limits_json)
-        ),
+        limits=TypeAdapter(
+            InspectionLimits | SemanticInspectionLimits | ClassificationInspectionLimits
+        ).validate_python(deepcopy(row.limits_json)),
         selected_paths=tuple(row.selected_paths_json),
         status=InspectionStatus(row.status),
         created_at=row.created_at,
@@ -140,7 +141,9 @@ def _from_row(row: PoCInspectionRow) -> PoCInspection:
             None
             if row.document_json is None
             else (
-                SemanticInspectionDocument
+                SupportClassificationDocument
+                if row.document_json.get("document_version") == "m20-c3-support-classifier-v1"
+                else SemanticInspectionDocument
                 if row.document_json.get("document_version") == "m20-c2-deterministic-v1"
                 else InspectionDocument
             ).model_validate(deepcopy(row.document_json))

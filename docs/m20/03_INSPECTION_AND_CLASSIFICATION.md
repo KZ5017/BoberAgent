@@ -1,7 +1,7 @@
 # M20-C — Inspection and execution classification
 
 **Status:** Architecture accepted in [ADR 0015](../adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md).
-C1 evidence foundation and C2 bounded deterministic observations implemented; C3–C5 remain planned. M20-C stops before
+C1 evidence, C2 bounded deterministic observations and C3 conditional support classification implemented; C4/C5 remain planned. M20-C stops before
 `ExecutionPlan`, preparation, or execution. See [M20-C implementation](M20C_IMPLEMENTATION.md).
 
 ## Goal and dependency
@@ -132,3 +132,19 @@ The C4 target is `CERTCC/CVE-2021-44228_scanner` commit
 manifest Artifact `artifact-0ba70bf4-9503-4b00-bc22-7398b3dfd4c1` (SHA-256
 `e9e517244eecdedfdb5df9dce43f4792ea5eb1fb763f3e7d48ba5611d229cfe0`).
 These bytes have **not** been inspected by this planning work.
+
+
+## Implemented C3 profile
+
+`m20-c3-support-classifier@1` consumes only persisted, validated C2 output. It creates a
+separate immutable PoCInspection document, pinning the C2 attempt/digest and referencing
+its semantic items/conflicts/coverage. Hard UNSUPPORTED reasons precede ASSISTED prerequisites;
+AUTOMATIC is the narrow conditional Python-first class, not execution authority.
+Material unknowns/conflicts, unexplained critical coverage gaps and collection truncation
+block support; irrelevant screenshot coverage does not. Existing C2 typed signals determine
+the rules: C3 does not add source detectors or rescan Artifacts.
+
+See [implementation rules and limitations](M20C_IMPLEMENTATION.md#c3-deterministic-conditional-support)
+for the bounded reason vocabulary, authority handling, runtime/parameter/dependency gates and
+restart/reuse semantics. C4 retained real-source validation and C5 optional advisory reasoning
+are still deferred, as are all M20-D+ plan/policy/runtime actions.

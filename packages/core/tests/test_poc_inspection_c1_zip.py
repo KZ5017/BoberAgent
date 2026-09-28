@@ -12,6 +12,7 @@ import pytest
 from boberagent_core import CoreDatabase
 from boberagent_core.inspections import InspectionStatus
 from boberagent_core.inspections.evidence import InspectionError
+from boberagent_core.inspections.models import InspectionDocument
 from boberagent_core.inspections.service import CitationSpan
 from test_poc_inspection_c1 import CONTENT, _manifest, _setup
 
@@ -99,7 +100,7 @@ def test_directory_cannot_be_cited(database: CoreDatabase, tmp_path: Path) -> No
         spans=(CitationSpan(path="source.py", start=0, end=1, reader_id="c1", reader_version="1"),),
     )
     assert completed.status is InspectionStatus.COMPLETED
-    assert completed.document is not None
+    assert isinstance(completed.document, InspectionDocument)
     with pytest.raises(InspectionError):
         service.validate_citation(
             completed.inspection_ref,

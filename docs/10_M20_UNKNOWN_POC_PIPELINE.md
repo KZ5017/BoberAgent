@@ -4,7 +4,7 @@
 Immutable Provenance is CLOSED**. B1–B4 established the bounded acquisition path; B5 validated
 it against real public GitHub through a Kali Execution Node, TLS/MCP, Node→Core Artifact sync,
 Core finalization, and Core reopen without re-fetch. M20-C1 evidence and C2 deterministic source
-observations are implemented; C3–C5 and M20-D through M20-H remain planned.
+observations and C3 conditional support classification are implemented; C4/C5 and M20-D through M20-H remain planned.
 ADR 0014 fixes M20-B architecture; [ADR 0015](adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md)
 fixes M20-C inspection ownership, evidence, and authority before implementation.
 This plan refines `09_BOOTSTRAP_PLAN.md` §100 without changing the Capability, Core, or Execution Node ownership
@@ -105,7 +105,8 @@ bindings, resources, outcomes/effects, uncertainty, status, and provenance; it d
 encode every proposed target/network/secret/cleanup constraint as explicit fields. The production
 Node's `execute_plan()` currently denies execution. Current M11 Workflow is static and sequential;
 M19 Reasoner validates proposals but has no PoC inspector or executor. A complete PoC policy
-approval engine, runtime confinement, and PoC Inspection persistence are not present.
+approval engine and runtime confinement are not present. C1–C3 now provide immutable PoC Inspection history,
+exact evidence, deterministic observations and conditional support; these do not authorize execution.
 Do not hide these gaps in opaque `metadata` or call existing local process execution a sandbox.
 
 The accepted M15 implementation cannot reconstruct a waiting Python continuation after a Node

@@ -24,18 +24,11 @@ from pydantic import ConfigDict, Field, StrictBool, StrictInt, ValidationError, 
 from boberagent_core.artifacts import CoreArtifactService
 from boberagent_core.models import CoreModel
 
+from .errors import InspectionError as InspectionError
 from .models import PoCInspection, SourceCitation
 
 _CHUNK = 64 * 1024
 _EOCD = b"PK\x05\x06"
-
-
-class InspectionError(ValueError):
-    """Bounded, source-text-free C1 failure suitable for durable diagnostics."""
-
-    def __init__(self, code: str) -> None:
-        self.code = code
-        super().__init__(code)
 
 
 class ManifestEntry(CoreModel):

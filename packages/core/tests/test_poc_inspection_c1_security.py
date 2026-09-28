@@ -9,6 +9,7 @@ from boberagent_contracts import ArtifactRef
 from boberagent_core import CoreDatabase
 from boberagent_core.inspections import InspectionLimits, InspectionStatus, SourceCitation
 from boberagent_core.inspections.evidence import InspectionError, SourceManifest
+from boberagent_core.inspections.models import InspectionDocument
 from boberagent_core.inspections.service import CitationSpan
 from pydantic import ValidationError
 from test_poc_inspection_c1 import CONTENT, _manifest, _setup, _zip
@@ -118,7 +119,7 @@ def test_selected_entry_limit_fails_but_unselected_is_explicit_coverage(
     )
     completed = service.inspect(unselected.inspection_ref)
     assert completed.status is InspectionStatus.COMPLETED
-    assert completed.document is not None
+    assert isinstance(completed.document, InspectionDocument)
     assert completed.document.verified_paths == ()
     assert completed.document.unverified_paths == ("source.py",)
 
@@ -135,7 +136,7 @@ def test_citation_rejects_foreign_refs_and_invalid_spans(
             ),
         ),
     )
-    assert completed.document is not None
+    assert isinstance(completed.document, InspectionDocument)
     citation = completed.document.citations[0]
     assert service.read_citation(completed.inspection_ref, citation) == CONTENT
     for update in (

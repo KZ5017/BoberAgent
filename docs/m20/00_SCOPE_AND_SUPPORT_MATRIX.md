@@ -55,6 +55,7 @@ the outcome remains blocked or `UNSUPPORTED` for v1. A classification record sho
 decisive facts, reason codes, source Artifact/revision, reviewer/decision provenance if any, and
 the exact profile version used; repeated inspection must not silently change a prior decision.
 
-**OPEN DECISION (M20-C/D ADR):** final reason-code vocabulary and whether a reviewed shell/build
-adapter is delivered within M20 or remains a documented assisted stop. The initial `AUTOMATIC`
-class does not depend on that choice.
+C3-v1 implements the bounded reason vocabulary described in
+[the implementation note](M20C_IMPLEMENTATION.md#c3-deterministic-conditional-support).
+**OPEN DECISION (M20-D/E):** whether a reviewed shell/build adapter is delivered within M20 or
+remains a documented assisted stop. The initial `AUTOMATIC` class does not depend on that choice.

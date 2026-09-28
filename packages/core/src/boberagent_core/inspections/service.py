@@ -19,7 +19,9 @@ from boberagent_core.models import CoreModel
 from boberagent_core.persistence import CoreDatabase
 from boberagent_core.research.models import PoCCandidateRef, VulnerabilityHypothesisRef
 
-from .evidence import InspectionError, VerifiedSource, _safe_path, line_span
+from .classification_models import CLASSIFIER_PROFILE_ID, SupportClassificationDocument
+from .errors import InspectionError
+from .evidence import VerifiedSource, _safe_path, line_span
 from .models import (
     InspectionDocument,
     InspectionLimits,
@@ -87,6 +89,8 @@ class CorePoCInspectionService:
     ) -> PoCInspection:
         """Bind only a completed, correctly owned acquisition and its two Artifacts."""
 
+        if profile_id == CLASSIFIER_PROFILE_ID:
+            raise InspectionError("USE_CLASSIFICATION_SERVICE")
         limits = limits or InspectionLimits()
         if isinstance(limits, SemanticInspectionLimits) != (profile_id == SEMANTIC_PROFILE_ID):
             raise InspectionError("INSPECTION_CONFIG_INVALID")
@@ -220,6 +224,8 @@ class CorePoCInspectionService:
             current = work.inspections.get(inspection_ref)
             if current is None:
                 raise InspectionError("INSPECTION_NOT_FOUND")
+            if current.profile_id == CLASSIFIER_PROFILE_ID:
+                raise InspectionError("USE_CLASSIFICATION_SERVICE")
             if current.status is InspectionStatus.COMPLETED:
                 return current
             if current.status is not InspectionStatus.REQUESTED:
@@ -301,7 +307,7 @@ class CorePoCInspectionService:
 
     def read_citation(self, inspection_ref: PoCInspectionRef, citation: SourceCitation) -> bytes:
         current = self._completed(inspection_ref)
-        assert current.document is not None
+        assert isinstance(current.document, InspectionDocument | SemanticInspectionDocument)
         if citation not in current.document.citations:
             raise InspectionError("CITATION_INVALID")
         source = VerifiedSource(
@@ -315,7 +321,7 @@ class CorePoCInspectionService:
         self, inspection_ref: PoCInspectionRef, citation: SourceCitation
     ) -> tuple[int, int] | None:
         current = self._completed(inspection_ref)
-        assert current.document is not None
+        assert isinstance(current.document, InspectionDocument | SemanticInspectionDocument)
         if citation not in current.document.citations:
             raise InspectionError("CITATION_INVALID")
         source = VerifiedSource(
@@ -346,6 +352,8 @@ class CorePoCInspectionService:
         current = self.get(inspection_ref)
         if current is None or current.status is not InspectionStatus.COMPLETED:
             raise InspectionError("INSPECTION_NOT_COMPLETED")
+        if isinstance(current.document, SupportClassificationDocument):
+            raise InspectionError("USE_CLASSIFICATION_SERVICE")
         return current
 
     def _finish(

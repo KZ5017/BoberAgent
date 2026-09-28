@@ -103,3 +103,56 @@ def test_non_core_packages_do_not_import_private_inspection_domain() -> None:
         if name.startswith("boberagent_core.inspections")
     ]
     assert not violations, violations
+
+
+def test_c3_consumes_history_not_source_or_execution_services() -> None:
+    """C3 is a separate policy layer, not an alias for the C1/C2 reader."""
+    forbidden = {
+        "ast",
+        "pathlib",
+        "zipfile",
+        "evidence",
+        "service",
+        "semantic_analysis",
+        "extraction",
+        "python_analysis",
+        "lexical_analysis",
+        "data_analysis",
+        "text",
+        "boberagent_core.artifacts",
+        "boberagent_core.secrets",
+        "boberagent_core.workflows",
+        "boberagent_core.interactions",
+    }
+    violations: list[str] = []
+    for filename in ("classifier.py", "classification_models.py", "classification_service.py"):
+        path = INSPECTIONS / filename
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for name in _imports(tree):
+            if any(name == banned or name.startswith(banned + ".") for banned in forbidden):
+                violations.append(f"{filename}: import {name}")
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                name = (
+                    node.func.attr
+                    if isinstance(node.func, ast.Attribute)
+                    else node.func.id
+                    if isinstance(node.func, ast.Name)
+                    else ""
+                )
+                if name in {
+                    "open",
+                    "open_content",
+                    "read_text",
+                    "read_bytes",
+                    "read_citation",
+                    "verify_entry",
+                    "parse",
+                    "analyze_semantics",
+                    "VerifiedSource",
+                    "resolve",
+                    "allocate",
+                    "create_workspace",
+                }:
+                    violations.append(f"{filename}: call {name}")
+    assert not violations, violations

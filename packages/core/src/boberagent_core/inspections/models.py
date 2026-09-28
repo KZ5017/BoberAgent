@@ -6,19 +6,21 @@ from enum import StrEnum
 from typing import Annotated, Literal, Self
 
 from boberagent_contracts import ArtifactRef, MissionRef, PoCAcquisitionRef
-from boberagent_contracts.refs import DomainRef
 from pydantic import AwareDatetime, Field, model_validator
 
 from boberagent_core.models import CoreModel
 from boberagent_core.research.models import PoCCandidateRef, VulnerabilityHypothesisRef
 
+from .classification_models import (
+    CLASSIFIER_PROFILE_ID,
+    CLASSIFIER_PROFILE_VERSION,
+    ClassificationInspectionLimits,
+    SupportClassificationDocument,
+)
 from .evidence_models import InspectionLimits as InspectionLimits
 from .evidence_models import SourceCitation as SourceCitation
+from .identity import PoCInspectionRef as PoCInspectionRef
 from .semantic_models import SemanticInspectionDocument, SemanticInspectionLimits
-
-
-class PoCInspectionRef(DomainRef):
-    """Stable identity of one inspection attempt, not a source content hash."""
 
 
 class InspectionStatus(StrEnum):
@@ -59,7 +61,7 @@ class PoCInspection(CoreModel):
     profile_id: str = Field(min_length=1, max_length=128)
     profile_version: str = Field(min_length=1, max_length=128)
     config_fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
-    limits: InspectionLimits | SemanticInspectionLimits
+    limits: InspectionLimits | SemanticInspectionLimits | ClassificationInspectionLimits
     selected_paths: tuple[str, ...] = ()
     status: InspectionStatus
     created_at: AwareDatetime
@@ -67,7 +69,8 @@ class PoCInspection(CoreModel):
     finished_at: AwareDatetime | None = None
     document: (
         Annotated[
-            InspectionDocument | SemanticInspectionDocument, Field(discriminator="document_version")
+            InspectionDocument | SemanticInspectionDocument | SupportClassificationDocument,
+            Field(discriminator="document_version"),
         ]
         | None
     ) = None
@@ -126,4 +129,24 @@ class PoCInspection(CoreModel):
                     or citation.end - citation.start > limits.max_citation_bytes
                 ):
                     raise ValueError("semantic citation disagrees with inspection evidence")
+        if self.profile_id == CLASSIFIER_PROFILE_ID:
+            limits = self.limits
+            if not isinstance(limits, ClassificationInspectionLimits) or (
+                self.profile_version != CLASSIFIER_PROFILE_VERSION
+            ):
+                raise ValueError("C3 requires its fixed profile version and typed configuration")
+            if self.document is not None and not isinstance(
+                self.document, SupportClassificationDocument
+            ):
+                raise ValueError("C3 requires a classification document")
+        if isinstance(self.document, SupportClassificationDocument):
+            if self.profile_id != CLASSIFIER_PROFILE_ID or not isinstance(
+                self.limits, ClassificationInspectionLimits
+            ):
+                raise ValueError("classification document requires the C3 profile")
+            if (
+                self.document.semantic_inspection_ref != self.limits.semantic_inspection_ref
+                or self.document.semantic_document_sha256 != self.limits.semantic_document_sha256
+            ):
+                raise ValueError("classification document disagrees with persisted C2 input")
         return self

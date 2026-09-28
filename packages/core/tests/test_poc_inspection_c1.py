@@ -29,6 +29,7 @@ from boberagent_core.inspections import (
     SourceCitation,
 )
 from boberagent_core.inspections.evidence import InspectionError, line_span
+from boberagent_core.inspections.models import InspectionDocument
 from boberagent_core.inspections.service import CitationSpan
 from sqlalchemy import inspect
 from test_core_poc_acquisition import (
@@ -159,7 +160,7 @@ def test_completed_citation_reuse_and_reopen(database_path: Path, tmp_path: Path
         spans=(CitationSpan(path="source.py", start=0, end=5, reader_id="c1", reader_version="1"),),
     )
     assert completed.status is InspectionStatus.COMPLETED
-    assert completed.document is not None
+    assert isinstance(completed.document, InspectionDocument)
     assert completed.document.verified_paths == ("source.py",)
     citation = completed.document.citations[0]
     assert service.read_citation(completed.inspection_ref, citation) == b"first"
@@ -303,7 +304,7 @@ def test_citation_rejects_foreign_identity_and_bounds(
         requested.inspection_ref,
         spans=(CitationSpan(path="source.py", start=0, end=5, reader_id="c1", reader_version="1"),),
     )
-    assert completed.document is not None
+    assert isinstance(completed.document, InspectionDocument)
     citation = completed.document.citations[0]
     for update in (
         {"raw_sha256": "f" * 64},

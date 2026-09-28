@@ -1,0 +1,11 @@
+import argparse
+import socket
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--target", required=True)
+parser.add_argument("--port", required=False, type=int, default=80)
+
+if __name__ == "__main__":
+    args = parser.parse_args()
+    connection = socket.create_connection((args.target, args.port), timeout=5)
+    connection.close()

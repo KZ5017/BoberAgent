@@ -1,6 +1,6 @@
 # M20-C1 exact source-evidence foundation
 
-**Status:** C1 and C2 implemented. C3–C5 remain unimplemented. Inspection is Core-owned and offline;
+**Status:** C1–C3 implemented. C4/C5 remain unimplemented. Inspection is Core-owned and offline;
 it reads only retained Core Artifacts from a `COMPLETED` `PoCAcquisition`. It does not import,
 extract, compile for execution, execute, or re-fetch acquired source. C1 does not interpret semantics;
 C2 adds the bounded deterministic profile described below.
@@ -56,7 +56,7 @@ rows. The offline manual check is
 C2 implements bounded deterministic source-fact extraction, requirements, risks, and semantic coverage;
 C3 owns conditional support classification. C4 may inspect the retained real B5 Artifacts only
 after deterministic semantic inspection exists. M20-D+ owns plans, policy, preparation, and
-execution. Classification and later phases are not implemented by C1/C2.
+execution. C3 adds classification separately; neither C1 nor C2 implicitly classifies source.
 
 ## C2 deterministic source observations
 
@@ -136,4 +136,108 @@ Run the fully offline synthetic smoke (dev/pytest environment):
 `uv run python scripts/manual-smoke/m20c2_deterministic_inspection_smoke_test.py`.
 It uses the shared migration-backed fixture test, completes C2, reopens Core and prints only
 bounded semantic metadata. No GitHub, Kali, MCP, live B5 Artifacts or network is involved.
-C3 classification, C4 retained real-source inspection, C5 advisory LLM and M20-D+ remain deferred.
+C3 classification is described below; C4 retained real-source inspection, C5 advisory LLM and M20-D+ remain deferred.
+
+
+## C3 deterministic conditional support
+
+Profile `m20-c3-support-classifier@1` produces the frozen, extra-forbidden Core-private
+`m20-c3-support-classifier-v1` document. **Classification is not authorization, a validated
+ExecutionPlan, runtime readiness, a safety guarantee, or permission to execute.**
+A completed C3 attempt means classification was determined from retained C2 evidence;
+`COMPLETED + UNSUPPORTED` is normal.
+
+```python
+from boberagent_core.inspections import CorePoCSupportClassificationService
+
+classifier = CorePoCSupportClassificationService(database)
+request = classifier.create(completed_c2.inspection_ref)
+completed_c3 = classifier.classify(request.inspection_ref)
+```
+
+The service accepts only persisted `COMPLETED` C2 output and revalidates its envelope,
+limits, citations/source binding and document. It never opens Artifacts, reads ZIP entries,
+runs extractors, or contacts a Node. Output pins the C2 attempt ref and canonical semantic
+SHA-256, with reasons referencing C2 item/conflict IDs and coverage paths. Resolving those
+IDs leads to the original citations; no source excerpts are duplicated. Attempt timestamps
+are separate from the deterministic result document.
+
+### Fixed v1 rules and precedence
+
+Hard support blocker wins over an assistance requirement, which wins over AUTOMATIC.
+The classifier emits every applicable reason, not just the first matching rule. Reasons,
+evidence refs and blockers are deduplicated/sorted. Codes are a closed `ReasonCode` enum;
+each code is its fixed profile rule identifier, not model-written policy prose. Positive
+codes explain the conditional Python target/entrypoint/coverage gates; `NON_BLOCKING_UNKNOWN`
+retains nonmaterial gaps without pretending all repository bytes were understood.
+
+| Gate | C3-v1 behavior |
+| --- | --- |
+| AUTOMATIC | One code-grounded observed Python entrypoint candidate, exactly one required target-host/URL parameter, adequate material coverage, and no blocker or assistance requirement |
+| Entrypoints | None credible: UNSUPPORTED; multiple credible candidates: ASSISTED operator selection, never a chosen final executable |
+| Runtime | Python is the only initial AUTOMATIC class; shell is ASSISTED; PowerShell/JavaScript are UNSUPPORTED in v1, even though C2 can inspect some syntax |
+| Parameters | Credential/username: ASSISTED; callback: ASSISTED listener; input file/mode/unknown required or indeterminate role: ASSISTED manual resolution; explicit optional cosmetic unknown can be nonblocking |
+| Target | Missing or competing Python target parameters block support; explicit mass-target/uncontrolled behavior unknowns block AUTOMATIC, without inventing a mass-target detector |
+| Privilege | Observed code/metadata privilege requirement or privileged-execution risk: UNSUPPORTED; a privilege-check function alone is not a requirement |
+| Authority | Documentation risk/privilege claims require review, not strong observed-risk classification; inferred risk is material uncertainty, not upgraded to OBSERVED |
+| Hard typed risks | Destructive filesystem, arbitrary-command and security-control modification indicators block support and retain cited item refs |
+| Effects | Generic process/shell/file-write/delete/service/registry indicators lack proven bounds in C2: UNSUPPORTED unbounded-effect uncertainty, not an invented persistence/destruction finding |
+| Credentials/listeners | ASSISTED explicit prerequisites only; no Secret values, grants, Resource/Session allocation or callback bindings |
+| Browser/build/environment | Representable bounded environment/manual/build/runtime requirements are ASSISTED; no preparation, build, installation or reviewed new runtime adapter |
+| Dependencies | Stdlib-looking imports do not add a requirement; understandable third-party/declared/local/system-tool dependencies require ASSISTED review; unknown dependencies block support; no install commands |
+| Conflicts | Every current typed runtime/credential conflict blocks support explicitly; neither source wins by convenience |
+| Unknowns | Unknown material semantics default to UNSUPPORTED. Only enumerated entrypoint-choice, lexical-only and parameter-role gaps become assistance; irrelevant assets/helper main-guard absence/explicit cosmetic options may be nonblocking |
+| Coverage | Unexplained partial, parser/encoding/binary/limit/unsupported material source blocks support; collection truncation blocks even if the unknown collection filled |
+
+Aggregate C2 `EXTRACTOR_LIMITATIONS` unknowns retain the severity of their explicit underlying
+causes. A bare unexplained aggregate still blocks. Explained partial coverage can require
+assistance or be nonblocking; it never hides parser/limit failures. Source helpers without
+their own main guard need not be independent entrypoints, but their other unknowns/effects
+are still evaluated.
+
+Relevance is conservative: unsupported/unknown file types, executable helpers, generated/vendor
+source and dependency metadata are material by default. Directory rows and documentation/
+image assets may be nonmaterial; a substantive non-documentation item on that path overrides
+the asset exception. A skipped PNG screenshot alone does not make a Python checker unsupported.
+Documentation requirements/conflicts are still evaluated even though the prose file is not
+an execution entrypoint. Unknown relevance for a helper is not optimistic AUTOMATIC support.
+
+### History, limits and recovery
+
+No migration is needed: the existing `poc_inspections` attempt table stores versioned output
+and typed configuration JSON. `ClassificationInspectionLimits` extends the existing request
+configuration with C2 ref/digest and `ClassifierConfiguration` (4000 semantic/conflict items,
+10,000 coverage paths by default). Inherited C1 evidence limits remain compatibility fields,
+not a reason for C3 to read source. Bounds cannot disable policy gates.
+
+The fingerprint includes this input identity and effective classifier configuration.
+Equivalent requested/completed C3 attempts reuse; changed C2 identity/configuration or
+`force_new` creates distinct history. Material policy changes require a new classifier
+profile version, never reinterpret an existing completed document. C1/C2 histories and
+their decoding remain unchanged. Failed/interrupted attempts are retained, not silently
+rerun. Restart recovery marks unproven INSPECTING C3 attempts INTERRUPTED; REQUESTED survives.
+Unexpected classifier defects persist safe FAILED diagnostics without exception/source text,
+not a guessed support class. Out-of-band changes to a pinned C2 input fail classification.
+
+### Limitations and validation
+
+C2 syntax observations are bounded, not complete program understanding. C3 adds **no**
+persistence, self-modification, obfuscation, mass-target, browser, interactive-input or
+source-repair detectors. Those classes are evaluated only if represented by existing typed
+requirements/risks/unknowns; material unmodeled unknowns fail closed. Typed unit fixtures test
+these uncertainty paths without asserting that current extractors detected them.
+No claim is made that absent indicators prove non-interaction, a single actual destination,
+bounded output, or harmless runtime behavior. Later M20-D must validate actual bindings,
+effects, runtime constraints and policy; richer evidence may be required before execution.
+
+Run the offline synthetic proof:
+`uv run python scripts/manual-smoke/m20c3_support_classification_smoke_test.py`.
+It completes C1/C2/C3 with AUTOMATIC, ASSISTED and UNSUPPORTED examples, reopens Core and
+checks immutable history. Output is only refs/profile/class/reason codes/evidence counts.
+Tests separately cover authority, severity, precedence, exact reason binding, input permutation
+determinism, strict serialization, coverage relevance, reuse/config/parent history and recovery.
+Architecture guards forbid C3 source readers/extractors, execution, network, Knowledge and LLM.
+
+**Next: C4**, manual read-only inspection of the retained real B5 Core Artifacts; not run here.
+C5 advisory LLM, M20-D final entrypoint/runtime/target/secret bindings and policy/ExecutionPlan,
+and M20-E+ preparation, installation, staging, allocation and execution remain unimplemented.

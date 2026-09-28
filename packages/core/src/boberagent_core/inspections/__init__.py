@@ -1,6 +1,15 @@
-"""Core-private, read-only M20-C1 source evidence foundation."""
+"""Core-private read-only evidence, semantic inspection and conditional support."""
 
-from .evidence import InspectionError
+from .classification_models import (
+    ClassificationInspectionLimits,
+    ClassificationReason,
+    ClassifierConfiguration,
+    ReasonCode,
+    SupportClassification,
+    SupportClassificationDocument,
+)
+from .classification_service import CorePoCSupportClassificationService
+from .errors import InspectionError
 from .models import (
     InspectionLimits,
     InspectionStatus,
@@ -26,7 +35,11 @@ from .service import CorePoCInspectionService
 
 __all__ = [
     "BehaviorIndicator",
+    "ClassificationInspectionLimits",
+    "ClassificationReason",
+    "ClassifierConfiguration",
     "CorePoCInspectionService",
+    "CorePoCSupportClassificationService",
     "CoverageStatus",
     "DependencyObservation",
     "EntrypointCandidate",
@@ -38,10 +51,13 @@ __all__ = [
     "ParameterCandidate",
     "PoCInspection",
     "PoCInspectionRef",
+    "ReasonCode",
     "Requirement",
     "RiskIndicator",
     "SemanticInspectionDocument",
     "SemanticInspectionLimits",
     "SourceCitation",
     "SourceOrigin",
+    "SupportClassification",
+    "SupportClassificationDocument",
 ]

@@ -1,5 +1,7 @@
 """Structured execution intent for dynamic or previously unknown code."""
 
+from typing import Literal
+
 from pydantic import AwareDatetime, Field
 
 from ._base import ContractModel, JsonObject, NonEmptyStr, SymbolicName
@@ -16,7 +18,9 @@ class IsolationRequirement(ContractModel):
 
 
 class ExecutionPlan(ContractModel):
-    """Validated structured intent; this object does not execute anything."""
+    """Legacy schema v1; status is presentation, never execution authority."""
+
+    schema_version: Literal["execution-plan-v1"] = "execution-plan-v1"
 
     execution_plan_id: ExecutionPlanRef
     source_artifact_ref: ArtifactRef

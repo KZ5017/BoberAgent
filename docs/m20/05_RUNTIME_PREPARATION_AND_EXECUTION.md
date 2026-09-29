@@ -1,7 +1,9 @@
 # M20-E/F — Attacker-side runtime preparation and controlled execution
 
 M20-E and M20-F have distinct contracts even if one future capability implementation coordinates
-them. Both depend on a current M20-D validated/approved plan, a verified M20-B source Artifact,
+them. Both depend on exact immutable v2 intent, separate current D decisions and a later E/F
+permission envelope bound to intent digest, Mission/action/Run/Node/provider/scope/limits,
+a verified M20-B source Artifact,
 and one in-scope Mission target. Initial automatic support is attacker-side, source-visible,
 non-interactive, user-space Python on the Kali Execution Node. Other languages and target-side or
 remote-Session execution are representable future adapter classes, not automatic M20-v1 support.
@@ -10,7 +12,7 @@ remote-Session execution are representable future adapter classes, not automatic
 
 | Input | Output |
 | --- | --- |
-| Validated plan, pinned source Artifact/hash, exact dependency declarations and policy limits | Run-owned managed Workspace, staged source with verified hash, isolated Python runtime Resource/venv with recorded provenance, readiness or explicit failure |
+| Exact v2 intent/digest, separate D decisions, E/F preparation permission, pinned source/dependencies and limits | Run-owned managed Workspace, staged source with verified hash, isolated Python runtime Resource/venv with recorded provenance, readiness or explicit failure |
 
 Reuse Node Workspace manager, Artifact spool/verified Core bytes, Tool Registry/Dependency
 Resolver, Resource identity and SDK abstractions. A runtime-preparation adapter is new. A venv
@@ -43,13 +45,15 @@ dependency provenance and no PoC entrypoint has yet run.
 
 | Input | Output |
 | --- | --- |
-| Validated/approved plan, ready runtime/Workspace, explicit single target, current authorization | Managed Process record and `CapabilityResult` with execution status, raw stdout/stderr/output Artifacts, timing, exit/timeout/cancel state, Diagnostics and declared Effects/Resources/Sessions actually observed |
+| Exact v2 intent/digest, ready runtime, explicit single target and current E/F execution permission | Managed Process record and `CapabilityResult` with execution status, raw stdout/stderr/output Artifacts, timing, exit/timeout/cancel state, Diagnostics and declared Effects/Resources/Sessions actually observed |
 
 Reuse SDK `ProcessService.execute_plan`, `ExecutionContext` scope/secrets/cancellation/logger,
 Node Process Manager, Artifact spool/sync, Event/Result outboxes, and normal Core Result ingestion.
 The production `ManagedProcessService.execute_plan()` currently raises `PolicyDenied`; a narrow
-Node plan executor and runtime adapter are required. It must reject DRAFT, REJECTED, stale,
-forged, or out-of-scope plans even if a caller bypasses higher-level sequencing. Do not make
+Node plan executor and runtime adapter are required. E/F owns permission-envelope admission
+and forged-plan enforcement tests before staging or launch. Legacy APPROVED, VALID + ALLOW,
+and operator approval alone are not execution credentials. Reject legacy-only, unpermitted,
+stale, forged, or out-of-scope intent even if a caller bypasses higher-level sequencing. Do not make
 `run_tool` or a general-purpose shell command a replacement for this gate. Launch an explicit
 executable and argument vector. Any needed secret is resolved only through a Run-scoped grant at
 the final tool boundary and redacted from BoberAgent logs/normal results; tool-produced raw
@@ -70,7 +74,7 @@ separate authorized attempt. Cleanup is recorded separately from target effects;
 Workspace must not delete synchronized evidence. For long-running work, the plan must define
 finite time/resource limits and a cancellation path.
 
-Tests: validated vs rejected plan; argv not shell concatenation; single-target scope; blocked
+Tests: exact permitted intent vs legacy/forged/unpermitted intent; argv not shell concatenation; single-target scope; blocked
 unexpected egress/filesystem activity (or fail-closed when enforcement unavailable); stdout/
 stderr and binary output capture; zero/nonzero/timeout/cancel; secret redaction; restart ambiguity;
 no duplicate process for duplicate invocation; Artifact sync and Result delivery independently.

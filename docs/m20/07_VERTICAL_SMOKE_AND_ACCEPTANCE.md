@@ -22,6 +22,11 @@ every PoC class pass. A failed prerequisite is an explicit test result, not a sk
 
 ## Test boundaries
 
+D1's gate is non-executing: immutable v2/legacy decoding, canonical request/intent/context
+fingerprints, separate decision records and C3 blocker retention. Later D completion stops at
+decisions even for VALID + ALLOW + operator approval. E/F owns permission-envelope admission,
+forged-plan refusal, staging and runtime-enforcement tests. D1 allocates/resolves/dispatches nothing.
+
 | Test tier | Input and expected result |
 | --- | --- |
 | Unit/contract | Typed hypothesis/candidate/inspection/plan/decision serialization, validation, provenance, classification and failure semantics |

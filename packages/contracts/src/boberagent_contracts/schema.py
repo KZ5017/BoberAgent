@@ -18,6 +18,7 @@ from .diagnostic import Diagnostic
 from .effect import Effect
 from .event import Event
 from .execution_plan import ExecutionPlan
+from .execution_plan_v2 import ExecutionPlanV2
 from .finding import Finding
 from .interaction import InteractionRequest, InteractionResponse
 from .invocation import CapabilityInvocation
@@ -48,6 +49,7 @@ EXCHANGED_MODEL_TYPES: tuple[type[BaseModel], ...] = (
     InteractionResponse,
     Checkpoint,
     ExecutionPlan,
+    ExecutionPlanV2,
     PoCSourceAcquisitionInput,
     PoCSourceAcquisitionReceipt,
 )

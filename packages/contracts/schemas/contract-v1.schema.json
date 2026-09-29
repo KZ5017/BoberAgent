@@ -15,6 +15,35 @@
       "pattern": "^[A-Za-z0-9._-]+$",
       "type": "string"
     },
+    "ArgumentToken": {
+      "discriminator": {
+        "mapping": {
+          "binding": "#/$defs/BindingToken",
+          "flag": "#/$defs/FlagToken",
+          "option": "#/$defs/OptionToken",
+          "option_value": "#/$defs/OptionValueToken",
+          "positional": "#/$defs/PositionalToken"
+        },
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/OptionToken"
+        },
+        {
+          "$ref": "#/$defs/FlagToken"
+        },
+        {
+          "$ref": "#/$defs/OptionValueToken"
+        },
+        {
+          "$ref": "#/$defs/PositionalToken"
+        },
+        {
+          "$ref": "#/$defs/BindingToken"
+        }
+      ]
+    },
     "ArtifactDescriptor": {
       "additionalProperties": false,
       "description": "Logical metadata for persistent evidence or generated non-secret data.",
@@ -98,6 +127,135 @@
         "created_at"
       ],
       "title": "ArtifactDescriptor",
+      "type": "object"
+    },
+    "BindingProvenance": {
+      "additionalProperties": false,
+      "description": "Evidence identity or operator input; never an assertion of OBSERVED source truth.",
+      "properties": {
+        "answer_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolicName"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "evidence_ids": {
+          "collection_semantics": "set",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SymbolicName"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "origin": {
+          "enum": [
+            "MISSION",
+            "SOURCE_EVIDENCE",
+            "OPERATOR",
+            "PLANNING"
+          ],
+          "title": "Origin",
+          "type": "string"
+        }
+      },
+      "required": [
+        "origin"
+      ],
+      "title": "BindingProvenance",
+      "type": "object"
+    },
+    "BindingToken": {
+      "additionalProperties": false,
+      "properties": {
+        "binding_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "kind": {
+          "const": "binding",
+          "default": "binding",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "binding_id"
+      ],
+      "title": "BindingToken",
+      "type": "object"
+    },
+    "BindingValue": {
+      "discriminator": {
+        "mapping": {
+          "callback_requirement": "#/$defs/CallbackValue",
+          "credential_ref": "#/$defs/CredentialValue",
+          "literal": "#/$defs/LiteralValue",
+          "managed_runtime_path": "#/$defs/ManagedPathValue",
+          "mission_target": "#/$defs/MissionTargetValue",
+          "operator": "#/$defs/OperatorValue",
+          "secret_ref": "#/$defs/SecretValue",
+          "source_path": "#/$defs/SourcePathValue"
+        },
+        "propertyName": "source"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/MissionTargetValue"
+        },
+        {
+          "$ref": "#/$defs/LiteralValue"
+        },
+        {
+          "$ref": "#/$defs/OperatorValue"
+        },
+        {
+          "$ref": "#/$defs/SecretValue"
+        },
+        {
+          "$ref": "#/$defs/CredentialValue"
+        },
+        {
+          "$ref": "#/$defs/CallbackValue"
+        },
+        {
+          "$ref": "#/$defs/SourcePathValue"
+        },
+        {
+          "$ref": "#/$defs/ManagedPathValue"
+        }
+      ]
+    },
+    "CallbackValue": {
+      "additionalProperties": false,
+      "properties": {
+        "component": {
+          "enum": [
+            "host",
+            "port"
+          ],
+          "title": "Component",
+          "type": "string"
+        },
+        "requirement_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "source": {
+          "const": "callback_requirement",
+          "default": "callback_requirement",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "requirement_id",
+        "component"
+      ],
+      "title": "CallbackValue",
       "type": "object"
     },
     "CapabilityDefinition": {
@@ -574,6 +732,77 @@
       "title": "Checkpoint",
       "type": "object"
     },
+    "CredentialRequirement": {
+      "additionalProperties": false,
+      "properties": {
+        "binding_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "credential_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Credential Ref",
+          "type": "string"
+        },
+        "kind": {
+          "const": "credential",
+          "default": "credential",
+          "title": "Kind",
+          "type": "string"
+        },
+        "purpose": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "role": {
+          "$ref": "#/$defs/SymbolicName"
+        }
+      },
+      "required": [
+        "credential_ref",
+        "role",
+        "purpose",
+        "binding_id"
+      ],
+      "title": "CredentialRequirement",
+      "type": "object"
+    },
+    "CredentialValue": {
+      "additionalProperties": false,
+      "properties": {
+        "credential_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Credential Ref",
+          "type": "string"
+        },
+        "secret_role": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "source": {
+          "const": "credential_ref",
+          "default": "credential_ref",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "credential_ref",
+        "secret_role"
+      ],
+      "title": "CredentialValue",
+      "type": "object"
+    },
+    "DeliveryChannel": {
+      "enum": [
+        "ARGUMENT",
+        "ENVIRONMENT",
+        "STANDARD_INPUT"
+      ],
+      "title": "DeliveryChannel",
+      "type": "string"
+    },
     "DependencyDeclaration": {
       "additionalProperties": false,
       "description": "A capability, tool, runtime, or Resource requirement.",
@@ -859,6 +1088,74 @@
       "title": "EffectReversibility",
       "type": "object"
     },
+    "EffectScope": {
+      "enum": [
+        "BOUNDED",
+        "UNKNOWN",
+        "BROAD"
+      ],
+      "title": "EffectScope",
+      "type": "string"
+    },
+    "EntrypointIntent": {
+      "additionalProperties": false,
+      "properties": {
+        "entry_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "evidence_ids": {
+          "collection_semantics": "set",
+          "items": {
+            "$ref": "#/$defs/SymbolicName"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "invocation_form": {
+          "enum": [
+            "SCRIPT",
+            "MODULE"
+          ],
+          "title": "Invocation Form",
+          "type": "string"
+        },
+        "language": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "relative_path": {
+          "$ref": "#/$defs/RelativeSourcePath"
+        }
+      },
+      "required": [
+        "relative_path",
+        "entry_sha256",
+        "language",
+        "invocation_form",
+        "evidence_ids"
+      ],
+      "title": "EntrypointIntent",
+      "type": "object"
+    },
+    "EnvironmentBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "binding_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "name": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "binding_id"
+      ],
+      "title": "EnvironmentBinding",
+      "type": "object"
+    },
     "Event": {
       "additionalProperties": false,
       "description": "A persistable notification carrying JSON-compatible data.",
@@ -959,9 +1256,64 @@
       "title": "ExecutionInteraction",
       "type": "string"
     },
+    "ExecutionLimits": {
+      "additionalProperties": false,
+      "description": "Finite numeric intent; enforcement belongs to E/F, not this schema.",
+      "properties": {
+        "disk_write_bytes": {
+          "maximum": 1099511627776,
+          "minimum": 0,
+          "title": "Disk Write Bytes",
+          "type": "integer"
+        },
+        "memory_bytes": {
+          "maximum": 1099511627776,
+          "minimum": 1,
+          "title": "Memory Bytes",
+          "type": "integer"
+        },
+        "output_bytes": {
+          "maximum": 1099511627776,
+          "minimum": 1,
+          "title": "Output Bytes",
+          "type": "integer"
+        },
+        "process_count": {
+          "maximum": 1024,
+          "minimum": 1,
+          "title": "Process Count",
+          "type": "integer"
+        },
+        "wall_time_seconds": {
+          "maximum": 86400,
+          "minimum": 1,
+          "title": "Wall Time Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "wall_time_seconds",
+        "process_count",
+        "memory_bytes",
+        "output_bytes",
+        "disk_write_bytes"
+      ],
+      "title": "ExecutionLimits",
+      "type": "object"
+    },
+    "ExecutionLocation": {
+      "enum": [
+        "ATTACKER_NODE",
+        "TARGET",
+        "REMOTE_SESSION",
+        "UNKNOWN"
+      ],
+      "title": "ExecutionLocation",
+      "type": "string"
+    },
     "ExecutionPlan": {
       "additionalProperties": false,
-      "description": "Validated structured intent; this object does not execute anything.",
+      "description": "Legacy schema v1; status is presentation, never execution authority.",
       "properties": {
         "argument_bindings": {
           "$ref": "#/$defs/JsonObject"
@@ -1054,6 +1406,12 @@
           "default": null,
           "title": "Runtime Version"
         },
+        "schema_version": {
+          "const": "execution-plan-v1",
+          "default": "execution-plan-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
         "source_artifact_ref": {
           "maxLength": 255,
           "minLength": 1,
@@ -1096,6 +1454,332 @@
       ],
       "title": "ExecutionPlanStatus",
       "type": "string"
+    },
+    "ExecutionPlanV2": {
+      "additionalProperties": false,
+      "description": "Finalized intent. Schema consistency checks do not assess policy or source truth.",
+      "properties": {
+        "bindings": {
+          "collection_semantics": "set",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ParameterBinding"
+          },
+          "title": "Bindings",
+          "type": "array"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "dependencies": {
+          "collection_semantics": "set",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PlanDependency"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "entrypoint": {
+          "$ref": "#/$defs/EntrypointIntent"
+        },
+        "environment": {
+          "collection_semantics": "set",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EnvironmentBinding"
+          },
+          "title": "Environment",
+          "type": "array"
+        },
+        "execution_plan_id": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Execution Plan Id",
+          "type": "string"
+        },
+        "expected_evidence": {
+          "collection_semantics": "set",
+          "items": {
+            "$ref": "#/$defs/ExpectedEvidence"
+          },
+          "minItems": 1,
+          "title": "Expected Evidence",
+          "type": "array"
+        },
+        "expected_results": {
+          "collection_semantics": "set",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ExpectedResult"
+          },
+          "title": "Expected Results",
+          "type": "array"
+        },
+        "filesystem": {
+          "$ref": "#/$defs/FilesystemConstraints"
+        },
+        "intent_profile": {
+          "const": "m20-d-intent",
+          "default": "m20-d-intent",
+          "title": "Intent Profile",
+          "type": "string"
+        },
+        "intent_profile_version": {
+          "const": "1",
+          "default": "1",
+          "title": "Intent Profile Version",
+          "type": "string"
+        },
+        "invocation": {
+          "$ref": "#/$defs/InvocationLayout"
+        },
+        "limits": {
+          "$ref": "#/$defs/ExecutionLimits"
+        },
+        "mission_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Mission Ref",
+          "type": "string"
+        },
+        "network": {
+          "$ref": "#/$defs/NetworkConstraints"
+        },
+        "resources": {
+          "collection_semantics": "set",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ResourceRequirement"
+          },
+          "title": "Resources",
+          "type": "array"
+        },
+        "runtime": {
+          "$ref": "#/$defs/RuntimeRequirement"
+        },
+        "schema_version": {
+          "const": "execution-plan-v2",
+          "default": "execution-plan-v2",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "sensitive_requirements": {
+          "collection_semantics": "set",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SensitiveRequirement"
+          },
+          "title": "Sensitive Requirements",
+          "type": "array"
+        },
+        "sessions": {
+          "collection_semantics": "set",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SessionRequirement"
+          },
+          "title": "Sessions",
+          "type": "array"
+        },
+        "source": {
+          "$ref": "#/$defs/PlanSource"
+        },
+        "target": {
+          "$ref": "#/$defs/PlanTarget"
+        },
+        "uncertainties": {
+          "collection_semantics": "set",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SymbolicName"
+          },
+          "title": "Uncertainties",
+          "type": "array"
+        }
+      },
+      "required": [
+        "execution_plan_id",
+        "mission_ref",
+        "source",
+        "target",
+        "entrypoint",
+        "runtime",
+        "invocation",
+        "filesystem",
+        "network",
+        "limits",
+        "expected_evidence",
+        "created_at"
+      ],
+      "title": "ExecutionPlanV2",
+      "type": "object"
+    },
+    "ExpectedEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "kind": {
+          "enum": [
+            "STDOUT",
+            "STDERR",
+            "OUTPUT_FILE",
+            "OBSERVATION"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "relative_path": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelativeSourcePath"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "semantic_type": {
+          "$ref": "#/$defs/SymbolicName"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "kind",
+        "semantic_type"
+      ],
+      "title": "ExpectedEvidence",
+      "type": "object"
+    },
+    "ExpectedResult": {
+      "additionalProperties": false,
+      "description": "A proposed expectation, not an observed effect or target assessment.",
+      "properties": {
+        "evidence_ids": {
+          "collection_semantics": "set",
+          "items": {
+            "$ref": "#/$defs/SymbolicName"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "scope": {
+          "$ref": "#/$defs/EffectScope"
+        },
+        "semantic_type": {
+          "$ref": "#/$defs/SymbolicName"
+        }
+      },
+      "required": [
+        "semantic_type",
+        "evidence_ids",
+        "scope"
+      ],
+      "title": "ExpectedResult",
+      "type": "object"
+    },
+    "FilesystemConstraints": {
+      "additionalProperties": false,
+      "properties": {
+        "cleanup": {
+          "enum": [
+            "REMOVE_MANAGED_WRITES",
+            "RETAIN_EVIDENCE",
+            "OPERATOR_REVIEW"
+          ],
+          "title": "Cleanup",
+          "type": "string"
+        },
+        "rules": {
+          "collection_semantics": "set",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/FilesystemRule"
+          },
+          "title": "Rules",
+          "type": "array"
+        },
+        "scope": {
+          "$ref": "#/$defs/EffectScope"
+        },
+        "source_read_only": {
+          "const": true,
+          "default": true,
+          "title": "Source Read Only",
+          "type": "boolean"
+        },
+        "writable_root_requirement_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolicName"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "scope",
+        "cleanup"
+      ],
+      "title": "FilesystemConstraints",
+      "type": "object"
+    },
+    "FilesystemOperation": {
+      "enum": [
+        "READ",
+        "WRITE",
+        "CREATE",
+        "DELETE"
+      ],
+      "title": "FilesystemOperation",
+      "type": "string"
+    },
+    "FilesystemRule": {
+      "additionalProperties": false,
+      "properties": {
+        "match": {
+          "default": "EXACT",
+          "enum": [
+            "EXACT",
+            "PATTERN"
+          ],
+          "title": "Match",
+          "type": "string"
+        },
+        "operations": {
+          "collection_semantics": "set",
+          "items": {
+            "$ref": "#/$defs/FilesystemOperation"
+          },
+          "minItems": 1,
+          "title": "Operations",
+          "type": "array"
+        },
+        "relative_path": {
+          "$ref": "#/$defs/RelativeSourcePath"
+        },
+        "root_requirement_id": {
+          "$ref": "#/$defs/SymbolicName"
+        }
+      },
+      "required": [
+        "root_requirement_id",
+        "relative_path",
+        "operations"
+      ],
+      "title": "FilesystemRule",
+      "type": "object"
     },
     "Finding": {
       "additionalProperties": false,
@@ -1204,6 +1888,27 @@
         "created_at"
       ],
       "title": "Finding",
+      "type": "object"
+    },
+    "FlagToken": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "flag",
+          "default": "flag",
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "pattern": "^--?[A-Za-z][A-Za-z0-9_-]*$",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "FlagToken",
       "type": "object"
     },
     "FullGitCommitSha": {
@@ -1454,6 +2159,43 @@
       "title": "InteractionType",
       "type": "string"
     },
+    "InvocationLayout": {
+      "additionalProperties": false,
+      "description": "Reviewed ordered layout, not a shell command or observed source fact.",
+      "properties": {
+        "arguments": {
+          "items": {
+            "$ref": "#/$defs/ArgumentToken"
+          },
+          "title": "Arguments",
+          "type": "array"
+        },
+        "evidence_ids": {
+          "collection_semantics": "set",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SymbolicName"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "origin": {
+          "const": "OPERATOR_REVIEWED",
+          "default": "OPERATOR_REVIEWED",
+          "title": "Origin",
+          "type": "string"
+        },
+        "review_id": {
+          "$ref": "#/$defs/SymbolicName"
+        }
+      },
+      "required": [
+        "review_id",
+        "arguments"
+      ],
+      "title": "InvocationLayout",
+      "type": "object"
+    },
     "IsolationRequirement": {
       "additionalProperties": false,
       "description": "Requested runtime isolation profile plus provider-neutral constraints.",
@@ -1514,6 +2256,247 @@
           "type": "object"
         }
       ]
+    },
+    "LiteralValue": {
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "const": "literal",
+          "default": "literal",
+          "title": "Source",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "LiteralValue",
+      "type": "object"
+    },
+    "ManagedPathValue": {
+      "additionalProperties": false,
+      "properties": {
+        "relative_path": {
+          "$ref": "#/$defs/RelativeSourcePath"
+        },
+        "requirement_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "source": {
+          "const": "managed_runtime_path",
+          "default": "managed_runtime_path",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "requirement_id",
+        "relative_path"
+      ],
+      "title": "ManagedPathValue",
+      "type": "object"
+    },
+    "MissionTargetValue": {
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "const": "mission_target",
+          "default": "mission_target",
+          "title": "Source",
+          "type": "string"
+        },
+        "target_role": {
+          "$ref": "#/$defs/TargetRole"
+        }
+      },
+      "required": [
+        "target_role"
+      ],
+      "title": "MissionTargetValue",
+      "type": "object"
+    },
+    "NetworkConstraints": {
+      "additionalProperties": false,
+      "properties": {
+        "rules": {
+          "collection_semantics": "set",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/NetworkRule"
+          },
+          "title": "Rules",
+          "type": "array"
+        },
+        "unspecified": {
+          "const": "DISALLOW",
+          "default": "DISALLOW",
+          "title": "Unspecified",
+          "type": "string"
+        }
+      },
+      "title": "NetworkConstraints",
+      "type": "object"
+    },
+    "NetworkDestinationClass": {
+      "enum": [
+        "SELECTED_TARGET",
+        "CALLBACK",
+        "LISTENER_BIND",
+        "PUBLIC_INTERNET",
+        "PREPARATION_EGRESS",
+        "MULTI_TARGET",
+        "UNKNOWN"
+      ],
+      "title": "NetworkDestinationClass",
+      "type": "string"
+    },
+    "NetworkRule": {
+      "additionalProperties": false,
+      "properties": {
+        "destination": {
+          "$ref": "#/$defs/NetworkDestinationClass"
+        },
+        "endpoint_binding_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolicName"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ports": {
+          "collection_semantics": "set",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 1,
+          "title": "Ports",
+          "type": "array"
+        },
+        "requirement_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolicName"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "transport": {
+          "enum": [
+            "tcp",
+            "udp"
+          ],
+          "title": "Transport",
+          "type": "string"
+        }
+      },
+      "required": [
+        "destination",
+        "transport",
+        "ports"
+      ],
+      "title": "NetworkRule",
+      "type": "object"
+    },
+    "NetworkTarget": {
+      "additionalProperties": false,
+      "properties": {
+        "address": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "asset_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Asset Ref",
+          "type": "string"
+        },
+        "port": {
+          "anyOf": [
+            {
+              "maximum": 65535,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Port"
+        },
+        "role": {
+          "enum": [
+            "HOST",
+            "IP",
+            "URL",
+            "SERVICE_ENDPOINT"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "service_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Service Ref"
+        },
+        "transport": {
+          "anyOf": [
+            {
+              "enum": [
+                "tcp",
+                "udp"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Transport"
+        }
+      },
+      "required": [
+        "role",
+        "asset_ref",
+        "address"
+      ],
+      "title": "NetworkTarget",
+      "type": "object"
     },
     "NonEmptyStr": {
       "maxLength": 1024,
@@ -1665,6 +2648,286 @@
       "minLength": 1,
       "pattern": "^[a-z][a-z0-9_-]*$",
       "type": "string"
+    },
+    "OperatorValue": {
+      "additionalProperties": false,
+      "properties": {
+        "answer_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "source": {
+          "const": "operator",
+          "default": "operator",
+          "title": "Source",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "answer_id",
+        "value"
+      ],
+      "title": "OperatorValue",
+      "type": "object"
+    },
+    "OptionToken": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "option",
+          "default": "option",
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "pattern": "^--?[A-Za-z][A-Za-z0-9_-]*$",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "OptionToken",
+      "type": "object"
+    },
+    "OptionValueToken": {
+      "additionalProperties": false,
+      "properties": {
+        "binding_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "kind": {
+          "const": "option_value",
+          "default": "option_value",
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "pattern": "^--?[A-Za-z][A-Za-z0-9_-]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "style": {
+          "default": "separate",
+          "enum": [
+            "separate",
+            "equals"
+          ],
+          "title": "Style",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "binding_id"
+      ],
+      "title": "OptionValueToken",
+      "type": "object"
+    },
+    "ParameterBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "binding_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "channel": {
+          "$ref": "#/$defs/DeliveryChannel"
+        },
+        "parameter_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "provenance": {
+          "$ref": "#/$defs/BindingProvenance"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "resolution": {
+          "$ref": "#/$defs/ResolutionState"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BindingValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "value_type": {
+          "$ref": "#/$defs/ValueType"
+        }
+      },
+      "required": [
+        "binding_id",
+        "parameter_id",
+        "value_type",
+        "channel",
+        "required",
+        "resolution",
+        "provenance"
+      ],
+      "title": "ParameterBinding",
+      "type": "object"
+    },
+    "PlanDependency": {
+      "additionalProperties": false,
+      "properties": {
+        "dependency_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "evidence_ids": {
+          "collection_semantics": "set",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SymbolicName"
+          },
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "identifier": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "kind": {
+          "$ref": "#/$defs/PlanDependencyKind"
+        },
+        "version_constraint": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NonEmptyStr"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "dependency_id",
+        "kind",
+        "identifier"
+      ],
+      "title": "PlanDependency",
+      "type": "object"
+    },
+    "PlanDependencyKind": {
+      "enum": [
+        "STDLIB_MODULE",
+        "LOCAL_MODULE",
+        "THIRD_PARTY_PACKAGE",
+        "SYSTEM_TOOL",
+        "OS_BUILD",
+        "RUNTIME_MODULE",
+        "DOCUMENTATION_CLAIM",
+        "UNKNOWN"
+      ],
+      "title": "PlanDependencyKind",
+      "type": "string"
+    },
+    "PlanSource": {
+      "additionalProperties": false,
+      "properties": {
+        "acquisition_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Acquisition Ref",
+          "type": "string"
+        },
+        "manifest_artifact_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Manifest Artifact Ref",
+          "type": "string"
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "raw_artifact_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Raw Artifact Ref",
+          "type": "string"
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "raw_size_bytes": {
+          "minimum": 0,
+          "title": "Raw Size Bytes",
+          "type": "integer"
+        },
+        "resolved_commit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FullGitCommitSha"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "acquisition_ref",
+        "raw_artifact_ref",
+        "raw_sha256",
+        "raw_size_bytes",
+        "manifest_artifact_ref",
+        "manifest_sha256"
+      ],
+      "title": "PlanSource",
+      "type": "object"
+    },
+    "PlanTarget": {
+      "discriminator": {
+        "mapping": {
+          "DIRECTORY": "#/$defs/SourceTarget",
+          "FILE": "#/$defs/SourceTarget",
+          "HOST": "#/$defs/NetworkTarget",
+          "IP": "#/$defs/NetworkTarget",
+          "REPOSITORY": "#/$defs/SourceTarget",
+          "SERVICE_ENDPOINT": "#/$defs/NetworkTarget",
+          "UNKNOWN": "#/$defs/UnknownTarget",
+          "URL": "#/$defs/NetworkTarget"
+        },
+        "propertyName": "role"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/NetworkTarget"
+        },
+        {
+          "$ref": "#/$defs/SourceTarget"
+        },
+        {
+          "$ref": "#/$defs/UnknownTarget"
+        }
+      ]
     },
     "PoCAcquisitionBounds": {
       "additionalProperties": false,
@@ -2030,6 +3293,39 @@
       "title": "PoCSourceAcquisitionReceipt",
       "type": "object"
     },
+    "PositionalToken": {
+      "additionalProperties": false,
+      "properties": {
+        "binding_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "kind": {
+          "const": "positional",
+          "default": "positional",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "binding_id"
+      ],
+      "title": "PositionalToken",
+      "type": "object"
+    },
+    "RelativeSourcePath": {
+      "maxLength": 1024,
+      "minLength": 1,
+      "pattern": "^[^\\\\\\x00-\\x1f:]+$",
+      "type": "string"
+    },
+    "ResolutionState": {
+      "enum": [
+        "RESOLVED",
+        "UNRESOLVED"
+      ],
+      "title": "ResolutionState",
+      "type": "string"
+    },
     "ResourceDescriptor": {
       "additionalProperties": false,
       "description": "Metadata for platform-managed runtime infrastructure.",
@@ -2107,6 +3403,46 @@
       "title": "ResourceDescriptor",
       "type": "object"
     },
+    "ResourceRequirement": {
+      "additionalProperties": false,
+      "properties": {
+        "access_mode": {
+          "$ref": "#/$defs/AccessMode"
+        },
+        "existing_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Existing Ref"
+        },
+        "purpose": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "requirement_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "resource_type": {
+          "$ref": "#/$defs/SymbolicName"
+        }
+      },
+      "required": [
+        "requirement_id",
+        "resource_type",
+        "purpose",
+        "access_mode"
+      ],
+      "title": "ResourceRequirement",
+      "type": "object"
+    },
     "ResultObjectType": {
       "description": "Object classes an operation may declare as outputs.",
       "enum": [
@@ -2131,6 +3467,59 @@
       ],
       "title": "RetrySemantics",
       "type": "string"
+    },
+    "RuntimeRequirement": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "location": {
+          "$ref": "#/$defs/ExecutionLocation"
+        },
+        "noninteractive": {
+          "title": "Noninteractive",
+          "type": "boolean"
+        },
+        "platform": {
+          "enum": [
+            "LINUX",
+            "WINDOWS",
+            "OTHER",
+            "UNKNOWN"
+          ],
+          "title": "Platform",
+          "type": "string"
+        },
+        "platform_variant": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolicName"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "user_space": {
+          "title": "User Space",
+          "type": "boolean"
+        },
+        "version_constraint": {
+          "$ref": "#/$defs/NonEmptyStr"
+        }
+      },
+      "required": [
+        "kind",
+        "version_constraint",
+        "platform",
+        "user_space",
+        "noninteractive",
+        "location"
+      ],
+      "title": "RuntimeRequirement",
+      "type": "object"
     },
     "SchemaDeclaration": {
       "additionalProperties": false,
@@ -2161,6 +3550,81 @@
       },
       "title": "SchemaDeclaration",
       "type": "object"
+    },
+    "SecretRequirement": {
+      "additionalProperties": false,
+      "properties": {
+        "binding_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "kind": {
+          "const": "secret",
+          "default": "secret",
+          "title": "Kind",
+          "type": "string"
+        },
+        "purpose": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "role": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "secret_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Secret Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "secret_ref",
+        "role",
+        "purpose",
+        "binding_id"
+      ],
+      "title": "SecretRequirement",
+      "type": "object"
+    },
+    "SecretValue": {
+      "additionalProperties": false,
+      "properties": {
+        "secret_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Secret Ref",
+          "type": "string"
+        },
+        "source": {
+          "const": "secret_ref",
+          "default": "secret_ref",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "secret_ref"
+      ],
+      "title": "SecretValue",
+      "type": "object"
+    },
+    "SensitiveRequirement": {
+      "discriminator": {
+        "mapping": {
+          "credential": "#/$defs/CredentialRequirement",
+          "secret": "#/$defs/SecretRequirement"
+        },
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SecretRequirement"
+        },
+        {
+          "$ref": "#/$defs/CredentialRequirement"
+        }
+      ]
     },
     "SessionDescriptor": {
       "additionalProperties": false,
@@ -2290,6 +3754,57 @@
       "title": "SessionDescriptor",
       "type": "object"
     },
+    "SessionRequirement": {
+      "additionalProperties": false,
+      "properties": {
+        "access_mode": {
+          "$ref": "#/$defs/AccessMode"
+        },
+        "existing_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Existing Ref"
+        },
+        "purpose": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "requirement_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "resource_requirement_id": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolicName"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "session_type": {
+          "$ref": "#/$defs/SymbolicName"
+        }
+      },
+      "required": [
+        "requirement_id",
+        "session_type",
+        "purpose",
+        "access_mode"
+      ],
+      "title": "SessionRequirement",
+      "type": "object"
+    },
     "Sha256Digest": {
       "pattern": "^[0-9a-f]{64}$",
       "type": "string"
@@ -2356,10 +3871,122 @@
       "title": "SideEffectLevel",
       "type": "string"
     },
+    "SourcePathValue": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Artifact Ref",
+          "type": "string"
+        },
+        "relative_path": {
+          "$ref": "#/$defs/RelativeSourcePath"
+        },
+        "source": {
+          "const": "source_path",
+          "default": "source_path",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_ref",
+        "relative_path"
+      ],
+      "title": "SourcePathValue",
+      "type": "object"
+    },
+    "SourceTarget": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Artifact Ref",
+          "type": "string"
+        },
+        "relative_path": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelativeSourcePath"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "role": {
+          "enum": [
+            "FILE",
+            "DIRECTORY",
+            "REPOSITORY"
+          ],
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role",
+        "artifact_ref"
+      ],
+      "title": "SourceTarget",
+      "type": "object"
+    },
     "SymbolicName": {
       "maxLength": 255,
       "minLength": 1,
       "pattern": "^[A-Za-z][A-Za-z0-9._:-]*$",
+      "type": "string"
+    },
+    "TargetRole": {
+      "enum": [
+        "HOST",
+        "IP",
+        "URL",
+        "SERVICE_ENDPOINT",
+        "FILE",
+        "DIRECTORY",
+        "REPOSITORY",
+        "UNKNOWN"
+      ],
+      "title": "TargetRole",
+      "type": "string"
+    },
+    "UnknownTarget": {
+      "additionalProperties": false,
+      "properties": {
+        "requirement_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "role": {
+          "const": "UNKNOWN",
+          "default": "UNKNOWN",
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "requirement_id"
+      ],
+      "title": "UnknownTarget",
+      "type": "object"
+    },
+    "ValueType": {
+      "enum": [
+        "TEXT",
+        "INTEGER",
+        "NUMBER",
+        "BOOLEAN",
+        "TARGET",
+        "PATH",
+        "SECRET",
+        "CREDENTIAL"
+      ],
+      "title": "ValueType",
       "type": "string"
     },
     "VersionString": {

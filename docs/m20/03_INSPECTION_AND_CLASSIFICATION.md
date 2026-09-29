@@ -6,7 +6,8 @@ The operator completed calibrated real C4 acceptance with `m20-c1-evidence@1`,
 `m20-c2-deterministic@2` and `m20-c3-support-classifier@2`: all COMPLETED,
 classification UNSUPPORTED, Core reopen PASS and identical-invocation reuse PASS.
 C5 is optional advisory future work, deferred and not required for closure.
-M20-D has not begun; inspection stops before `ExecutionPlan`, preparation or execution.
+Inspection remains stopped before ExecutionPlan/preparation/execution. M20-D1 now adds a
+separate architecture/domain foundation only; it does not change inspection or C5.
 See the [immutable acceptance record](M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
 
 ## Goal and dependency
@@ -155,7 +156,8 @@ See [implementation rules and limitations](M20C_IMPLEMENTATION.md#c3-determinist
 for the bounded reason vocabulary, authority handling, runtime/parameter/dependency gates and
 restart/reuse semantics. The calibrated C4.1 real operator rerun is accepted.
 C5 remains optional/deferred and is not required for M20-C closure.
-M20-D+ plan/policy/runtime actions have not begun.
+M20-D1 supplies separate typed intent/decision foundations only; plan/policy/runtime actions
+remain unimplemented.
 
 ## C4 retained real-source smoke
 

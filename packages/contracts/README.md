@@ -26,3 +26,9 @@ Milestone 15's durable human-interaction subset supports immutable confirmation,
 single-choice requests. Each request is correlated to one Mission and Capability Run and is
 validated against its structured response. This is non-secret input: capability authors must not
 ask operators to enter credentials or other sensitive material through these ordinary fields.
+
+M20-D1 adds immutable `ExecutionPlanV2` intent and version-aware `decode_execution_plan`.
+Legacy `ExecutionPlan`/status remain readable but confer no executor eligibility or permission.
+Typed components are exposed through `boberagent_contracts.plan_values` and
+`boberagent_contracts.plan_requirements`; the public root exports versioned plan types and
+`execution_intent_digest`. See [the D1 developer notes](../../docs/m20/M20D_IMPLEMENTATION.md).

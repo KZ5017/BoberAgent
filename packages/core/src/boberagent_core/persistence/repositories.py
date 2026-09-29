@@ -723,6 +723,11 @@ class CoreUnitOfWork:
         )
         from boberagent_core.inspections.repository import PoCInspectionRepository
         from boberagent_core.interactions.repository import InteractionRepository
+        from boberagent_core.planning.repository import (
+            ExecutionPlanRepository,
+            PlanDecisionRepository,
+            PlanningAttemptRepository,
+        )
         from boberagent_core.research.repository import ResearchRepository
         from boberagent_core.results.repository import ResultIngestionRepository
         from boberagent_core.secrets.repository import SecretRepository
@@ -748,6 +753,9 @@ class CoreUnitOfWork:
         self.research = ResearchRepository(session)
         self.acquisitions = PoCAcquisitionRepository(session)
         self.inspections = PoCInspectionRepository(session)
+        self.planning_attempts = PlanningAttemptRepository(session)
+        self.execution_plans = ExecutionPlanRepository(session)
+        self.plan_decisions = PlanDecisionRepository(session)
 
 
 def _flush_identity(session: Session, logical_ref: DomainRef) -> None:

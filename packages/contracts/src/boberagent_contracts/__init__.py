@@ -34,6 +34,12 @@ from .enums import (
 )
 from .event import Event
 from .execution_plan import ExecutionPlan, IsolationRequirement
+from .execution_plan_v2 import (
+    ExecutionPlanDocument,
+    ExecutionPlanV2,
+    decode_execution_plan,
+    execution_intent_digest,
+)
 from .finding import Finding
 from .interaction import (
     MAX_INTERACTION_OPTIONS,
@@ -120,8 +126,10 @@ __all__ = [
     "ExecutionDuration",
     "ExecutionInteraction",
     "ExecutionPlan",
+    "ExecutionPlanDocument",
     "ExecutionPlanRef",
     "ExecutionPlanStatus",
+    "ExecutionPlanV2",
     "Finding",
     "FindingRef",
     "FullGitCommitSha",
@@ -164,6 +172,8 @@ __all__ = [
     "WorkflowRunRef",
     "contract_schema_bundle",
     "contract_schema_json",
+    "decode_execution_plan",
+    "execution_intent_digest",
     "validate_interaction_response",
     "write_contract_schema",
 ]

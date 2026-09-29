@@ -6,6 +6,16 @@ from alembic import context
 from sqlalchemy import Connection, engine_from_config, pool
 
 from boberagent_core.persistence.orm import Base
+from boberagent_core.persistence.planning_orm import (
+    ExecutionPlanRow,
+    PlanDecisionRow,
+    PlanningAttemptRow,
+)
+
+# Register D2 mappings on the existing Core metadata, never a parallel declarative base.
+assert all(
+    row.metadata is Base.metadata for row in (ExecutionPlanRow, PlanDecisionRow, PlanningAttemptRow)
+)
 
 config = context.config
 if config.config_file_name is not None:

@@ -6,7 +6,8 @@ it against real public GitHub through a Kali Execution Node, TLS/MCP, Node→Cor
 Core finalization, and Core reopen without re-fetch. **M20-C — Source Inspection + Conditional
 Support Classification is CLOSED** following successful operator C4 acceptance with C1@1,
 C2@2 and C3@2. C5 is optional advisory future work, not a closure prerequisite.
-M20-D has not begun; M20-D through M20-H remain planned. See the
+M20-D1 typed domain foundation and D2 durable planning persistence are implemented;
+**M20-D remains OPEN**. Construction, evaluation and interactions remain later D slices; E–H remain planned. See the
 [retained-source acceptance record](m20/M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
 ADR 0014 fixes M20-B architecture; [ADR 0015](adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md)
 fixes M20-C inspection ownership, evidence, and authority before implementation.
@@ -57,10 +58,10 @@ hypothesis; scope and the selected target never expand implicitly.
 | Research | `VulnerabilityHypothesis` → bounded `ResearchRequest` → sourced hits / `PoCCandidate`s | Core-owned `ResearchProvider` port and admission; no download-as-execution |
 | Acquire | selected candidate + historical source hit → Core `PoCAcquisition`, full-SHA GitHub ZIP Artifact + structural manifest Artifact | Core authorizes/routes/finalizes only after both Artifacts sync and verify; Node resolves/retrieves/inventories without execution |
 | Inspect | completed acquisition's exact Core-retained raw ZIP + structural manifest → versioned `PoCInspection` + conditional classification and reasons | Core-owned, read-only, deterministic-first; rehash and cite verified bytes; optional later advisory Reasoner; no PoC execution or plan |
-| Plan | inspection + selected target → proposed Contract `ExecutionPlan` and explicit bindings | Core validates against authoritative refs, source, scope and policy |
-| Validate | draft plan → validated plan / rejection / assistance or approval requirement | deterministic Core gate; Node revalidates enforceable constraints |
-| Prepare | validated/approved plan → isolated attacker-side runtime Resource + Workspace | Node; pinned source/dependencies, no README install command |
-| Execute | validated plan + runtime → managed process evidence and `CapabilityResult` | Node via SDK `ProcessService.execute_plan`; no shell string by default |
+| Plan | inspection + target → Core proposal/revisions → immutable ExecutionPlan v2 | Core constructs intent, no side effects |
+| Validate | intent → separate validation, policy assessment, optional operator approval | Core decisions; STOP, not execution authorization |
+| Prepare | exact intent + decisions + E/F permission envelope → runtime Resource + Workspace | Node admission/enforcement; no README install command |
+| Execute | exact intent + E/F execution permission + runtime → managed evidence and `CapabilityResult` | Node via SDK `ProcessService.execute_plan`; no shell string by default |
 | Interpret | plan + evidence + relevant state/Knowledge → bounded interpretation | Core; do not equate exit code with vulnerability confirmation |
 | Adapt/HITL | interpretation → one bounded declared adjustment, durable request, or stop | Core Workflow/Attempt + M15 Interaction; policy approval separate |
 
@@ -93,7 +94,7 @@ be representable in plan intent but have no M20-v1 automatic adapter.
 | M20-A | [Research and candidates](m20/01_RESEARCH_AND_CANDIDATES.md) | bounded, sourced candidates; no acquisition/execution |
 | M20-B | [Acquisition and provenance](m20/02_ACQUISITION_AND_PROVENANCE.md) | pinned, hashed Artifact; no execution |
 | M20-C | [Inspection and classification](m20/03_INSPECTION_AND_CLASSIFICATION.md) | **CLOSED:** typed facts, explicit reasons, fail-closed uncertainty; calibrated real C4 accepted |
-| M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | deterministic validation; no model authority |
+| M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | D1/D2 domain + persistence; later construction/validation/policy/approval; STOP before permission/dispatch |
 | M20-E/F | [Runtime preparation and execution](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | enforceable isolation and managed evidence capture |
 | M20-G | [Interpretation, adaptation, HITL](m20/06_INTERPRETATION_ADAPTATION_AND_HITL.md) | separate outcome, bounded attempts, durable wait/stop |
 | M20-H | [Vertical smoke and acceptance](m20/07_VERTICAL_SMOKE_AND_ACCEPTANCE.md) | controlled fixture then authorized real unknown PoC |
@@ -103,9 +104,9 @@ be representable in plan intent but have no M20-v1 automatic adapter.
 Reuse Contract `ExecutionPlan`, `CapabilityResult`, Artifacts, SDK `ExecutionContext`, managed
 Workspaces/Processes, Node spool, Artifact sync, Registry/Router, M11 durable Workflow, M15
 Interaction, M16 run-scoped secret grants, M17/18 curated Knowledge, and M19 advisory Reasoner.
-The current Contract plan holds source Artifact, runtime, isolation, dependencies, entrypoint,
-bindings, resources, outcomes/effects, uncertainty, status, and provenance; it does **not** yet
-encode every proposed target/network/secret/cleanup constraint as explicit fields. The production
+Legacy plans remain decodable but their status is not authority. D1 adds deeply immutable v2
+intent with explicit source, targets, runtime, bindings, ordered invocation, requirements,
+filesystem/network constraints, budgets and expected evidence. No D planning evaluator exists yet. The production
 Node's `execute_plan()` currently denies execution. Current M11 Workflow is static and sequential;
 M19 Reasoner validates proposals but has no PoC inspector or executor. A complete PoC policy
 approval engine and runtime confinement are not present. C1–C3 now provide immutable PoC Inspection history,
@@ -145,5 +146,12 @@ fixes M20-C inspection ownership, exact source binding, citations, fact authorit
 history, and conditional classification. M20-C is CLOSED with authoritative
 `m20-c2-deterministic@2` / `m20-c3-support-classifier@2`; historical @1 results remain
 immutable. The real source classified UNSUPPORTED, not safe or authorized to execute.
-C5 remains optional/deferred and is not required for M20-C closure. M20-D has not begun;
-later-phase architecture decisions remain open.
+C5 remains optional/deferred and is not required for M20-C closure.
+[ADR 0016](adr/0016-immutable-execution-intent-and-policy-authority.md) fixes immutable intent
+and separate authority; [ADR 0017](adr/0017-core-owned-durable-planning-interactions.md) fixes
+later D6 Interaction ownership. D1 adds typed intent; D2 adds Core-owned immutable plan/decision history, atomic request reuse,
+revision CAS and explicit persistence recovery through migration 0013. D2 adds no planner,
+semantic validator, policy evaluator, HITL behavior or execution path.
+Even VALID + ALLOW + operator approval is not execution authorization. E/F must separately
+bind permission to exact digest, Mission/action/Run/Node/provider/scope/limits. Later-phase
+implementation and confinement decisions remain open.

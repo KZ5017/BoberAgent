@@ -5,6 +5,14 @@ from .admission_models import (
     PlanningAdmissionRequest,
     PlanningAdmissionResult,
 )
+from .construction_models import (
+    ConstructionAssessment,
+    PlanConstructionRequest,
+    PlanConstructionResult,
+    PlanningEvidence,
+    PlanningScope,
+    PlanningScopeAsset,
+)
 from .fingerprints import decision_context_fingerprint, planning_request_fingerprint
 from .models import (
     DecisionContext,
@@ -37,9 +45,12 @@ from .records import (
 
 __all__ = [
     "ApprovalDocument",
+    "ConstructionAssessment",
     "DecisionContext",
     "InitialPlanPolicyProfile",
     "OperatorPlanApproval",
+    "PlanConstructionRequest",
+    "PlanConstructionResult",
     "PlanDecisionRecord",
     "PlanDecisionRef",
     "PlanPolicyAssessment",
@@ -58,8 +69,11 @@ __all__ = [
     "PlanningAttemptLifecycle",
     "PlanningAttemptRef",
     "PlanningDisposition",
+    "PlanningEvidence",
     "PlanningInspectionProvenance",
     "PlanningRequest",
+    "PlanningScope",
+    "PlanningScopeAsset",
     "PolicyDocument",
     "StoredExecutionPlan",
     "ValidationDocument",

@@ -1,9 +1,9 @@
 # M20-D — Implemented slices
 
-D1, D2 and D3 are implemented; **M20-D remains OPEN**. D1 supplies typed domain intent;
+D1, D2, D3 and D4 are implemented; **M20-D remains OPEN**. D1 supplies typed domain intent;
 D2 supplies persistence primitives; D3 admits authoritative persisted evidence and durably rejects
-C3 UNSUPPORTED. No slice performs plan construction, semantic plan validation, policy evaluation,
-HITL behavior or dispatch.
+C3 UNSUPPORTED. D4 adds narrow Python construction and deterministic validation only.
+No slice evaluates policy, approves, dispatches, stages, prepares or executes.
 
 ## Contract API
 
@@ -37,7 +37,8 @@ Sensitive roles require SecretRef/CredentialRef and explicit purpose, not plaint
 boberagent_core.planning exposes PlanningAttemptRef/lifecycle, PlanningRequest, partial
 PlanProposal and revisions, inspection pins, PlanningAnswer provenance, disposition,
 PlanValidation/reasons, PlanPolicyAssessment, OperatorPlanApproval, the narrow
-InitialPlanPolicyProfile and DecisionContext. D3 provides a narrow evidence-admission application service, described below.
+InitialPlanPolicyProfile and DecisionContext. D3 provides narrow evidence admission and D4 provides explicit construction/validation services,
+described below.
 D2 repository access uses the existing Core unit of work, described below.
 The exact C3@2 document/blocker refs remain attached to the request; UNSUPPORTED cannot produce
 a finalized plan. Historical C2/C3@1 models remain readable, but new D-v1 inputs require @2.
@@ -156,8 +157,8 @@ Digests are identifiers, not signatures against a privileged database editor.
 Verification covers migration from empty/prior-head databases, preserved upstream data,
 constraints, restart/recovery, concurrent reuse, CAS, immutable decisions, rollback, strict V2,
 ordered arguments, negative determinations and sensitive-reference regression cases.
-D4–D6 construction/validation/policy/interaction work and all E/F preparation/execution remain
-unimplemented. Production execute_plan() stays denied.
+At the D2 boundary, construction/validation remain separate application responsibilities.
+D5/D6 policy/interaction work and all E/F preparation/execution remain unimplemented. Production execute_plan() stays denied.
 
 ## D3 — Authoritative evidence admission and early C3 rejection
 
@@ -223,5 +224,121 @@ A synthetic negative covers the retained real case’s coverage/material-unknown
 categories; the real CERTCC source is not accessed or run. Dedicated architecture guards forbid
 construction, readers, Router, transport, execution, secrets, allocation, Reasoner and Knowledge.
 
-**M20-D remains OPEN.** D4–D6 and all E/F work remain unimplemented; production execute_plan()
+**M20-D remains OPEN.** D5/D6 and all E/F work remain unimplemented; production execute_plan()
 remains denied. Eligibility and UNSUPPORTED describe support, not safety or authorization.
+
+## D4 — Narrow Python construction and deterministic validation
+
+`CoreExecutionPlanningService.construct(PlanConstructionRequest)` is an explicit Core pump;
+`get(PlanningAttemptRef)` inspects stored history. Public typed inputs/results are exported
+from `boberagent_core.planning`; the service lives in `.planning.construction`.
+The request contains the admitted AttemptRef, expected proposal revision, explicit typed
+network target, reviewed InvocationLayout, bindings, runtime declaration and finite limits.
+It cannot supply source truth, classification, a plan, policy decision or execution authority.
+
+D4 resolves D3's exact authoritative request again in the same UoW, without admitting a new
+attempt or reopening Artifacts. Completed acquisition/C2@2/C3@2, configuration and ownership
+checks are unchanged. Invalid upstream evidence aborts without writing construction history.
+Only AUTOMATIC can finalize. ASSISTED is conservatively non-final or invalid under the narrow
+slice; UNSUPPORTED cannot enter construction and its exact historical reasons remain intact.
+
+### Reviewed invocation, target and bindings
+
+The existing D1 `InvocationLayout` is the reviewed-input model: `OPERATOR_REVIEWED` origin,
+explicit review_id, exact selected C2 parameter IDs in evidence_ids, and ordered typed tokens.
+It is operator/reviewer planning input, **not OBSERVED source evidence**. Layout and binding
+provenance are preserved in proposal revisions and finalized intent. No README, parameter-name
+convention, source parser or model derives missing argv structure.
+
+Exactly one CODE/OBSERVED Python SCRIPT_MAIN_GUARD candidate is eligible. Intent pins its
+relative path, coverage/citation entry hash, language, SCRIPT form and item ID, with matching
+Python-source/main-guard facts. Multiple eligible entrypoints require later input; none is
+guessed. No Artifact bytes are read or freshly rehashed by planning.
+
+The initial positive target is one explicit TCP SERVICE_ENDPOINT: Mission-owned AssetRef,
+exact persisted primary address, port, transport and optional owned ServiceRef. HOST/IP
+parameter roles can bind that typed endpoint; actual rendering belongs to future execution.
+File/directory/repository/unknown/URL targets are outside this first positive slice. Service
+identity, Asset ownership, port and transport must match. Bootstrap scope follows the existing
+Mission-owned-Asset rule, with a digest of Mission/Asset/address metadata; no new scope policy,
+DNS lookup, address expansion or target contact is introduced.
+
+Every selected entrypoint parameter needs an explicit resolved argument-channel binding,
+including optional/defaulted parameters. This intentionally narrower v1 does **not** omit or
+recover defaults. Missing/redacted values yield INVALID without recovering source plaintext.
+Supported sources are MISSION_TARGET for TARGET_HOST and LITERAL/OPERATOR_VALUE integer
+TARGET_PORT/TIMEOUT, preserving candidate ref, requiredness, type, channel, resolution and
+Mission/reviewer provenance. Port equals the selected endpoint; timeout is positive and
+within the declared wall budget. Other roles/sources remain outside this slice.
+
+Reviewed option-value (separate/equals), positional, and option-followed-by-binding structures
+are supported. Each binding must be delivered exactly once. Standalone flags, unknown/repeated
+bindings, mismatched channels and arbitrary text are rejected. No shell string or quoting engine
+exists. The ordered Contract layout remains authoritative; changing token order changes digest.
+
+### Runtime, effects and validator
+
+Runtime intent is Python `>=3.12,<4`, attacker-side Linux/Kali, user-space and noninteractive.
+No executable lookup/version probe/venv occurs. Only CODE/OBSERVED STDLIB_LOOKING imports enter
+the positive dependency slice; this records C2's apparent dependency evidence, **not proof of
+installed modules**. Unknown, third-party, build, local or other dependencies are not installed
+or promoted to stdlib. Rejected proposal requirements remain explicit.
+
+The first slice permits no source filesystem mutation, environment requirement, sensitive
+binding, Resource/Session requirement, listener/browser, subprocess or unknown destination.
+Filesystem intent is bounded/read-only with no writable rules. Network intent is one selected
+TCP endpoint only; unspecified destinations are DISALLOW. Public/preparation/callback/listener/
+multi-target/unknown destinations are rejected. Only network-connect indicators are accepted;
+C2 material unknowns, conflicts, risks and requirements cannot be cleared by a reviewer.
+These are consistency/support checks over C2 evidence, **not a proof of arbitrary-source safety
+or a runtime sandbox**. E/F must implement enforceable confinement independently.
+
+All ExecutionLimits fields must be explicit: bounded wall, memory, output, process and write
+budgets; initial process_count=1 and disk_write_bytes=0. Stdout/stderr are the expected evidence.
+Limits describe intent; D4 enforces nothing on a running system.
+
+Pure validator `m20-d4-plan-validator@1` uses fixed first-failure precedence: schema, Mission/
+scope, source, C2/C3 provenance, admission, entrypoint, reviewed layout, binding completeness/
+types/target role/single target, runtime, dependencies, filesystem, network, finite limits,
+noninteractive/user-space/attacker-side and unresolved semantics. Reasons are bounded codes
+and evidence refs, never source excerpts or exception details. Complete V2 candidates also
+cross model validation; C3 AUTOMATIC alone does not create a plan or VALID decision.
+
+### Durable outcomes, replay and atomicity
+
+- VALID: one immutable V2 + one separate PlanValidation + COMPLETED/VALID attempt, atomically.
+- INVALID: COMPLETED/INVALID, rejected proposal revision and bounded diagnostic codes; no plan
+  or plan decision. References are retained in that proposal and authoritative request.
+- REQUIRES_INPUT: WAITING_INPUT/REQUIRES_INPUT with a partial proposal and explicit unresolved
+  requirement code for missing reviewed layout or bounded entrypoint choice. No D6 Interaction
+  is created. Critical unknown effects are never an operator-clearable wait.
+
+A proposal update appends D2's next contiguous revision and exact prior-revision digest.
+Changed active input requires the current expected revision; stale input conflicts. Identical
+waiting/completed construction replays return stored history unchanged (generated unresolved
+markers are not new caller input). Changed finalized input conflicts, never rewrites intent.
+There is no automatic retry/resume scheduler.
+
+D2 finalize and decision append share the existing outer UoW. An append/internal failure after
+finalization rolls back the entire revision/plan/completion transition; no VALID attempt without
+validation or orphan plan is committed by D4. No repository or migration redesign is needed.
+Concurrent independent callers yield one plan and one validation history, with stale callers
+conflicting or observing the identical completed result.
+
+Validation binds PlanRef, semantic intent digest, validator/version, Mission, current scope
+digest and exact C3 classification digest in the existing decision context. The context contains
+the supported requested profile declaration, not an evaluated policy. D4 v1 accepts the current
+`m20-python-single-target@1` profile identity only. Returned policy is NOT_EVALUATED and runtime
+readiness NOT_ASSESSED; no policy assessment, approval, permission, Run, Node token, grant or
+dispatch record is created. History inspection/replay is not a fresh execution permission.
+
+Tests use harmless retained synthetic Python evidence through real acquisition/C2/C3/D3 services.
+They prove positive construction/validation, negative and assisted boundaries, independent pure
+validator defenses, exact hashes/refs, argument/digest sensitivity, explicit operator values,
+reopen/reuse, CAS, rollback after finalization, concurrent independent UoWs and no byte/runtime
+access. Generated PlanRef/time do not change semantic digest; target, bindings, limits and argument
+order do. Existing migration-backed tests verify prior/fresh database compatibility; D4 adds no
+migration, dependency or shared Contract change.
+
+**M20-D remains OPEN.** D5 policy, D6 HITL and all E/F staging/preparation/execution are deferred.
+Production execute_plan() remains denied.

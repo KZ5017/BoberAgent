@@ -1,7 +1,7 @@
 # M20-D — ExecutionPlan and deterministic policy gate
 
 **Status:** D1 typed domain foundation, D2 durable persistence, and D3 authoritative evidence
-admission/early C3 rejection implemented. **M20-D remains OPEN**.
+admission/early C3 rejection, and D4 narrow construction/validation implemented. **M20-D remains OPEN**.
 [ADR 0016](../adr/0016-immutable-execution-intent-and-policy-authority.md) fixes immutable intent
 and separate authority. [ADR 0017](../adr/0017-core-owned-durable-planning-interactions.md)
 fixes the future D6 planning Interaction owner.
@@ -170,5 +170,33 @@ replayed existing active/completed attempts are returned unchanged, not resumed 
 change is needed. PlanningRequest permits `proposal=None` at this preconstruction boundary;
 existing proposal-bearing requests and fingerprints remain unchanged.
 
-M20-D remains OPEN. D4 construction, D5 evaluation and D6 HITL remain deferred; production
+M20-D remains OPEN. D5 evaluation and D6 HITL remain deferred; production
 execute_plan() stays denied. Admission is neither safety nor authorization.
+
+## Implemented D4 narrow construction
+
+`CoreExecutionPlanningService` consumes a D3 AttemptRef, expected revision, explicit reviewed
+D1 InvocationLayout, typed bindings, Mission endpoint, runtime intent and limits. It rechecks
+authoritative metadata and constructs proposal→V2→pure `m20-d4-plan-validator@1`. Only
+AUTOMATIC can finalize; classification alone is not VALID. Reviewed argv is persisted operator
+input, never source truth. Exactly one CODE/OBSERVED Python main-guard entrypoint is pinned.
+
+The first positive case is a TCP SERVICE_ENDPOINT on a Mission-owned Asset (optional owned
+Service), explicit address/port, Python >=3.12,<4 on attacker-side Linux/Kali, user-space,
+noninteractive, apparent stdlib-only dependencies, no mutations/environment/secrets/resources/
+sessions, finite budgets (one process, zero disk writes), and only the selected network endpoint.
+All parameters are explicitly bound; no defaults or CLI structure are guessed. Unsupported
+effects/requirements/material unknowns remain fail-closed.
+
+VALID finalization and separate PlanValidation append share one D2 UoW. INVALID retains a
+rejected proposal and bounded codes without a plan. Missing reviewed layout or bounded
+entrypoint choice may persist WAITING_INPUT/REQUIRES_INPUT without a D6 Interaction; material
+unknowns are not such waits. Repeated identical construction returns history; changed finalized
+input and stale active revisions conflict. Reopen preserves exact plan, ordered tokens/digest
+and validation; concurrent callers cannot create duplicate plans.
+
+See [D4 implementation and limitations](M20D_IMPLEMENTATION.md#d4--narrow-python-construction-and-deterministic-validation).
+Policy is explicitly NOT_EVALUATED, readiness NOT_ASSESSED and authorization absent.
+No bytes/source reader, Secret resolution, allocation, runtime probing, policy evaluation,
+approval, dispatch or execution occurs. D4 adds no migration and does not change C2/C3 history.
+M20-D remains OPEN; D5/D6 and E/F are unimplemented.

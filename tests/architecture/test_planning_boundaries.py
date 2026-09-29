@@ -63,6 +63,9 @@ ALLOWED_IMPORTS = {
     "fingerprints",
     "records",
     "admission_models",
+    "construction_models",
+    "boberagent_core.models",
+    "boberagent_core.inspections.semantic_models",
     "boberagent_contracts",
     "boberagent_contracts._base",
     "boberagent_contracts.execution_plan_v2",
@@ -117,6 +120,7 @@ def test_d1_modules_have_no_side_effect_dependencies() -> None:
                 "fingerprints.py",
                 "records.py",
                 "admission_models.py",
+                "construction_models.py",
             )
         ),
         *(
@@ -158,7 +162,7 @@ def test_d1_modules_have_no_side_effect_dependencies() -> None:
     assert not violations, violations
 
 
-def test_planning_namespace_has_only_domain_persistence_and_admission() -> None:
+def test_planning_namespace_has_only_implemented_d_slices() -> None:
     assert {path.name for path in PLANNING.glob("*.py")} == {
         "__init__.py",
         "models.py",
@@ -169,4 +173,7 @@ def test_planning_namespace_has_only_domain_persistence_and_admission() -> None:
         "admission.py",
         "admission_models.py",
         "admission_errors.py",
+        "construction.py",
+        "construction_models.py",
+        "validation.py",
     }

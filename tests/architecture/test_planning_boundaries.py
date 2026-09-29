@@ -62,6 +62,7 @@ ALLOWED_IMPORTS = {
     "models",
     "fingerprints",
     "records",
+    "admission_models",
     "boberagent_contracts",
     "boberagent_contracts._base",
     "boberagent_contracts.execution_plan_v2",
@@ -110,7 +111,13 @@ def test_d1_modules_have_no_side_effect_dependencies() -> None:
     paths = (
         *(
             PLANNING / name
-            for name in ("__init__.py", "models.py", "fingerprints.py", "records.py")
+            for name in (
+                "__init__.py",
+                "models.py",
+                "fingerprints.py",
+                "records.py",
+                "admission_models.py",
+            )
         ),
         *(
             CONTRACTS / name
@@ -151,7 +158,7 @@ def test_d1_modules_have_no_side_effect_dependencies() -> None:
     assert not violations, violations
 
 
-def test_planning_namespace_has_only_domain_and_d2_persistence() -> None:
+def test_planning_namespace_has_only_domain_persistence_and_admission() -> None:
     assert {path.name for path in PLANNING.glob("*.py")} == {
         "__init__.py",
         "models.py",
@@ -159,4 +166,7 @@ def test_planning_namespace_has_only_domain_and_d2_persistence() -> None:
         "records.py",
         "errors.py",
         "repository.py",
+        "admission.py",
+        "admission_models.py",
+        "admission_errors.py",
     }

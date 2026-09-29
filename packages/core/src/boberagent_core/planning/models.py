@@ -166,11 +166,12 @@ class PlanningRequest(FrozenContractModel):
     candidate_ref: PoCCandidateRef
     source: PlanSource
     inspection: PlanningInspectionProvenance
-    proposal: PlanProposal
+    # D3 admission stops before any proposal; existing D1/D2 requests remain unchanged.
+    proposal: PlanProposal | None = None
 
     @model_validator(mode="after")
     def shape(self) -> Self:
-        if self.source != self.proposal.source:
+        if self.proposal is not None and self.source != self.proposal.source:
             raise ValueError("proposal must pin the request's exact source")
         return self
 

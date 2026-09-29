@@ -1,5 +1,10 @@
 """M20-D1 Core-private domain foundation, not a planning service or executor."""
 
+from .admission_models import (
+    PlanningAdmissionOutcome,
+    PlanningAdmissionRequest,
+    PlanningAdmissionResult,
+)
 from .fingerprints import decision_context_fingerprint, planning_request_fingerprint
 from .models import (
     DecisionContext,
@@ -45,6 +50,9 @@ __all__ = [
     "PlanValidationReason",
     "PlanValidationReasonCode",
     "PlanValidationStatus",
+    "PlanningAdmissionOutcome",
+    "PlanningAdmissionRequest",
+    "PlanningAdmissionResult",
     "PlanningAnswer",
     "PlanningAttempt",
     "PlanningAttemptLifecycle",

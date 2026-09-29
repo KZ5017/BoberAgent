@@ -6,7 +6,8 @@ it against real public GitHub through a Kali Execution Node, TLS/MCP, Node→Cor
 Core finalization, and Core reopen without re-fetch. **M20-C — Source Inspection + Conditional
 Support Classification is CLOSED** following successful operator C4 acceptance with C1@1,
 C2@2 and C3@2. C5 is optional advisory future work, not a closure prerequisite.
-M20-D1 typed domain foundation and D2 durable planning persistence are implemented;
+M20-D1 typed domain foundation, D2 durable planning persistence, and D3 authoritative
+evidence admission/early C3 rejection are implemented;
 **M20-D remains OPEN**. Construction, evaluation and interactions remain later D slices; E–H remain planned. See the
 [retained-source acceptance record](m20/M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
 ADR 0014 fixes M20-B architecture; [ADR 0015](adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md)
@@ -94,7 +95,7 @@ be representable in plan intent but have no M20-v1 automatic adapter.
 | M20-A | [Research and candidates](m20/01_RESEARCH_AND_CANDIDATES.md) | bounded, sourced candidates; no acquisition/execution |
 | M20-B | [Acquisition and provenance](m20/02_ACQUISITION_AND_PROVENANCE.md) | pinned, hashed Artifact; no execution |
 | M20-C | [Inspection and classification](m20/03_INSPECTION_AND_CLASSIFICATION.md) | **CLOSED:** typed facts, explicit reasons, fail-closed uncertainty; calibrated real C4 accepted |
-| M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | D1/D2 domain + persistence; later construction/validation/policy/approval; STOP before permission/dispatch |
+| M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | D1–D3 domain, persistence and evidence admission; later construction/validation/policy/approval; STOP before permission/dispatch |
 | M20-E/F | [Runtime preparation and execution](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | enforceable isolation and managed evidence capture |
 | M20-G | [Interpretation, adaptation, HITL](m20/06_INTERPRETATION_ADAPTATION_AND_HITL.md) | separate outcome, bounded attempts, durable wait/stop |
 | M20-H | [Vertical smoke and acceptance](m20/07_VERTICAL_SMOKE_AND_ACCEPTANCE.md) | controlled fixture then authorized real unknown PoC |
@@ -106,7 +107,7 @@ Workspaces/Processes, Node spool, Artifact sync, Registry/Router, M11 durable Wo
 Interaction, M16 run-scoped secret grants, M17/18 curated Knowledge, and M19 advisory Reasoner.
 Legacy plans remain decodable but their status is not authority. D1 adds deeply immutable v2
 intent with explicit source, targets, runtime, bindings, ordered invocation, requirements,
-filesystem/network constraints, budgets and expected evidence. No D planning evaluator exists yet. The production
+filesystem/network constraints, budgets and expected evidence. D3 admits only authoritative persisted evidence; no plan construction or policy evaluator exists yet. The production
 Node's `execute_plan()` currently denies execution. Current M11 Workflow is static and sequential;
 M19 Reasoner validates proposals but has no PoC inspector or executor. A complete PoC policy
 approval engine and runtime confinement are not present. C1–C3 now provide immutable PoC Inspection history,
@@ -150,8 +151,12 @@ C5 remains optional/deferred and is not required for M20-C closure.
 [ADR 0016](adr/0016-immutable-execution-intent-and-policy-authority.md) fixes immutable intent
 and separate authority; [ADR 0017](adr/0017-core-owned-durable-planning-interactions.md) fixes
 later D6 Interaction ownership. D1 adds typed intent; D2 adds Core-owned immutable plan/decision history, atomic request reuse,
-revision CAS and explicit persistence recovery through migration 0013. D2 adds no planner,
-semantic validator, policy evaluator, HITL behavior or execution path.
+revision CAS and explicit persistence recovery through migration 0013. D3 verifies Mission/source/C2@2/C3@2 ownership, versions, configuration and exact parent/digest
+pins without reopening source bytes. AUTOMATIC/ASSISTED remain REQUESTED and eligible only for
+later construction/assistance; UNSUPPORTED becomes durable COMPLETED/UNSUPPORTED with exact C3
+reasons and no proposal, plan or decision. Invalid provenance fails before attempt creation.
+Identical requests reuse D2 history atomically across restart/concurrency. D4–D6 and E/F remain
+unimplemented; D3 adds no planner, semantic plan validator, policy evaluator, HITL or execution path.
 Even VALID + ALLOW + operator approval is not execution authorization. E/F must separately
 bind permission to exact digest, Mission/action/Run/Node/provider/scope/limits. Later-phase
 implementation and confinement decisions remain open.

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 import time
 from collections.abc import Callable
 from datetime import datetime, timedelta
@@ -20,6 +18,7 @@ from boberagent_core.persistence import CoreDatabase
 from boberagent_core.research.models import PoCCandidateRef, VulnerabilityHypothesisRef
 
 from .classification_models import CLASSIFIER_PROFILE_ID, SupportClassificationDocument
+from .config_identity import evidence_config_fingerprint
 from .errors import InspectionError
 from .evidence import VerifiedSource, _safe_path, line_span
 from .models import (
@@ -107,13 +106,7 @@ class CorePoCInspectionService:
                 _safe_path(path)
         except (TypeError, ValueError) as error:
             raise InspectionError("INSPECTION_CONFIG_INVALID") from error
-        config = {
-            "limits": limits.model_dump(mode="json"),
-            "selected_paths": selected_paths,
-        }
-        fingerprint = hashlib.sha256(
-            json.dumps(config, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        ).hexdigest()
+        fingerprint = evidence_config_fingerprint(limits, selected_paths)
         with self._database.unit_of_work() as work:
             mission = work.missions.get(mission_ref)
             hypothesis = work.research.get_hypothesis(hypothesis_ref)

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 from collections.abc import Callable
 from datetime import datetime, timedelta
 from uuid import uuid4
@@ -22,6 +20,7 @@ from .classification_models import (
     semantic_digest,
 )
 from .classifier import classify_support, validate_classification_evidence
+from .config_identity import classification_config_fingerprint
 from .errors import InspectionError
 from .identity import PoCInspectionRef
 from .models import InspectionStatus, PoCInspection
@@ -68,11 +67,7 @@ class CorePoCSupportClassificationService:
                 semantic_document_sha256=semantic_digest(document),
                 classifier_config=config,
             )
-            fingerprint = hashlib.sha256(
-                json.dumps(
-                    limits.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
-                ).encode("utf-8")
-            ).hexdigest()
+            fingerprint = classification_config_fingerprint(limits)
             if not force_new:
                 for previous in work.inspections.list_for_acquisition(source.acquisition_ref):
                     if (

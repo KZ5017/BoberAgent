@@ -1,8 +1,9 @@
 # M20-D — Implemented slices
 
-D1 and D2 are implemented; **M20-D remains OPEN**. D1 supplies typed domain intent;
-D2 supplies persistence primitives only. Neither performs planning construction, authoritative
-validation, policy evaluation, HITL behavior or dispatch.
+D1, D2 and D3 are implemented; **M20-D remains OPEN**. D1 supplies typed domain intent;
+D2 supplies persistence primitives; D3 admits authoritative persisted evidence and durably rejects
+C3 UNSUPPORTED. No slice performs plan construction, semantic plan validation, policy evaluation,
+HITL behavior or dispatch.
 
 ## Contract API
 
@@ -36,7 +37,7 @@ Sensitive roles require SecretRef/CredentialRef and explicit purpose, not plaint
 boberagent_core.planning exposes PlanningAttemptRef/lifecycle, PlanningRequest, partial
 PlanProposal and revisions, inspection pins, PlanningAnswer provenance, disposition,
 PlanValidation/reasons, PlanPolicyAssessment, OperatorPlanApproval, the narrow
-InitialPlanPolicyProfile and DecisionContext. There is no planning application service.
+InitialPlanPolicyProfile and DecisionContext. D3 provides a narrow evidence-admission application service, described below.
 D2 repository access uses the existing Core unit of work, described below.
 The exact C3@2 document/blocker refs remain attached to the request; UNSUPPORTED cannot produce
 a finalized plan. Historical C2/C3@1 models remain readable, but new D-v1 inputs require @2.
@@ -155,5 +156,72 @@ Digests are identifiers, not signatures against a privileged database editor.
 Verification covers migration from empty/prior-head databases, preserved upstream data,
 constraints, restart/recovery, concurrent reuse, CAS, immutable decisions, rollback, strict V2,
 ordered arguments, negative determinations and sensitive-reference regression cases.
-D3–D6 construction/validation/policy/interaction work and all E/F preparation/execution remain
+D4–D6 construction/validation/policy/interaction work and all E/F preparation/execution remain
 unimplemented. Production execute_plan() stays denied.
+
+## D3 — Authoritative evidence admission and early C3 rejection
+
+```python
+from boberagent_core.planning import PlanningAdmissionRequest
+from boberagent_core.planning.admission import CorePlanningAdmissionService
+
+service = CorePlanningAdmissionService(database)
+result = service.admit(PlanningAdmissionRequest(
+    mission_ref=mission_ref, acquisition_ref=acquisition_ref,
+    semantic_inspection_ref=c2_ref, classification_inspection_ref=c3_ref,
+    planner_profile="m20-d-planning", planner_version="1",
+    policy_profile="m20-python-single-target", policy_version="1",
+))
+stored = service.get_admission(result.attempt.planning_attempt_ref)
+```
+
+This is an immediate deterministic pump, not a planner or background scheduler. Caller input is
+refs/profile identities only; strict decoding (including model_copy bypass checks) rejects added
+truth/proposal fields. All source hashes, ownership and classification come from Core repositories.
+Hypothesis/candidate refs derive from acquisition. Mission ownership traverses hypothesis, candidate,
+Asset, optional Service and the acquisition-producing Run. Equal hashes never replace ownership.
+
+All three upstream stages must be COMPLETED. Only C2@2/C3@2 are admitted. C2 pins must equal
+acquisition raw/manifest refs, hashes, raw size and commit; C3 must bind the same source and exact
+C2 ref/digest in both document and typed configuration. Existing configuration hash calculations
+are shared pure helpers, byte-for-byte unchanged. Current C2/C3 typed documents and referenced
+semantic items, unknowns, conflicts and coverage are validated from metadata only. Artifact catalog
+AVAILABLE state/descriptors must agree with receipt; no file is opened or rehashed, so admission
+is not a fresh physical-byte integrity assertion. Future integrity rechecks remain separate.
+
+D2 request identity includes Mission/upstream refs, source pins, C2 ref/profile/semantic digest,
+C3 ref/profile/exact classification-document digest and planner/requested-policy identity.
+C3 semantic_document_sha256 remains the **parent C2 digest**. C3 classification_sha256 uses
+D1 canonical_digest. Source/configuration identities remain traceable through immutable acquisition/
+inspection refs rather than duplicating entire C2/configuration documents. Generated attempt ID/time
+and runtime/transport/Node identity do not affect reuse. Changed admitted evidence or policy identity
+creates a different fingerprint; unknown profile versions cannot become new accepted determinations.
+
+AUTOMATIC and ASSISTED yield ELIGIBLE_AUTOMATIC/ELIGIBLE_ASSISTED with REQUESTED attempts, no
+VALID/ALLOW/approval implication. Exact assistance refs remain in C3; no WAITING_INPUT or Interaction
+is generated. UNSUPPORTED yields REJECTED_UNSUPPORTED with COMPLETED/UNSUPPORTED. The entire strict
+C3 document preserves reason codes, item/conflict/coverage references, material unknowns **and**
+assistance reasons; no source text or exception payload is copied into diagnostics. All paths have
+proposal=None, zero revisions, no finalized plan and no plan decisions. PlanningRequest makes only
+the existing proposal field optional; old proposal-bearing JSON and canonical fingerprints do not
+change. No schema migration, dependency or shared Contract change is introduced.
+
+Invalid provenance fails before insertion with AdmissionErrorCode/PlanningAdmissionError; it never
+pretends the PoC itself was classified UNSUPPORTED. This deliberately avoids manufacturing an
+incomplete canonical request for COMPLETED/INVALID. New unsupported insertion and lifecycle writes
+share one UoW; internal failure rolls everything back, even after lifecycle writes. Existing D2
+atomic conflict-safe reuse handles independent concurrent calls/restart. Stored active/completed
+attempts are returned unchanged, not implicitly advanced or retried. Failed/interrupted/cancelled
+history follows D2 explicit new-request semantics; no automatic scheduling is added.
+
+Tests build real persisted synthetic acquisition/C2/C3 chains through existing services, then forbid
+Artifact/citation/inspection/classifier calls during admission. They cover all classifications,
+current/historical/unknown profiles, ownership/source/configuration/parent mismatches, strict stored
+corruption, caller tampering, separate digests, changed evidence/policy identity, rollback, concurrent
+independent UoWs and reopen/reuse. Every admission path verifies no plan/decision/Interaction rows.
+A synthetic negative covers the retained real case’s coverage/material-unknown/target-boundary reason
+categories; the real CERTCC source is not accessed or run. Dedicated architecture guards forbid
+construction, readers, Router, transport, execution, secrets, allocation, Reasoner and Knowledge.
+
+**M20-D remains OPEN.** D4–D6 and all E/F work remain unimplemented; production execute_plan()
+remains denied. Eligibility and UNSUPPORTED describe support, not safety or authorization.

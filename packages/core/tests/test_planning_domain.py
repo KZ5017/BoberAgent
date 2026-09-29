@@ -118,6 +118,7 @@ def test_automatic_begins_planning_and_assisted_retains_unresolved_proposal() ->
         updated_at=NOW,
     )
     assert assisted.finalized_plan is None
+    assert assisted.request.proposal is not None
     assert assisted.request.proposal.bindings[0].value is None
     assert PlanningAttempt.model_validate_json(assisted.model_dump_json()) == assisted
 
@@ -259,6 +260,7 @@ def test_revision_and_answer_provenance_without_current_hitl_behavior() -> None:
         value=OperatorValue(answer_id="answer-1", value="check"),
         answered_at=NOW,
     )
+    assert request.proposal is not None
     revision = PlanProposalRevision(
         planning_attempt_ref=answer.planning_attempt_ref,
         revision_number=1,

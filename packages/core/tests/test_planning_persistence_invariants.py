@@ -97,6 +97,7 @@ def test_proposal_answer_provenance_retained_without_interactions(
         value=OperatorValue(answer_id="answer-d2", value="check"),
         answered_at=NOW,
     )
+    assert attempt.request.proposal is not None
     revision = PlanProposalRevision(
         planning_attempt_ref=attempt.planning_attempt_ref,
         revision_number=1,

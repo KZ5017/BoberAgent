@@ -1,6 +1,7 @@
 # M20-D — ExecutionPlan and deterministic policy gate
 
-**Status:** D1 typed domain foundation and D2 durable persistence implemented. **M20-D remains OPEN**.
+**Status:** D1 typed domain foundation, D2 durable persistence, and D3 authoritative evidence
+admission/early C3 rejection implemented. **M20-D remains OPEN**.
 [ADR 0016](../adr/0016-immutable-execution-intent-and-policy-authority.md) fixes immutable intent
 and separate authority. [ADR 0017](../adr/0017-core-owned-durable-planning-interactions.md)
 fixes the future D6 planning Interaction owner.
@@ -99,7 +100,8 @@ Secret or secret-value hash belongs in these inputs. Changing argv order changes
 
 D1 supplies strict schemas, pure canonical helpers, tests and documentation only: no tables,
 migrations, repositories/services, construction pump, authoritative validator/policy evaluation,
-HITL request generation or dispatch. D2 now implements persistence primitives, not a planner service. Later D slices construct and evaluate
+HITL request generation or dispatch. D2 implements persistence primitives; D3 adds metadata-only authoritative admission, not a planner.
+Later D slices construct and evaluate
 against authoritative Mission/scope/evidence/prerequisite state. D6 implements ADR 0017 owners.
 The exact remaining slice implementation is not authorized by D1.
 
@@ -133,3 +135,40 @@ decision-context fingerprints are verified with D1 helpers; unknown/corrupt docu
 Changed scope, policy or reference/status prerequisite context needs new decision records.
 History lookup is not current applicability or approval. No automatic planner/validator/policy
 engine, HITL prompts, dispatch, permission envelope, staging or runtime work exists in D2.
+
+## Implemented D3 evidence admission
+
+`CorePlanningAdmissionService.admit(PlanningAdmissionRequest)` accepts only Mission/acquisition,
+C2/C3 refs and planner/requested-policy identities. It derives hypothesis/candidate ownership
+from Core; caller documents, hashes, classifications, blockers and proposals are forbidden.
+The service loads persisted Mission, acquisition, C2/C3, hypothesis/candidate, Asset/optional
+Service, producing Run and Artifact catalog metadata. Acquisition/C2/C3 must be COMPLETED,
+with exactly `m20-c2-deterministic@2` / `m20-c3-support-classifier@2`. Historical @1 stays
+readable but inadmissible; unknown versions and inconsistent configuration fail closed.
+
+Source refs/hashes/size/commit, Mission and upstream relationships must match. Catalog descriptors
+and AVAILABLE metadata must agree with the completed acquisition receipt. D3 recomputes existing
+configuration identities and the C2 semantic-document digest, verifies both persisted C3 parent
+ref/digest locations, strictly decodes C3 and checks bounded item/conflict/coverage references.
+The separately pinned C3 classification-document digest uses D1 canonicalization; it is not
+the C2-parent `semantic_document_sha256`. Immutable inspection/acquisition refs retain their
+configuration and source-identity provenance; no Node/runtime/transport fields enter identity.
+No ZIP/manifest/source/citation reader, rehash, extraction or reclassification runs in admission.
+
+Admission is distinct from disposition/validation/policy:
+
+- AUTOMATIC → ELIGIBLE_AUTOMATIC, REQUESTED, no disposition or proposal.
+- ASSISTED → ELIGIBLE_ASSISTED, REQUESTED, exact assistance provenance, no Interaction/wait/proposal.
+- UNSUPPORTED → REJECTED_UNSUPPORTED, atomic REQUESTED→EVALUATING→COMPLETED/UNSUPPORTED,
+  entire original C3 document including assistance reasons retained, no plan or decisions.
+
+Invalid/undecodable/incompatible provenance raises a bounded admission error **before** attempt
+creation, rather than forging an UNSUPPORTED classification or partial request identity.
+Unexpected failure rolls back the complete UoW. D2 conflict-safe insertion/index owns reuse;
+replayed existing active/completed attempts are returned unchanged, not resumed or retried.
+`get_admission()` inspects stored admission, not current permission. No new migration or Contract
+change is needed. PlanningRequest permits `proposal=None` at this preconstruction boundary;
+existing proposal-bearing requests and fingerprints remain unchanged.
+
+M20-D remains OPEN. D4 construction, D5 evaluation and D6 HITL remain deferred; production
+execute_plan() stays denied. Admission is neither safety nor authorization.

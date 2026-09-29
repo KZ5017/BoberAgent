@@ -95,7 +95,7 @@ be representable in plan intent but have no M20-v1 automatic adapter.
 | M20-A | [Research and candidates](m20/01_RESEARCH_AND_CANDIDATES.md) | bounded, sourced candidates; no acquisition/execution |
 | M20-B | [Acquisition and provenance](m20/02_ACQUISITION_AND_PROVENANCE.md) | pinned, hashed Artifact; no execution |
 | M20-C | [Inspection and classification](m20/03_INSPECTION_AND_CLASSIFICATION.md) | **CLOSED:** typed facts, explicit reasons, fail-closed uncertainty; calibrated real C4 accepted |
-| M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | D1–D4 domain, persistence, evidence admission and narrow construction/validation; later policy/approval; STOP before permission/dispatch |
+| M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | D1–D5 intent, persistence, admission, construction/validation and deterministic policy assessment; D6 approval deferred; STOP before permission/dispatch |
 | M20-E/F | [Runtime preparation and execution](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | enforceable isolation and managed evidence capture |
 | M20-G | [Interpretation, adaptation, HITL](m20/06_INTERPRETATION_ADAPTATION_AND_HITL.md) | separate outcome, bounded attempts, durable wait/stop |
 | M20-H | [Vertical smoke and acceptance](m20/07_VERTICAL_SMOKE_AND_ACCEPTANCE.md) | controlled fixture then authorized real unknown PoC |
@@ -107,7 +107,7 @@ Workspaces/Processes, Node spool, Artifact sync, Registry/Router, M11 durable Wo
 Interaction, M16 run-scoped secret grants, M17/18 curated Knowledge, and M19 advisory Reasoner.
 Legacy plans remain decodable but their status is not authority. D1 adds deeply immutable v2
 intent with explicit source, targets, runtime, bindings, ordered invocation, requirements,
-filesystem/network constraints, budgets and expected evidence. D3 admits authoritative persisted evidence; D4 constructs and validates only the narrow reviewed Python/single-endpoint slice. No policy evaluator exists yet. The production
+filesystem/network constraints, budgets and expected evidence. D3 admits authoritative persisted evidence; D4 constructs and validates only the narrow reviewed Python/single-endpoint slice. D5 adds a Core-owned narrow deterministic policy assessment, not approval or authorization. The production
 Node's `execute_plan()` currently denies execution. Current M11 Workflow is static and sequential;
 M19 Reasoner validates proposals but has no PoC inspector or executor. A complete PoC policy
 approval engine and runtime confinement are not present. C1–C3 now provide immutable PoC Inspection history,
@@ -158,8 +158,9 @@ reasons and no proposal, plan or decision. Invalid provenance fails before attem
 Identical requests reuse D2 history atomically across restart/concurrency. D4 now persists reviewed
 proposal revisions and atomically finalizes immutable V2 plus separate validation for the narrow
 synthetic positive case; invalid input has no plan and bounded input gaps may wait without HITL.
-Policy is NOT_EVALUATED, readiness NOT_ASSESSED and authorization absent. D5/D6 and E/F remain
-unimplemented; D3 adds no planner, semantic plan validator, policy evaluator, HITL or execution path.
+D4 leaves policy NOT_EVALUATED. D5 evaluates a registered Mission/target-scoped profile and appends
+ALLOW, DENY or REQUIRES_APPROVAL as history; readiness stays NOT_ASSESSED and authorization absent.
+D6 and E/F remain unimplemented. [D5 details](m20/M20D5_POLICY.md) specify fingerprint/reuse rules.
 Even VALID + ALLOW + operator approval is not execution authorization. E/F must separately
 bind permission to exact digest, Mission/action/Run/Node/provider/scope/limits. Later-phase
 implementation and confinement decisions remain open.

@@ -8,6 +8,12 @@ and one in-scope Mission target. Initial automatic support is attacker-side, sou
 non-interactive, user-space Python on the Kali Execution Node. Other languages and target-side or
 remote-Session execution are representable future adapter classes, not automatic M20-v1 support.
 
+D5 now records a separate deterministic `ALLOW`, `DENY` or `REQUIRES_APPROVAL` assessment
+under an explicit Core-owned Mission/target policy profile. These are append-only planning
+decisions, not permission envelopes or readiness. A historical ALLOW may be stale after scope,
+profile or validation changes. D6 approval remains separate; E/F must define and enforce
+fresh execution admission before staging or launch. See [D5 policy](M20D5_POLICY.md).
+
 ## M20-E: prepare runtime
 
 | Input | Output |

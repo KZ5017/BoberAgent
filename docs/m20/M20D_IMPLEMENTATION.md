@@ -1,9 +1,9 @@
 # M20-D — Implemented slices
 
-D1, D2, D3 and D4 are implemented; **M20-D remains OPEN**. D1 supplies typed domain intent;
+D1 through D5 are implemented; **M20-D remains OPEN**. D1 supplies typed domain intent;
 D2 supplies persistence primitives; D3 admits authoritative persisted evidence and durably rejects
-C3 UNSUPPORTED. D4 adds narrow Python construction and deterministic validation only.
-No slice evaluates policy, approves, dispatches, stages, prepares or executes.
+C3 UNSUPPORTED. D4 adds narrow Python construction and deterministic validation. D5 adds
+deterministic policy assessment only; no slice approves, dispatches, stages, prepares or executes.
 
 ## Contract API
 
@@ -340,5 +340,8 @@ access. Generated PlanRef/time do not change semantic digest; target, bindings, 
 order do. Existing migration-backed tests verify prior/fresh database compatibility; D4 adds no
 migration, dependency or shared Contract change.
 
-**M20-D remains OPEN.** D5 policy, D6 HITL and all E/F staging/preparation/execution are deferred.
-Production execute_plan() remains denied.
+That is the historical D4 stop boundary. [D5 implementation](M20D5_POLICY.md) now adds a
+registered narrow profile, pure checker, strict validation prerequisite and append-only policy
+assessment with migration `0014_m20_d5_policy_identity`. **M20-D remains OPEN.** D6 HITL,
+operator approval and all E/F staging/preparation/execution remain deferred. Production
+execute_plan() remains denied.

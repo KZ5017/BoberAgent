@@ -33,7 +33,13 @@ from .models import (
     PlanProposalRevision,
     PlanValidation,
 )
-from .records import PlanDecisionRecord, PlanDecisionRef, ProposalHistory, StoredExecutionPlan
+from .records import (
+    PlanDecisionRecord,
+    PlanDecisionRef,
+    PolicyDocument,
+    ProposalHistory,
+    StoredExecutionPlan,
+)
 
 _json: TypeAdapter[JsonObject] = TypeAdapter(JsonObject)
 _digest: TypeAdapter[str] = TypeAdapter(Sha256Digest)
@@ -595,6 +601,18 @@ class PlanDecisionRepository:
                 .on_conflict_do_nothing()
             )
             loaded = self.get(record.decision_ref)
+            if loaded is None and isinstance(record.document, PolicyDocument):
+                # Database uniqueness is authoritative across independent processes.
+                matches = tuple(
+                    item
+                    for item in self.find_by_context(
+                        plan.plan.execution_plan_id,
+                        decision_context_fingerprint(record.context),
+                    )
+                    if isinstance(item.document, PolicyDocument)
+                )
+                if len(matches) == 1 and _same_policy_assessment(matches[0], record):
+                    return matches[0]
             if loaded != record:
                 raise PlanningConflict("PlanDecisionRef identifies a different immutable record")
         return record
@@ -658,6 +676,16 @@ class PlanDecisionRepository:
             raise PlanningPersistenceError(
                 "corrupt or unsupported persisted plan decision"
             ) from None
+
+
+def _same_policy_assessment(left: PlanDecisionRecord, right: PlanDecisionRecord) -> bool:
+    if not isinstance(left.document, PolicyDocument) or not isinstance(
+        right.document, PolicyDocument
+    ):
+        return False
+    return left.context == right.context and left.document.value.model_dump(
+        exclude={"assessed_at"}
+    ) == right.document.value.model_dump(exclude={"assessed_at"})
 
 
 def _evaluator(record: PlanDecisionRecord) -> tuple[str, str]:

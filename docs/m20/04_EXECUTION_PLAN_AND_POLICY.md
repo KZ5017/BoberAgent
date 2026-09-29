@@ -1,7 +1,7 @@
 # M20-D — ExecutionPlan and deterministic policy gate
 
-**Status:** D1 typed domain foundation, D2 durable persistence, and D3 authoritative evidence
-admission/early C3 rejection, and D4 narrow construction/validation implemented. **M20-D remains OPEN**.
+**Status:** D1–D5 typed intent, durable history, authoritative evidence admission, narrow
+construction/validation and deterministic policy assessment implemented. **M20-D remains OPEN**.
 [ADR 0016](../adr/0016-immutable-execution-intent-and-policy-authority.md) fixes immutable intent
 and separate authority. [ADR 0017](../adr/0017-core-owned-durable-planning-interactions.md)
 fixes the future D6 planning Interaction owner.
@@ -199,4 +199,13 @@ See [D4 implementation and limitations](M20D_IMPLEMENTATION.md#d4--narrow-python
 Policy is explicitly NOT_EVALUATED, readiness NOT_ASSESSED and authorization absent.
 No bytes/source reader, Secret resolution, allocation, runtime probing, policy evaluation,
 approval, dispatch or execution occurs. D4 adds no migration and does not change C2/C3 history.
-M20-D remains OPEN; D5/D6 and E/F are unimplemented.
+The statement above describes the D4 boundary at completion. D5 is now implemented; D6 and
+E/F remain unimplemented. **M20-D remains OPEN.**
+
+## Implemented D5 policy assessment
+
+[D5 policy details](M20D5_POLICY.md) specify the Core-owned profile registry, explicit
+Mission/Asset/Service policy scope, pure versioned checker, bounded reason codes, profile digest,
+validation prerequisites, decision-context fingerprint, append-only reuse/reevaluation and
+concurrent uniqueness. DENY cannot become approval-required. ALLOW is not execution permission;
+readiness remains NOT_ASSESSED and authorization NONE. D6 owns approval/HITL.

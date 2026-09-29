@@ -175,5 +175,8 @@ def test_planning_namespace_has_only_implemented_d_slices() -> None:
         "admission_errors.py",
         "construction.py",
         "construction_models.py",
+        "policy_models.py",
+        "policy_evaluator.py",
+        "policy_service.py",
         "validation.py",
     }

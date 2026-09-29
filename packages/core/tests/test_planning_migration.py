@@ -27,7 +27,7 @@ def test_fresh_head_and_upgrade_preserve_previous_metadata(database_path: Path) 
             )
         assert "planning_attempts" not in inspect(database._migration_engine).get_table_names()
         upgrade_database(database)
-        assert current_revision(database) == "0013_m20_d2_planning"
+        assert current_revision(database) == "0014_m20_d5_policy_identity"
         tables = set(inspect(database._migration_engine).get_table_names())
         assert {"planning_attempts", "execution_plans", "plan_decisions"} <= tables
         with database._migration_engine.connect() as connection:

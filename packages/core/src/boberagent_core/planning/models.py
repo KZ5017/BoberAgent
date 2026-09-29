@@ -298,6 +298,11 @@ class PlanPolicyDecision(StrEnum):
 class PlanPolicyAssessment(PlanDecisionBinding):
     policy_profile: SymbolicName
     policy_version: NonEmptyStr
+    # D5 pins exact profile content; optional for historical D2 policy records.
+    policy_sha256: Sha256Digest | None = None
+    # Separate checker identity; historical D2 records predate the D5 evaluator.
+    evaluator_profile: SymbolicName | None = None
+    evaluator_version: NonEmptyStr | None = None
     decision: PlanPolicyDecision
     reason_codes: tuple[SymbolicName, ...] = Field(
         min_length=1, json_schema_extra={"collection_semantics": "set"}

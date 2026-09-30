@@ -9,8 +9,8 @@ C2@2 and C3@2. C5 is optional advisory future work, not a closure prerequisite.
 M20-D1 typed domain foundation, D2 durable planning persistence, and D3 authoritative
 evidence admission/early C3 rejection, and D4 narrow Python construction/deterministic validation are implemented;
 **M20-D remains OPEN**. D5 policy evaluation, D6 Core planning assistance/operator approval,
-and D7 offline synthetic vertical acceptance are implemented; D8 retained-source negative
-acceptance and E–H remain planned. See the
+and D7 offline synthetic vertical acceptance are implemented; D8's manual retained-source
+negative harness is implemented but has not been operator-run. E–H remain planned. See the
 [retained-source acceptance record](m20/M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
 ADR 0014 fixes M20-B architecture; [ADR 0015](adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md)
 fixes M20-C inspection ownership, evidence, and authority before implementation.
@@ -175,3 +175,9 @@ rejection. Reopen/reuse, stale/conflicting replay, immutable history, context in
 and zero new execution authority are asserted. The [D7 acceptance record](m20/M20D_IMPLEMENTATION.md#d7--synthetic-vertical-acceptance)
 is not a real-source, runtime or safety claim. **M20-D remains OPEN pending D8
 retained-source negative smoke.**
+
+D8 now has an opt-in, offline retained-source harness with a read-only metadata preflight.
+Its real mode calls only Core D3 admission on the persisted C2@2/C3@2 chain and verifies
+durable UNSUPPORTED rejection, no downstream plan/decision/Interaction, reopen and reuse.
+Automated tests use synthetic retained evidence. The real CERTCC source has not been run by
+this implementation; operator acceptance is still required before closing M20-D.

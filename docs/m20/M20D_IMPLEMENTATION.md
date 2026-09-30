@@ -375,3 +375,22 @@ Runtime-related table counts are unchanged from the synthetic acquisition baseli
 authorization stays NONE and readiness NOT_ASSESSED. The production Node's
 `execute_plan()` denial is unchanged. **M20-D remains OPEN pending D8 retained-source
 negative smoke; M20-E/F have not begun.**
+
+## D8 — retained-source negative planning harness
+
+The manual-only `m20d8_real_retained_negative_planning_smoke_test.py` requires an explicit
+Core SQLite path, Artifact root, Mission/Candidate/Acquisition/C1/C2/C3 refs and expected
+raw/manifest Artifact refs, hashes and commit. `--check-config` opens Core in SQLite
+read-only mode, checks schema/current metadata and C3 UNSUPPORTED without reading ZIP or
+source bytes or creating a PlanningAttempt. The operator alone may use
+`--real-retained-source` to call production `CorePlanningAdmissionService.admit()` with
+refs/profile identities only; D3 derives classification and the full reason set from Core.
+
+The harness requires REJECTED_UNSUPPORTED and durable COMPLETED/UNSUPPORTED with exact
+C3 document/digest, prints bounded reason codes and evidence references, and asserts no
+proposal, revision, plan, decision, planning Interaction or execution-side table growth.
+It closes/reopens Core, repeats identical admission and compares all acquisition,
+inspection-history and Artifact catalog snapshots. The default expected codes are the
+three known retained-source blockers; any additional persisted reasons are preserved.
+Offline tests use synthetic retained evidence. The real D8 run remains operator-triggered;
+**M20-D is OPEN**, and M20-E/F behavior is not introduced.

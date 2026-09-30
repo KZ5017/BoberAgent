@@ -645,3 +645,47 @@ target connection. A synthetic acquisition fixture creates baseline Run/Artifact
 D3–D6 create **no additional execution Run or Artifact**. The smoke stops at D6:
 authorization NONE, readiness NOT_ASSESSED, production `execute_plan()` denied.
 M20-D is still OPEN pending D8 retained-source negative smoke.
+
+## M20-D8 real retained-source negative planning (offline, opt-in)
+
+From the repository root, select the **existing** completed CERTCC acquisition and
+calibrated C1@1/C2@2/C3@2 history. This script does not fetch, re-inspect, open ZIP
+bytes, stage or execute source. It requires the current Core schema; it never migrates
+the selected database. Run `--check-config` first. Only the second command writes a
+Core PlanningAttempt, and only through D3 admission. These commands are manual-only;
+normal pytest uses isolated synthetic evidence.
+
+```bash
+D8_ARGS=(
+  --database /home/bober/boberagent-data/m20-live/core.sqlite3
+  --artifact-root /home/bober/boberagent-data/m20-live/artifacts
+  --mission-ref mission-m20a-live-b1feccbe94eb483ea3b7a8608d48fa73
+  --candidate-ref poc-candidate-1b200c6e7f9b4876bc91131ca505df46
+  --acquisition-ref poc-acquisition-2f6a3658a57c42f5ae2252edf1736352
+  --c1-inspection-ref poc-inspection-e3bad26d882449e196d9146b841d42e8
+  --c2-inspection-ref poc-inspection-c3420f5b09d6450dae2fc10d8b4d230b
+  --c3-inspection-ref poc-inspection-b97d53fab5e14b4d953a7671791399fa
+  --raw-artifact-ref artifact-032c7c87-c1c2-402a-ba2e-269545766f3a
+  --raw-sha256 033fc4b983cff57b9a0debb3491e2638e6598800eb8ae96802021ef7edb232d6
+  --manifest-artifact-ref artifact-463d3e1b-e38a-41ed-afb9-b59fc33bee56
+  --manifest-sha256 e9e517244eecdedfdb5df9dce43f4792ea5eb1fb763f3e7d48ba5611d229cfe0
+  --commit 042e5d9c15fe8312492d2f08063631be58486830
+)
+uv run python scripts/manual-smoke/m20d8_real_retained_negative_planning_smoke_test.py \
+  --check-config "${D8_ARGS[@]}"
+```
+
+After verifying the read-only preflight, the operator may deliberately run:
+
+```bash
+uv run python scripts/manual-smoke/m20d8_real_retained_negative_planning_smoke_test.py \
+  --real-retained-source "${D8_ARGS[@]}"
+```
+
+The real mode must report `REJECTED_UNSUPPORTED`, durable `COMPLETED/UNSUPPORTED`,
+the actual C3 reason codes and evidence refs, zero plan/decision/Interaction records
+for the attempt, stable upstream metadata, and the same PlanningAttempt after Core
+reopen and replay. The three known blocker codes are checked by default; additional
+authoritative C3 reasons are printed, not discarded. The operator's successful real
+run is still required before M20-D can be marked CLOSED. No approval or execution
+authority follows from this negative result; M20-E/F are untouched.

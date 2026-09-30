@@ -227,3 +227,13 @@ Run, dispatch, grant, staging or target contact. Production `execute_plan()` rem
 denied. [Harness usage](../../scripts/manual-smoke/README.md#m20-d7-offline-synthetic-planning-vertical-smoke)
 and [implementation notes](M20D_IMPLEMENTATION.md#d7--synthetic-vertical-acceptance)
 describe the test-only fixture. **M20-D remains OPEN pending D8 retained-source negative smoke.**
+
+## D8 retained-source negative admission harness
+
+The manual D8 harness uses the existing completed CERTCC acquisition and authoritative
+C2@2/C3@2 records. Its metadata preflight is SQLite read-only and does not open source
+bytes. The opt-in mode invokes only D3 admission: C3 UNSUPPORTED must become durable
+COMPLETED/UNSUPPORTED with exact C3 reasons, no proposal/plan/validation/policy/HITL/approval,
+and no execution-side records. It checks reopen, identical-request reuse and unchanged
+upstream acquisition/inspection/Artifact metadata. Automated validation uses synthetic
+retained evidence; the real operator run remains pending, so **M20-D is OPEN**.

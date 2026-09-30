@@ -1,10 +1,10 @@
 # M20-D — ExecutionPlan and deterministic policy gate
 
-**Status:** D1–D5 typed intent, durable history, authoritative evidence admission, narrow
-construction/validation and deterministic policy assessment implemented. **M20-D remains OPEN**.
+**Status:** D1–D6 typed intent, durable history, admission, narrow construction/validation,
+deterministic policy assessment and Core-owned HITL/approval implemented. **M20-D remains OPEN**.
 [ADR 0016](../adr/0016-immutable-execution-intent-and-policy-authority.md) fixes immutable intent
 and separate authority. [ADR 0017](../adr/0017-core-owned-durable-planning-interactions.md)
-fixes the future D6 planning Interaction owner.
+fixes the implemented D6 planning Interaction owner. See [D6 details](M20D6_PLANNING_HITL.md).
 
 ## Ownership and stop boundary
 
@@ -170,8 +170,8 @@ replayed existing active/completed attempts are returned unchanged, not resumed 
 change is needed. PlanningRequest permits `proposal=None` at this preconstruction boundary;
 existing proposal-bearing requests and fingerprints remain unchanged.
 
-M20-D remains OPEN. D5 evaluation and D6 HITL remain deferred; production
-execute_plan() stays denied. Admission is neither safety nor authorization.
+M20-D remains OPEN. This was the historical D3 stop boundary; D5/D6 are now implemented.
+Production execute_plan() stays denied. Admission is neither safety nor authorization.
 
 ## Implemented D4 narrow construction
 
@@ -190,7 +190,7 @@ effects/requirements/material unknowns remain fail-closed.
 
 VALID finalization and separate PlanValidation append share one D2 UoW. INVALID retains a
 rejected proposal and bounded codes without a plan. Missing reviewed layout or bounded
-entrypoint choice may persist WAITING_INPUT/REQUIRES_INPUT without a D6 Interaction; material
+entrypoint choice could persist WAITING_INPUT/REQUIRES_INPUT without a D6 Interaction; material
 unknowns are not such waits. Repeated identical construction returns history; changed finalized
 input and stale active revisions conflict. Reopen preserves exact plan, ordered tokens/digest
 and validation; concurrent callers cannot create duplicate plans.
@@ -199,7 +199,7 @@ See [D4 implementation and limitations](M20D_IMPLEMENTATION.md#d4--narrow-python
 Policy is explicitly NOT_EVALUATED, readiness NOT_ASSESSED and authorization absent.
 No bytes/source reader, Secret resolution, allocation, runtime probing, policy evaluation,
 approval, dispatch or execution occurs. D4 adds no migration and does not change C2/C3 history.
-The statement above describes the D4 boundary at completion. D5 is now implemented; D6 and
+The statement above describes the historical D4 boundary. D5 and D6 are now implemented;
 E/F remain unimplemented. **M20-D remains OPEN.**
 
 ## Implemented D5 policy assessment
@@ -208,4 +208,4 @@ E/F remain unimplemented. **M20-D remains OPEN.**
 Mission/Asset/Service policy scope, pure versioned checker, bounded reason codes, profile digest,
 validation prerequisites, decision-context fingerprint, append-only reuse/reevaluation and
 concurrent uniqueness. DENY cannot become approval-required. ALLOW is not execution permission;
-readiness remains NOT_ASSESSED and authorization NONE. D6 owns approval/HITL.
+readiness remains NOT_ASSESSED and authorization NONE. D6 adds separate approval/HITL.

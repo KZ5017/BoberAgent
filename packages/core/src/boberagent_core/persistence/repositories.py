@@ -722,6 +722,7 @@ class CoreUnitOfWork:
             CredentialRepository,
         )
         from boberagent_core.inspections.repository import PoCInspectionRepository
+        from boberagent_core.interactions.planning_repository import PlanningInteractionRepository
         from boberagent_core.interactions.repository import InteractionRepository
         from boberagent_core.planning.repository import (
             ExecutionPlanRepository,
@@ -747,6 +748,7 @@ class CoreUnitOfWork:
         self.routing_decisions = RoutingDecisionRepository(session)
         self.result_ingestions = ResultIngestionRepository(session)
         self.interactions = InteractionRepository(session)
+        self.planning_interactions = PlanningInteractionRepository(session)
         self.secrets = SecretRepository(session)
         self.credentials = CredentialRepository(session)
         self.core_events = CoreEventRepository(session)

@@ -31,6 +31,7 @@ from boberagent_core.persistence.repositories import CoreUnitOfWork
 
 from .admission import _authoritative_request
 from .admission_models import PlanningAdmissionRequest
+from .assistance_questions import question_for_wait
 from .construction_models import (
     PlanConstructionRequest,
     PlanConstructionResult,
@@ -104,11 +105,16 @@ class CoreExecutionPlanningService:
                 evidence = _evidence(work, attempt, request)
                 proposal = _proposal(request, evidence)
                 if attempt.lifecycle.is_terminal or attempt.lifecycle is State.WAITING_INPUT:
-                    if attempt.revisions and canonical_digest(
-                        attempt.revisions[-1].proposal,
-                        exclude=frozenset({"unresolved_requirement_ids"}),
-                    ) == canonical_digest(
-                        proposal, exclude=frozenset({"unresolved_requirement_ids"})
+                    if (
+                        attempt.revisions
+                        and canonical_digest(
+                            attempt.revisions[-1].proposal,
+                            exclude=frozenset({"unresolved_requirement_ids"}),
+                        )
+                        == canonical_digest(
+                            proposal, exclude=frozenset({"unresolved_requirement_ids"})
+                        )
+                        and (attempt.lifecycle.is_terminal or not attempt.revisions[-1].answers)
                     ):
                         return _result(work, attempt)
                     if attempt.lifecycle.is_terminal:
@@ -164,6 +170,10 @@ class CoreExecutionPlanningService:
                         disposition=Disposition.REQUIRES_INPUT if waiting else Disposition.INVALID,
                         diagnostic_codes=codes,
                     )
+                    if waiting:
+                        question = question_for_wait(attempt, assessment, evidence, now)
+                        if question is not None:
+                            work.planning_interactions.create(question)
                     return _result(work, attempt)
                 candidate = _candidate(proposal, attempt, now)
                 final_assessment = validate_plan(candidate, evidence)
@@ -291,6 +301,11 @@ def _proposal(request: PlanConstructionRequest, evidence: PlanningEvidence) -> P
                 invocation_form="SCRIPT",
                 evidence_ids=(entry.item_id,),
             )
+    if evidence.attempt.revisions:
+        prior = evidence.attempt.revisions[-1].proposal.entrypoint
+        if prior is not None and any(prior.evidence_ids == (item.item_id,) for item in eligible):
+            entrypoint = prior
+
     target = request.target
     host = next(
         (item for item in request.bindings if isinstance(item.value, MissionTargetValue)), None

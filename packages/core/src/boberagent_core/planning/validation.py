@@ -41,7 +41,7 @@ from boberagent_core.inspections.semantic_models import (
 )
 
 from .construction_models import ConstructionAssessment, PlanningEvidence
-from .models import PlanProposal, PlanValidationReason
+from .models import PlanningInteractionPurpose, PlanProposal, PlanValidationReason
 from .models import PlanValidationReasonCode as Code
 from .models import PlanValidationStatus as Status
 
@@ -154,16 +154,52 @@ def assess_proposal(proposal: PlanProposal, evidence: PlanningEvidence) -> Const
     )
     if not entries:
         return _answer(Code.ENTRYPOINT_INVALID)
-    entry = entries[0] if len(entries) == 1 else None
+    entry = (
+        entries[0]
+        if len(entries) == 1
+        else next(
+            (
+                item
+                for item in entries
+                if proposal.entrypoint is not None
+                and proposal.entrypoint.evidence_ids == (item.item_id,)
+            ),
+            None,
+        )
+    )
+    selected_entry_answer = entry is not None and any(
+        answer.purpose is PlanningInteractionPurpose.PLANNING_ENTRYPOINT_SELECTION
+        and isinstance(answer.value, OperatorValue)
+        and answer.value.value == entry.item_id
+        for revision in attempt.revisions
+        for answer in revision.answers
+    )
     if entry is not None:
         selected = proposal.entrypoint
         coverage = next(
             (item for item in semantic.coverage if item.path == entry.source_path), None
         )
+        selected_path_gaps = tuple(
+            item for item in semantic.unknowns if item.source_path == entry.source_path
+        )
         if (
             selected is None
             or coverage is None
-            or coverage.status is not CoverageStatus.INSPECTED
+            or not (
+                coverage.status is CoverageStatus.INSPECTED
+                or (
+                    selected_entry_answer
+                    and coverage.status is CoverageStatus.PARTIAL
+                    and coverage.reason == "EXTRACTOR_LIMITATIONS"
+                    and len(selected_path_gaps) == 1
+                    and selected_path_gaps[0].reason == "MULTIPLE_ENTRYPOINT_CANDIDATES"
+                    and any(
+                        reason.code.value == "REQUIRES_ENTRYPOINT_SELECTION"
+                        and selected_path_gaps[0].item_id in reason.item_refs
+                        for reason in classification.reasons
+                    )
+                )
+            )
             or (
                 selected.relative_path != entry.source_path
                 or selected.language != "python"
@@ -222,6 +258,13 @@ def assess_proposal(proposal: PlanProposal, evidence: PlanningEvidence) -> Const
         ):
             return _answer(Code.BINDING_TYPE_MISMATCH, parameter.item_id)
         if binding.resolution is not ResolutionState.RESOLVED:
+            if (
+                parameter.role in {ParameterRole.TARGET_PORT, ParameterRole.TIMEOUT}
+                and binding.value_type is ValueType.INTEGER
+                and binding.provenance.origin == "OPERATOR"
+                and binding.value is None
+            ):
+                return _answer(Code.UNRESOLVED_BINDING, parameter.item_id, waiting=True)
             return _answer(Code.UNRESOLVED_BINDING, parameter.item_id)
         if binding.provenance.evidence_ids != (parameter.item_id,):
             return _answer(Code.INVOCATION_LAYOUT_INVALID, parameter.item_id)
@@ -401,18 +444,34 @@ def assess_proposal(proposal: PlanProposal, evidence: PlanningEvidence) -> Const
         and not (
             len(entries) > 1
             and item.item_id in entrypoint_assistance
-            and item.reason in {"MULTIPLE_ENTRYPOINT_CANDIDATES", "EXTRACTOR_LIMITATIONS"}
+            and item.reason == "MULTIPLE_ENTRYPOINT_CANDIDATES"
         )
         for item in semantic.unknowns
     ):
         return _answer(Code.UNKNOWN_CRITICAL_EFFECT)
-    if len(entries) != 1:
+    if len(entries) != 1 and not selected_entry_answer:
         return _answer(
             Code.ENTRYPOINT_SELECTION_REQUIRED, *(item.item_id for item in entries), waiting=True
         )
     if layout is None:
         return _answer(Code.INVOCATION_LAYOUT_REQUIRED, waiting=True)
-    if classification.classification is not SupportClassification.AUTOMATIC:
+    unresolved_assistance = tuple(
+        reason
+        for reason in classification.reasons
+        if disposition(reason.code) is ReasonDisposition.ASSISTANCE
+        and not (reason.code.value == "REQUIRES_ENTRYPOINT_SELECTION" and selected_entry_answer)
+        and not (
+            reason.code.value == "REQUIRES_MANUAL_PARAMETER"
+            and any(
+                answer.purpose is PlanningInteractionPurpose.PLANNING_PARAMETER_VALUE
+                and isinstance(answer.value, OperatorValue)
+                and any(binding.value == answer.value for binding in proposal.bindings)
+                for revision in attempt.revisions
+                for answer in revision.answers
+            )
+        )
+    )
+    if unresolved_assistance:
         return _answer(Code.ASSISTANCE_REQUIRED, waiting=True)
     if (
         any(item.kind not in {"STDOUT", "STDERR"} for item in proposal.expected_evidence)

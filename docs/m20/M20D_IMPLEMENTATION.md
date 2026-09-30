@@ -1,9 +1,10 @@
 # M20-D — Implemented slices
 
-D1 through D5 are implemented; **M20-D remains OPEN**. D1 supplies typed domain intent;
+D1 through D6 are implemented; **M20-D remains OPEN**. D1 supplies typed domain intent;
 D2 supplies persistence primitives; D3 admits authoritative persisted evidence and durably rejects
 C3 UNSUPPORTED. D4 adds narrow Python construction and deterministic validation. D5 adds
-deterministic policy assessment only; no slice approves, dispatches, stages, prepares or executes.
+deterministic policy assessment. D6 adds separate Core-owned planning assistance and operator
+policy approval; no slice dispatches, stages, prepares or executes.
 
 ## Contract API
 
@@ -158,7 +159,8 @@ Verification covers migration from empty/prior-head databases, preserved upstrea
 constraints, restart/recovery, concurrent reuse, CAS, immutable decisions, rollback, strict V2,
 ordered arguments, negative determinations and sensitive-reference regression cases.
 At the D2 boundary, construction/validation remain separate application responsibilities.
-D5/D6 policy/interaction work and all E/F preparation/execution remain unimplemented. Production execute_plan() stays denied.
+At D2 closure, D5/D6 policy/interaction work was not yet implemented. It is now described in
+[D5](M20D5_POLICY.md) and [D6](M20D6_PLANNING_HITL.md). E/F remain unimplemented; production execute_plan() stays denied.
 
 ## D3 — Authoritative evidence admission and early C3 rejection
 
@@ -224,8 +226,8 @@ A synthetic negative covers the retained real case’s coverage/material-unknown
 categories; the real CERTCC source is not accessed or run. Dedicated architecture guards forbid
 construction, readers, Router, transport, execution, secrets, allocation, Reasoner and Knowledge.
 
-**M20-D remains OPEN.** D5/D6 and all E/F work remain unimplemented; production execute_plan()
-remains denied. Eligibility and UNSUPPORTED describe support, not safety or authorization.
+**M20-D remains OPEN.** At D3 closure D5/D6 were pending; they are now implemented separately.
+E/F remain unimplemented and production execute_plan() remains denied.
 
 ## D4 — Narrow Python construction and deterministic validation
 
@@ -342,6 +344,6 @@ migration, dependency or shared Contract change.
 
 That is the historical D4 stop boundary. [D5 implementation](M20D5_POLICY.md) now adds a
 registered narrow profile, pure checker, strict validation prerequisite and append-only policy
-assessment with migration `0014_m20_d5_policy_identity`. **M20-D remains OPEN.** D6 HITL,
-operator approval and all E/F staging/preparation/execution remain deferred. Production
-execute_plan() remains denied.
+assessment with migration `0014_m20_d5_policy_identity`. [D6](M20D6_PLANNING_HITL.md) now
+adds HITL and exact operator approval. **M20-D remains OPEN.** E/F staging, preparation and
+execution remain deferred; production execute_plan() remains denied.

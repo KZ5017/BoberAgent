@@ -2,7 +2,7 @@
 
 from typing import Annotated, Literal, Self
 
-from boberagent_contracts import DomainRef, ExecutionPlanRef, ExecutionPlanV2, Sha256Digest
+from boberagent_contracts import ExecutionPlanRef, ExecutionPlanV2, Sha256Digest
 from boberagent_contracts._base import FrozenContractModel
 from pydantic import AwareDatetime, Field, model_validator
 
@@ -14,10 +14,9 @@ from .models import (
     PlanProposalRevision,
     PlanValidation,
 )
-
-
-class PlanDecisionRef(DomainRef):
-    """Core-owned identity of one immutable assessment/approval record."""
+from .models import (
+    PlanDecisionRef as PlanDecisionRef,
+)
 
 
 class ProposalHistory(FrozenContractModel):

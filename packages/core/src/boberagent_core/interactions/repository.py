@@ -30,13 +30,18 @@ class InteractionRepository:
         request_json = _json_object_adapter.validate_python(request.model_dump(mode="json"))
         row = self._session.get(InteractionRow, str(request.interaction_id))
         if row is not None:
-            if row.node_id != node_id or row.request_json != request_json:
+            if (
+                row.owner_kind != "CAPABILITY_RUN"
+                or row.node_id != node_id
+                or row.request_json != request_json
+            ):
                 raise InteractionConflict(
                     f"InteractionRef identifies conflicting request content: {request.interaction_id}"
                 )
             return _from_row(row)
         row = InteractionRow(
             interaction_id=str(request.interaction_id),
+            owner_kind="CAPABILITY_RUN",
             node_id=node_id,
             run_id=str(request.run_ref),
             mission_id=str(request.mission_ref),
@@ -58,21 +63,24 @@ class InteractionRepository:
 
     def get(self, interaction_ref: InteractionRef) -> CoreInteraction | None:
         row = self._session.get(InteractionRow, str(interaction_ref))
-        return None if row is None else _from_row(row)
+        return None if row is None or row.owner_kind != "CAPABILITY_RUN" else _from_row(row)
 
     def list_pending(self) -> tuple[CoreInteraction, ...]:
         rows = self._session.scalars(
             select(InteractionRow)
-            .where(InteractionRow.state == InteractionLifecycle.REQUESTED.value)
+            .where(
+                InteractionRow.owner_kind == "CAPABILITY_RUN",
+                InteractionRow.state == InteractionLifecycle.REQUESTED.value,
+            )
             .order_by(InteractionRow.requested_at, InteractionRow.interaction_id)
         )
         return tuple(_from_row(row) for row in rows if row.response_json is None)
 
     def list_all(self) -> tuple[CoreInteraction, ...]:
         rows = self._session.scalars(
-            select(InteractionRow).order_by(
-                InteractionRow.requested_at, InteractionRow.interaction_id
-            )
+            select(InteractionRow)
+            .where(InteractionRow.owner_kind == "CAPABILITY_RUN")
+            .order_by(InteractionRow.requested_at, InteractionRow.interaction_id)
         )
         return tuple(_from_row(row) for row in rows)
 
@@ -122,12 +130,13 @@ class InteractionRepository:
 
     def _required(self, interaction_ref: InteractionRef) -> InteractionRow:
         row = self._session.get(InteractionRow, str(interaction_ref))
-        if row is None:
+        if row is None or row.owner_kind != "CAPABILITY_RUN":
             raise InteractionNotFound(f"unknown Interaction: {interaction_ref}")
         return row
 
 
 def _from_row(row: InteractionRow) -> CoreInteraction:
+    assert row.node_id is not None
     return CoreInteraction(
         node_id=row.node_id,
         request=InteractionRequest.model_validate(deepcopy(row.request_json)),

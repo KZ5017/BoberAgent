@@ -29,6 +29,7 @@ ALLOWED = {
     "errors",
     "records",
     "validation",
+    "assistance_questions",
 }
 FORBIDDEN_CALLS = {
     "dispatch",

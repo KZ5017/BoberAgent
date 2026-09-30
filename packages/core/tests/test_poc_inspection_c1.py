@@ -325,7 +325,7 @@ def test_migration_from_b_and_fresh(database_path: Path) -> None:
         upgrade_database(database, "0011_m20_b3_fixture_mode")
         assert "poc_inspections" not in inspect(database._migration_engine).get_table_names()
         upgrade_database(database)
-        assert current_revision(database) == "0014_m20_d5_policy_identity"
+        assert current_revision(database) == "0015_m20_d6_planning_interactions"
         assert "poc_inspections" in inspect(database._migration_engine).get_table_names()
     finally:
         database.dispose()

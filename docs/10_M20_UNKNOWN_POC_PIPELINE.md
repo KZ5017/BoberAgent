@@ -8,7 +8,8 @@ Support Classification is CLOSED** following successful operator C4 acceptance w
 C2@2 and C3@2. C5 is optional advisory future work, not a closure prerequisite.
 M20-D1 typed domain foundation, D2 durable planning persistence, and D3 authoritative
 evidence admission/early C3 rejection, and D4 narrow Python construction/deterministic validation are implemented;
-**M20-D remains OPEN**. Policy evaluation and interactions remain later D slices; E–H remain planned. See the
+**M20-D remains OPEN**. D5 policy evaluation and D6 Core planning assistance/operator approval
+are implemented; D7/D8 acceptance and E–H remain planned. See the
 [retained-source acceptance record](m20/M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
 ADR 0014 fixes M20-B architecture; [ADR 0015](adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md)
 fixes M20-C inspection ownership, evidence, and authority before implementation.
@@ -95,7 +96,7 @@ be representable in plan intent but have no M20-v1 automatic adapter.
 | M20-A | [Research and candidates](m20/01_RESEARCH_AND_CANDIDATES.md) | bounded, sourced candidates; no acquisition/execution |
 | M20-B | [Acquisition and provenance](m20/02_ACQUISITION_AND_PROVENANCE.md) | pinned, hashed Artifact; no execution |
 | M20-C | [Inspection and classification](m20/03_INSPECTION_AND_CLASSIFICATION.md) | **CLOSED:** typed facts, explicit reasons, fail-closed uncertainty; calibrated real C4 accepted |
-| M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | D1–D5 intent, persistence, admission, construction/validation and deterministic policy assessment; D6 approval deferred; STOP before permission/dispatch |
+| M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | D1–D6 intent, persistence, admission, construction/validation, deterministic policy and Core HITL/approval; STOP before permission/dispatch |
 | M20-E/F | [Runtime preparation and execution](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | enforceable isolation and managed evidence capture |
 | M20-G | [Interpretation, adaptation, HITL](m20/06_INTERPRETATION_ADAPTATION_AND_HITL.md) | separate outcome, bounded attempts, durable wait/stop |
 | M20-H | [Vertical smoke and acceptance](m20/07_VERTICAL_SMOKE_AND_ACCEPTANCE.md) | controlled fixture then authorized real unknown PoC |
@@ -110,7 +111,7 @@ intent with explicit source, targets, runtime, bindings, ordered invocation, req
 filesystem/network constraints, budgets and expected evidence. D3 admits authoritative persisted evidence; D4 constructs and validates only the narrow reviewed Python/single-endpoint slice. D5 adds a Core-owned narrow deterministic policy assessment, not approval or authorization. The production
 Node's `execute_plan()` currently denies execution. Current M11 Workflow is static and sequential;
 M19 Reasoner validates proposals but has no PoC inspector or executor. A complete PoC policy
-approval engine and runtime confinement are not present. C1–C3 now provide immutable PoC Inspection history,
+execution authorization and runtime confinement are not present. C1–C3 now provide immutable PoC Inspection history,
 exact evidence, deterministic observations and conditional support; these do not authorize execution.
 Do not hide these gaps in opaque `metadata` or call existing local process execution a sandbox.
 
@@ -160,7 +161,8 @@ proposal revisions and atomically finalizes immutable V2 plus separate validatio
 synthetic positive case; invalid input has no plan and bounded input gaps may wait without HITL.
 D4 leaves policy NOT_EVALUATED. D5 evaluates a registered Mission/target-scoped profile and appends
 ALLOW, DENY or REQUIRES_APPROVAL as history; readiness stays NOT_ASSESSED and authorization absent.
-D6 and E/F remain unimplemented. [D5 details](m20/M20D5_POLICY.md) specify fingerprint/reuse rules.
+D6 now adds bounded assistance and separate exact policy approval without reopening finalized
+attempts; [D6 details](m20/M20D6_PLANNING_HITL.md). E/F remain unimplemented.
 Even VALID + ALLOW + operator approval is not execution authorization. E/F must separately
 bind permission to exact digest, Mission/action/Run/Node/provider/scope/limits. Later-phase
 implementation and confinement decisions remain open.

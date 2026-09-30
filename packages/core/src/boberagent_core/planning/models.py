@@ -30,6 +30,7 @@ from boberagent_contracts.plan_values import (
     EntrypointIntent,
     EnvironmentBinding,
     InvocationLayout,
+    OperatorValue,
     ParameterBinding,
     PlanTarget,
     TargetRole,
@@ -46,6 +47,10 @@ from boberagent_core.research.models import PoCCandidateRef, VulnerabilityHypoth
 
 class PlanningAttemptRef(DomainRef):
     """Core-owned planning identity, never an executable CapabilityRunRef."""
+
+
+class PlanDecisionRef(DomainRef):
+    """Core-owned identity of one immutable assessment or approval."""
 
 
 class PlanningAttemptLifecycle(StrEnum):
@@ -125,8 +130,17 @@ class PlanProposal(FrozenContractModel):
     )
 
 
+class PlanningInteractionPurpose(StrEnum):
+    PLANNING_ENTRYPOINT_SELECTION = "PLANNING_ENTRYPOINT_SELECTION"
+    PLANNING_PARAMETER_VALUE = "PLANNING_PARAMETER_VALUE"
+    PLANNING_INVOCATION_LAYOUT = "PLANNING_INVOCATION_LAYOUT"
+    PLANNING_RUNTIME_CONFIRMATION = "PLANNING_RUNTIME_CONFIRMATION"
+    PLANNING_DEPENDENCY_REVIEW = "PLANNING_DEPENDENCY_REVIEW"
+    POLICY_APPROVAL = "POLICY_APPROVAL"
+
+
 class PlanningAnswer(FrozenContractModel):
-    """Future D6 answer provenance, not Interaction routing or an approval."""
+    """D6 answer provenance, not source evidence or policy approval."""
 
     answer_id: SymbolicName
     interaction_ref: InteractionRef
@@ -135,6 +149,22 @@ class PlanningAnswer(FrozenContractModel):
     operator_id: SymbolicName
     value: BindingValue
     answered_at: AwareDatetime
+    purpose: PlanningInteractionPurpose | None = None
+    proposal_revision: StrictInt | None = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def d6_binding(self) -> Self:
+        if self.purpose is None:
+            if self.proposal_revision is not None:
+                raise ValueError("historical answer cannot have a D6 revision without purpose")
+        elif (
+            self.purpose is PlanningInteractionPurpose.POLICY_APPROVAL
+            or self.proposal_revision is None
+            or not isinstance(self.value, OperatorValue)
+            or self.value.answer_id != self.answer_id
+        ):
+            raise ValueError("planning answer requires exact non-policy operator provenance")
+        return self
 
 
 class PlanProposalRevision(FrozenContractModel):
@@ -313,11 +343,31 @@ class PlanPolicyAssessment(PlanDecisionBinding):
 class OperatorPlanApproval(PlanDecisionBinding):
     """Deliberate exact-intent human decision; never a Node execution credential."""
 
+    # D6 exact applicability pins. Optional only for historical D2 approval documents.
+    policy_decision_ref: PlanDecisionRef | None = None
+    interaction_ref: InteractionRef | None = None
+    validation_decision_ref: PlanDecisionRef | None = None
+    policy_sha256: Sha256Digest | None = None
+    policy_context_fingerprint: Sha256Digest | None = None
+
     policy_profile: SymbolicName
     policy_version: NonEmptyStr
     decision: Literal["APPROVE", "REJECT"]
     operator_id: SymbolicName
     decided_at: AwareDatetime
+
+    @model_validator(mode="after")
+    def exact_d6_pins(self) -> Self:
+        pins = (
+            self.policy_decision_ref,
+            self.interaction_ref,
+            self.validation_decision_ref,
+            self.policy_sha256,
+            self.policy_context_fingerprint,
+        )
+        if any(pin is not None for pin in pins) and not all(pin is not None for pin in pins):
+            raise ValueError("D6 approval requires all exact policy and interaction pins")
+        return self
 
 
 class InitialPlanPolicyProfile(FrozenContractModel):

@@ -48,18 +48,20 @@ it does not mutate the previously inspected Artifact.
 
 ## Human assistance and policy
 
-ADR 0017 assigns later D6 planning interactions a Core PlanningAttempt owner alongside the
-existing CapabilityRun owner. D1 defines answer provenance only, not interaction behavior.
+ADR 0017 assigns implemented D6 planning interactions a Core PlanningAttempt owner alongside the
+existing CapabilityRun owner. [D6 details](M20D6_PLANNING_HITL.md) define bounded pre-finalization
+answers and separate post-finalization policy approval. D1 defines answer provenance only.
 Core planning durability does not restore Node Python continuations. An answer is not an
 OBSERVED fact, policy approval or E/F permission envelope. Policy approval is separate and
 cannot override denial; E/F must still authorize the exact execution context.
 
-Reuse M15 durable `InteractionRequest`/response and `Checkpoint` for missing credential binding,
-listener/Session prerequisite, entrypoint choice, bounded manual parameter, or a request to stop.
-Use M16 refs/grants for credential/secret values; never put plaintext in prompts, Events,
-checkpoints or normal logs. Reuse existing Resource/Session leases for prerequisites. A missing
-policy approval is **not** an InteractionRequest: policy decisions and approvals require the
-separate M20-D gate, and a denied action remains denied regardless of human input.
+M15 Run-owned `InteractionRequest`/response and `Checkpoint` remain the execution-time
+interaction path. D6 Core planning questions instead use the shared durable Interaction
+store with PlanningAttempt ownership, not a synthetic Run or Node continuation. Use M16
+refs/grants for future credential/secret selections; never put plaintext in prompts,
+Events, checkpoints or normal logs. A missing policy approval is **not** an M15 Run-owned
+InteractionRequest: D6 uses a separate Core `POLICY_APPROVAL` purpose and append-only
+decision; a denied action remains denied regardless of human input.
 
 The accepted M15 implementation preserves Core restart while a Node waiter lives, but a Node
 restart fails a waiting Run conservatively; it cannot restore a Python coroutine. M20 must not

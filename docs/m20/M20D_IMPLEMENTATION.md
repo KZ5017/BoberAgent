@@ -1,10 +1,11 @@
-# M20-D — Implemented slices
+# M20-D — Implemented slices and closure
 
-D1 through D6 are implemented; **M20-D remains OPEN**. D1 supplies typed domain intent;
+D1 through D8 are complete; **M20-D is CLOSED**. D1 supplies typed domain intent;
 D2 supplies persistence primitives; D3 admits authoritative persisted evidence and durably rejects
 C3 UNSUPPORTED. D4 adds narrow Python construction and deterministic validation. D5 adds
 deterministic policy assessment. D6 adds separate Core-owned planning assistance and operator
-policy approval; no slice dispatches, stages, prepares or executes.
+policy approval. D7 synthetic and D8 real retained-source acceptance passed. No slice dispatches,
+stages, prepares or executes.
 
 ## Contract API
 
@@ -226,7 +227,7 @@ A synthetic negative covers the retained real case’s coverage/material-unknown
 categories; the real CERTCC source is not accessed or run. Dedicated architecture guards forbid
 construction, readers, Router, transport, execution, secrets, allocation, Reasoner and Knowledge.
 
-**M20-D remains OPEN.** At D3 closure D5/D6 were pending; they are now implemented separately.
+At D3 closure M20-D was still open and D5/D6 were pending; this is historical context.
 E/F remain unimplemented and production execute_plan() remains denied.
 
 ## D4 — Narrow Python construction and deterministic validation
@@ -345,7 +346,7 @@ migration, dependency or shared Contract change.
 That is the historical D4 stop boundary. [D5 implementation](M20D5_POLICY.md) now adds a
 registered narrow profile, pure checker, strict validation prerequisite and append-only policy
 assessment with migration `0014_m20_d5_policy_identity`. [D6](M20D6_PLANNING_HITL.md) now
-adds HITL and exact operator approval. **M20-D remains OPEN.** E/F staging, preparation and
+adds HITL and exact operator approval. M20-D later closed after D8. E/F staging, preparation and
 execution remain deferred; production execute_plan() remains denied.
 
 ## D7 — Synthetic vertical acceptance
@@ -373,8 +374,8 @@ scope creates a new D5 context and makes historical approval inapplicable withou
 rewriting it. C2/C3 records, plans and decisions are compared across the run.
 Runtime-related table counts are unchanged from the synthetic acquisition baseline;
 authorization stays NONE and readiness NOT_ASSESSED. The production Node's
-`execute_plan()` denial is unchanged. **M20-D remains OPEN pending D8 retained-source
-negative smoke; M20-E/F have not begun.**
+`execute_plan()` denial is unchanged. The later real retained-source D8 acceptance passed;
+M20-E/F have not begun.
 
 ## D8 — retained-source negative planning harness
 
@@ -392,5 +393,46 @@ proposal, revision, plan, decision, planning Interaction or execution-side table
 It closes/reopens Core, repeats identical admission and compares all acquisition,
 inspection-history and Artifact catalog snapshots. The default expected codes are the
 three known retained-source blockers; any additional persisted reasons are preserved.
-Offline tests use synthetic retained evidence. The real D8 run remains operator-triggered;
-**M20-D is OPEN**, and M20-E/F behavior is not introduced.
+Offline tests use synthetic retained evidence. The operator subsequently ran real D8
+successfully; M20-E/F behavior was not introduced.
+
+## M20-D closed real retained-source negative acceptance
+
+**M20-D CLOSED.** D1–D8 are complete. D7's six migration-backed synthetic vertical cases
+passed; the operator then ran the opt-in D8 smoke against the retained CERTCC acquisition.
+This closure records that reported real acceptance; it does not re-run or re-inspect source.
+
+```yaml
+mission_ref: mission-m20a-live-b1feccbe94eb483ea3b7a8608d48fa73
+acquisition_ref: poc-acquisition-2f6a3658a57c42f5ae2252edf1736352
+c2_inspection_ref: poc-inspection-c3420f5b09d6450dae2fc10d8b4d230b
+c2_profile: m20-c2-deterministic@2
+c2_digest: 205ed39e26c1b568b06552f221916855684ff067207ba11c446b5c05f3c8f288
+c3_inspection_ref: poc-inspection-b97d53fab5e14b4d953a7671791399fa
+c3_profile: m20-c3-support-classifier@2
+c3_classification_digest: 5b2049a450c7afe369dba60a831adcf6e9a2e0d0c3f4f90fcd470e24b65bb5c7
+c3_classification: UNSUPPORTED
+planning_attempt_ref: planning-attempt-f0d274ff3b414e3d8080485a622792af
+request_fingerprint: 1fa7adcb92483ab24bb0f2950bb5236700a4ef8761b987b24410b67940a364db
+lifecycle: COMPLETED
+disposition: UNSUPPORTED
+admission: REJECTED_UNSUPPORTED
+execution_plan_count: 0
+plan_decision_count: 0
+interaction_count: 0
+```
+
+The durable rejection retained authoritative C3 blocker categories
+`UNSUPPORTED_INSUFFICIENT_COVERAGE`, `UNSUPPORTED_MATERIAL_UNKNOWN` and
+`UNSUPPORTED_TARGET_BOUNDARY`; C3 assistance and informational reasons remained available
+for audit. No ExecutionPlanV2, PlanValidation, PlanPolicyAssessment, planning Interaction,
+OperatorPlanApproval or execution-side record was created. Core reopen succeeded, and an
+identical admission reused the same PlanningAttempt and request fingerprint. Historical
+acquisition and C1/C2/C3 inspection records, including prior-version history, remained
+unchanged.
+
+UNSUPPORTED is a conditional support classification, **not** a safety finding or execution
+authorization. Planning validity is distinct from policy; policy is distinct from operator
+approval; operator approval is distinct from execution authorization. Production
+`execute_plan()` remains denied. M20-E/F have not begun. This documentation closure changes
+no production behavior, C2/C3 history or policy.

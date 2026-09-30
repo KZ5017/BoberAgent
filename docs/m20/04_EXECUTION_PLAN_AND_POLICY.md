@@ -1,7 +1,7 @@
 # M20-D — ExecutionPlan and deterministic policy gate
 
-**Status:** D1–D6 typed intent, durable history, admission, narrow construction/validation,
-deterministic policy assessment and Core-owned HITL/approval implemented. **M20-D remains OPEN**.
+**Status: M20-D CLOSED.** D1–D8 are complete: typed intent, durable admission/history,
+deterministic validation/policy, Core HITL, synthetic D7 and real retained-source D8 acceptance.
 [ADR 0016](../adr/0016-immutable-execution-intent-and-policy-authority.md) fixes immutable intent
 and separate authority. [ADR 0017](../adr/0017-core-owned-durable-planning-interactions.md)
 fixes the implemented D6 planning Interaction owner. See [D6 details](M20D6_PLANNING_HITL.md).
@@ -170,7 +170,7 @@ replayed existing active/completed attempts are returned unchanged, not resumed 
 change is needed. PlanningRequest permits `proposal=None` at this preconstruction boundary;
 existing proposal-bearing requests and fingerprints remain unchanged.
 
-M20-D remains OPEN. This was the historical D3 stop boundary; D5/D6 are now implemented.
+At D3 closure M20-D was still open; this is the historical D3 stop boundary.
 Production execute_plan() stays denied. Admission is neither safety nor authorization.
 
 ## Implemented D4 narrow construction
@@ -200,7 +200,7 @@ Policy is explicitly NOT_EVALUATED, readiness NOT_ASSESSED and authorization abs
 No bytes/source reader, Secret resolution, allocation, runtime probing, policy evaluation,
 approval, dispatch or execution occurs. D4 adds no migration and does not change C2/C3 history.
 The statement above describes the historical D4 boundary. D5 and D6 are now implemented;
-E/F remain unimplemented. **M20-D remains OPEN.**
+E/F remain unimplemented. **M20-D is now CLOSED after D8 acceptance.**
 
 ## Implemented D5 policy assessment
 
@@ -226,7 +226,7 @@ retain authorization NONE and readiness NOT_ASSESSED; no D7 case adds an executi
 Run, dispatch, grant, staging or target contact. Production `execute_plan()` remains
 denied. [Harness usage](../../scripts/manual-smoke/README.md#m20-d7-offline-synthetic-planning-vertical-smoke)
 and [implementation notes](M20D_IMPLEMENTATION.md#d7--synthetic-vertical-acceptance)
-describe the test-only fixture. **M20-D remains OPEN pending D8 retained-source negative smoke.**
+describe the test-only fixture. The later real retained-source D8 acceptance passed.
 
 ## D8 retained-source negative admission harness
 
@@ -236,4 +236,9 @@ bytes. The opt-in mode invokes only D3 admission: C3 UNSUPPORTED must become dur
 COMPLETED/UNSUPPORTED with exact C3 reasons, no proposal/plan/validation/policy/HITL/approval,
 and no execution-side records. It checks reopen, identical-request reuse and unchanged
 upstream acquisition/inspection/Artifact metadata. Automated validation uses synthetic
-retained evidence; the real operator run remains pending, so **M20-D is OPEN**.
+retained evidence. The operator-run real D8 acceptance passed: D3 persisted the exact C3
+UNSUPPORTED classification as `COMPLETED / UNSUPPORTED / REJECTED_UNSUPPORTED`, with no
+ExecutionPlan, PlanValidation, PlanPolicyAssessment, planning Interaction,
+OperatorPlanApproval or execution-side record. Reopen and identical admission reuse passed;
+the retained acquisition and inspection history remained unchanged. This is not a safety or
+authorization decision. **M20-D is CLOSED; M20-E/F have not begun.**

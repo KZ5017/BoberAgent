@@ -1,6 +1,6 @@
 # M20-D5 — Deterministic ExecutionPlan policy assessment
 
-**Implemented; M20-D remains OPEN.** D5 assesses existing immutable v2 intent. It does not
+**Implemented; M20-D is CLOSED after D8 acceptance.** D5 assesses immutable v2 intent. It does not
 approve, prepare, stage, dispatch or execute a plan. Production `execute_plan()` stays denied.
 
 `CorePlanPolicyService.evaluate(plan_ref)` loads the finalized plan, its COMPLETED/VALID

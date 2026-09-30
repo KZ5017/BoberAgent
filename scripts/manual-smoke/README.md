@@ -534,7 +534,8 @@ It writes inspection history, not source bytes, only after the explicit real-dat
 The operator completed the calibrated real C4 rerun with C1@1/C2@2/C3@2: all COMPLETED,
 classification UNSUPPORTED, Core reopen PASS and identical-invocation reuse PASS.
 See the [immutable acceptance record](../../docs/m20/M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
-C5 is optional advisory future work, deferred and not required for closure. M20-D has not begun.
+C5 is optional advisory future work, deferred and not required for closure. At C4 closure,
+M20-D had not begun; it is now CLOSED after D8 acceptance.
 The @1 run completed C1/C2/C3, reopened Core and reused history without fetch/execution/LLM/plan.
 Its honest UNSUPPORTED outcome exposed primitive-only filesystem overclassification.
 C4.1 preserves observed writes/deletes, requires stronger evidence for destructive/broad scope,
@@ -644,7 +645,7 @@ as the automated D7 tests; it needs no Kali, internet, MCP, model, source execut
 target connection. A synthetic acquisition fixture creates baseline Run/Artifact records;
 D3–D6 create **no additional execution Run or Artifact**. The smoke stops at D6:
 authorization NONE, readiness NOT_ASSESSED, production `execute_plan()` denied.
-M20-D is still OPEN pending D8 retained-source negative smoke.
+The six D7 synthetic cases passed; M20-D later closed after the real D8 negative acceptance.
 
 ## M20-D8 real retained-source negative planning (offline, opt-in)
 
@@ -675,17 +676,19 @@ uv run python scripts/manual-smoke/m20d8_real_retained_negative_planning_smoke_t
   --check-config "${D8_ARGS[@]}"
 ```
 
-After verifying the read-only preflight, the operator may deliberately run:
+The operator previously ran the following real mode after read-only preflight:
 
 ```bash
 uv run python scripts/manual-smoke/m20d8_real_retained_negative_planning_smoke_test.py \
   --real-retained-source "${D8_ARGS[@]}"
 ```
 
-The real mode must report `REJECTED_UNSUPPORTED`, durable `COMPLETED/UNSUPPORTED`,
-the actual C3 reason codes and evidence refs, zero plan/decision/Interaction records
-for the attempt, stable upstream metadata, and the same PlanningAttempt after Core
-reopen and replay. The three known blocker codes are checked by default; additional
-authoritative C3 reasons are printed, not discarded. The operator's successful real
-run is still required before M20-D can be marked CLOSED. No approval or execution
-authority follows from this negative result; M20-E/F are untouched.
+The operator-reported real run passed with PlanningAttempt
+`planning-attempt-f0d274ff3b414e3d8080485a622792af` and request fingerprint
+`1fa7adcb92483ab24bb0f2950bb5236700a4ef8761b987b24410b67940a364db`:
+`COMPLETED / UNSUPPORTED / REJECTED_UNSUPPORTED`. Plan, decision and Interaction counts
+were all zero. Core reopen and identical admission reuse passed; retained upstream
+history remained unchanged. The three known blocker categories and further authoritative
+C3 reasons were preserved. See the [M20-D closure record](../../docs/m20/M20D_IMPLEMENTATION.md#m20-d-closed-real-retained-source-negative-acceptance)
+for exact C2/C3 refs and digests. This negative result is neither safety nor authorization.
+**M20-D CLOSED. M20-E has not begun.** Production `execute_plan()` remains denied.

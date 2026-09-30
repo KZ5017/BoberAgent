@@ -1,7 +1,7 @@
 # M20-D6 — Core planning assistance and operator policy approval
 
-D6 is implemented as Core-owned, durable, explicitly pumped interaction. M20-D remains
-open for its later vertical acceptance slices. D6 does not dispatch, stage, prepare or
+D6 is implemented as Core-owned, durable, explicitly pumped interaction. M20-D later
+closed after D7/D8 acceptance. D6 does not dispatch, stage, prepare or
 execute a PoC; readiness remains `NOT_ASSESSED`, authorization remains `NONE`, and
 production `execute_plan()` remains denied.
 

@@ -2,7 +2,7 @@
 
 **Status:** Accepted. M20-C is CLOSED following operator calibrated C4 acceptance with C1@1,
 C2@2 and C3@2; historical @1 results remain immutable. C5 is optional advisory future work,
-deferred and not required for closure. M20-D has not begun. The accepted decisions below
+deferred and not required for closure. M20-D is now CLOSED; the accepted decisions below
 are unchanged; see the [acceptance record](../m20/M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
 
 ## Context

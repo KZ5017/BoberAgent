@@ -6,11 +6,11 @@ it against real public GitHub through a Kali Execution Node, TLS/MCP, Node→Cor
 Core finalization, and Core reopen without re-fetch. **M20-C — Source Inspection + Conditional
 Support Classification is CLOSED** following successful operator C4 acceptance with C1@1,
 C2@2 and C3@2. C5 is optional advisory future work, not a closure prerequisite.
-M20-D1 typed domain foundation, D2 durable planning persistence, and D3 authoritative
-evidence admission/early C3 rejection, and D4 narrow Python construction/deterministic validation are implemented;
-**M20-D remains OPEN**. D5 policy evaluation, D6 Core planning assistance/operator approval,
-and D7 offline synthetic vertical acceptance are implemented; D8's manual retained-source
-negative harness is implemented but has not been operator-run. E–H remain planned. See the
+**M20-D — ExecutionPlan + Deterministic Validation/Policy is CLOSED.** D1–D6 implement
+typed intent, durable admission/construction, validation, policy and Core-owned assistance/
+approval. D7 synthetic vertical acceptance and operator-run D8 real retained-source negative
+acceptance both passed. E–H remain planned. See the
+[M20-D closure record](m20/M20D_IMPLEMENTATION.md#m20-d-closed-real-retained-source-negative-acceptance) and the
 [retained-source acceptance record](m20/M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
 ADR 0014 fixes M20-B architecture; [ADR 0015](adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md)
 fixes M20-C inspection ownership, evidence, and authority before implementation.
@@ -97,7 +97,7 @@ be representable in plan intent but have no M20-v1 automatic adapter.
 | M20-A | [Research and candidates](m20/01_RESEARCH_AND_CANDIDATES.md) | bounded, sourced candidates; no acquisition/execution |
 | M20-B | [Acquisition and provenance](m20/02_ACQUISITION_AND_PROVENANCE.md) | pinned, hashed Artifact; no execution |
 | M20-C | [Inspection and classification](m20/03_INSPECTION_AND_CLASSIFICATION.md) | **CLOSED:** typed facts, explicit reasons, fail-closed uncertainty; calibrated real C4 accepted |
-| M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | D1–D6 intent, persistence, admission, construction/validation, deterministic policy and Core HITL/approval; STOP before permission/dispatch |
+| M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | **CLOSED:** D1–D8, synthetic D7 and real retained-source negative D8 accepted; STOP before permission/dispatch |
 | M20-E/F | [Runtime preparation and execution](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | enforceable isolation and managed evidence capture |
 | M20-G | [Interpretation, adaptation, HITL](m20/06_INTERPRETATION_ADAPTATION_AND_HITL.md) | separate outcome, bounded attempts, durable wait/stop |
 | M20-H | [Vertical smoke and acceptance](m20/07_VERTICAL_SMOKE_AND_ACCEPTANCE.md) | controlled fixture then authorized real unknown PoC |
@@ -173,11 +173,12 @@ retained evidence and production Core pumps: automatic ALLOW; exact bounded plan
 assistance; approval and operator denial; hard policy DENY; and material UNKNOWN
 rejection. Reopen/reuse, stale/conflicting replay, immutable history, context invalidation
 and zero new execution authority are asserted. The [D7 acceptance record](m20/M20D_IMPLEMENTATION.md#d7--synthetic-vertical-acceptance)
-is not a real-source, runtime or safety claim. **M20-D remains OPEN pending D8
-retained-source negative smoke.**
+is not a real-source, runtime or safety claim.
 
-D8 now has an opt-in, offline retained-source harness with a read-only metadata preflight.
-Its real mode calls only Core D3 admission on the persisted C2@2/C3@2 chain and verifies
-durable UNSUPPORTED rejection, no downstream plan/decision/Interaction, reopen and reuse.
-Automated tests use synthetic retained evidence. The real CERTCC source has not been run by
-this implementation; operator acceptance is still required before closing M20-D.
+The operator completed D8 against the retained CERTCC C2@2/C3@2 chain: Core D3 produced
+`COMPLETED / UNSUPPORTED / REJECTED_UNSUPPORTED`, preserved the authoritative C3 reasons,
+and created no plan, decision, Interaction or execution-side record. Core reopen and identical
+admission reuse passed; upstream acquisition and inspection history remained unchanged.
+This negative classification is not safety or authorization. Planning validity, policy,
+operator approval and execution authorization remain separate. Production `execute_plan()`
+is denied; M20-E/F have not begun. **M20-D is CLOSED.**

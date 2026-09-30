@@ -3,7 +3,8 @@
 **Status: CLOSED.** The operator completed calibrated real C4 acceptance with C1@1,
 C2@2 and C3@2: all COMPLETED, final classification UNSUPPORTED, Core reopen PASS and
 identical-invocation reuse PASS. C5 is optional advisory future work, deferred and not
-required for closure. M20-D has not begun. Inspection is Core-owned and offline;
+required for closure. At M20-C closure, M20-D had not begun; M20-D is now CLOSED.
+Inspection is Core-owned and offline;
 it reads only retained Core Artifacts from a `COMPLETED` `PoCAcquisition`. It does not import,
 extract, compile for execution, execute, or re-fetch acquired source. C1 does not interpret semantics;
 C2 adds the bounded deterministic profile described below.

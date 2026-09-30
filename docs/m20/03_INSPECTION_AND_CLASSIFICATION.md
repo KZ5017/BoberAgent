@@ -6,8 +6,8 @@ The operator completed calibrated real C4 acceptance with `m20-c1-evidence@1`,
 `m20-c2-deterministic@2` and `m20-c3-support-classifier@2`: all COMPLETED,
 classification UNSUPPORTED, Core reopen PASS and identical-invocation reuse PASS.
 C5 is optional advisory future work, deferred and not required for closure.
-Inspection remains stopped before ExecutionPlan/preparation/execution. M20-D1 now adds a
-separate architecture/domain foundation only; it does not change inspection or C5.
+Inspection remains stopped before ExecutionPlan/preparation/execution. M20-D later added
+separate planning authority and is now CLOSED; it did not change inspection or C5.
 See the [immutable acceptance record](M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
 
 ## Goal and dependency

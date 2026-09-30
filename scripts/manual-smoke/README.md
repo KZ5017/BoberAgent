@@ -617,3 +617,31 @@ Offline automated tests use temporary synthetic retained data:
 They do not require these real paths. See [C4 implementation/acceptance](../../docs/m20/M20C_IMPLEMENTATION.md#c4-real-retained-source-validation-harness).
 C4 stops here: no C5, chosen executable/argv, target/Secret binding, ExecutionPlan, policy approval,
 Node restaging, runtime preparation or execution.
+
+## M20-D7 offline synthetic planning vertical smoke
+
+From the repository root, run the six test-only D3→D6 cases in isolated temporary
+Core SQLite databases and synthetic Artifact roots (automatically removed afterward):
+
+```shell
+uv run python scripts/manual-smoke/m20d7_synthetic_planning_vertical_smoke_test.py
+```
+
+To retain the six isolated databases for manual inspection, supply a **new or empty**
+directory; this script refuses a nonempty location:
+
+```shell
+uv run python scripts/manual-smoke/m20d7_synthetic_planning_vertical_smoke_test.py \
+  --runtime-directory /tmp/boberagent-m20d7-acceptance
+```
+
+The smoke prints safe Mission/Attempt/Interaction/Plan refs, proposal revision counts,
+intent digests, validation/policy/approval decision refs and policy context fingerprints.
+It checks automatic ALLOW, assisted entrypoint choice, operator APPROVE and DENY,
+hard policy DENY, material UNKNOWN rejection, reopen/reuse, and absence of new
+execution-side records. It reuses the same offline synthetic fixtures and assertions
+as the automated D7 tests; it needs no Kali, internet, MCP, model, source execution or
+target connection. A synthetic acquisition fixture creates baseline Run/Artifact records;
+D3–D6 create **no additional execution Run or Artifact**. The smoke stops at D6:
+authorization NONE, readiness NOT_ASSESSED, production `execute_plan()` denied.
+M20-D is still OPEN pending D8 retained-source negative smoke.

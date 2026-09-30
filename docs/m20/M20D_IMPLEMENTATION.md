@@ -347,3 +347,31 @@ registered narrow profile, pure checker, strict validation prerequisite and appe
 assessment with migration `0014_m20_d5_policy_identity`. [D6](M20D6_PLANNING_HITL.md) now
 adds HITL and exact operator approval. **M20-D remains OPEN.** E/F staging, preparation and
 execution remain deferred; production execute_plan() remains denied.
+
+## D7 — Synthetic vertical acceptance
+
+D7 adds no production planning API, migration, dependency, authority or execution
+behavior. The test-only `m20d7_vertical_harness.py` uses existing synthetic retained
+C1/C2/C3 fixtures to seed authoritative Mission/source history, then calls the real
+D3–D6 Core services against six isolated migrated SQLite databases. The manual
+wrapper runs exactly the same assertions offline and prints refs/digests/decision IDs
+only, not source excerpts or secret material.
+
+| Case | Durable result |
+| --- | --- |
+| Automatic + ALLOW | D3 eligible; D4 VALID immutable plan/validation; D5 ALLOW with no approval |
+| Assisted entrypoint | D3 assisted; D4 WAITING_INPUT; one exact C2 choice; D6 answer revision; explicit resume finalizes VALID |
+| Approval | Current REQUIRES_APPROVAL creates a separate pending policy Interaction while Attempt remains COMPLETED/VALID; APPROVE adds append-only decision |
+| Operator denial | DENY records REJECT without modifying plan, validation or assessment |
+| Hard policy DENY | A valid plan exceeds an explicit ceiling; D5 denies and D6 cannot request approval |
+| Material UNKNOWN | C3 UNSUPPORTED remains without a plan or generic human override |
+
+Reopen checkpoints cover post-admission, pending planning and policy Interactions,
+post-validation, and post-approval. Identical admission, construction, policy and
+response replays reuse history; conflicting/stale responses fail. Changing Mission
+scope creates a new D5 context and makes historical approval inapplicable without
+rewriting it. C2/C3 records, plans and decisions are compared across the run.
+Runtime-related table counts are unchanged from the synthetic acquisition baseline;
+authorization stays NONE and readiness NOT_ASSESSED. The production Node's
+`execute_plan()` denial is unchanged. **M20-D remains OPEN pending D8 retained-source
+negative smoke; M20-E/F have not begun.**

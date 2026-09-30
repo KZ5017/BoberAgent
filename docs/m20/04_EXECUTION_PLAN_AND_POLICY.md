@@ -209,3 +209,21 @@ Mission/Asset/Service policy scope, pure versioned checker, bounded reason codes
 validation prerequisites, decision-context fingerprint, append-only reuse/reevaluation and
 concurrent uniqueness. DENY cannot become approval-required. ALLOW is not execution permission;
 readiness remains NOT_ASSESSED and authorization NONE. D6 adds separate approval/HITL.
+
+## D7 synthetic vertical acceptance
+
+The offline D7 harness exercises production D3 admission, D4 construction/validation,
+D5 policy assessment and D6 planning assistance/approval over migration-backed Core
+state. It covers automatic + ALLOW, a persisted entrypoint-selection wait and resume,
+REQUIRES_APPROVAL + APPROVE, REQUIRES_APPROVAL + DENY, hard policy DENY, and material
+UNKNOWN that cannot become a planning question or valid plan. It closes/reopens Core
+after admission, while each kind of Interaction is pending, after finalization, and
+after operator approval. Exact requests/answers reuse history; conflicting or stale
+answers fail. C2/C3, plans and decisions remain historical records.
+
+This is synthetic acceptance, not source execution or safety authorization. All cases
+retain authorization NONE and readiness NOT_ASSESSED; no D7 case adds an execution
+Run, dispatch, grant, staging or target contact. Production `execute_plan()` remains
+denied. [Harness usage](../../scripts/manual-smoke/README.md#m20-d7-offline-synthetic-planning-vertical-smoke)
+and [implementation notes](M20D_IMPLEMENTATION.md#d7--synthetic-vertical-acceptance)
+describe the test-only fixture. **M20-D remains OPEN pending D8 retained-source negative smoke.**

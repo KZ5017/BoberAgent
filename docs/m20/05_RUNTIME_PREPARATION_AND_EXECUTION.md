@@ -1,7 +1,7 @@
 # M20-E/F — Attacker-side runtime preparation and controlled execution
 
 M20-E and M20-F have distinct authority and implementation gates. **M20-E architecture is
-SPECIFIED; E1 typed contracts are COMPLETE, E2–E9 have NOT STARTED, and M20-E remains OPEN.
+SPECIFIED; E1–E2 are COMPLETE, E3–E9 have NOT STARTED, and M20-E remains OPEN.
 M20-F has NOT STARTED.** Both depend on exact
 immutable v2 intent and current D decisions, but E uses a preparation-only permit and F later
 requires its own execution authorization. Initial E support is attacker-side, source-visible,
@@ -42,7 +42,8 @@ Read the [M20-E implementation sequence](M20E_IMPLEMENTATION.md),
 [authority](M20E_RUNTIME_AUTHORITY.md), [source/workspace](M20E_SOURCE_AND_WORKSPACE.md),
 [Python baseline](M20E_PYTHON_RUNTIME.md), [recovery/evidence](M20E_PREPARATION_RECOVERY.md)
 and [acceptance](M20E_ACCEPTANCE.md). E is complete only after E1–E9 acceptance; only E1's
-side-effect-free typed boundary has been implemented. Production `execute_plan()` remains denied.
+side-effect-free typed boundary and E2's Core-only durable admission have been implemented.
+No preparation has been dispatched. Production `execute_plan()` remains denied.
 
 ## M20-F: execute and capture evidence
 

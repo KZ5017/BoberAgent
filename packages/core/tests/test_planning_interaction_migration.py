@@ -28,7 +28,7 @@ def test_upgrade_preserves_m15_run_interaction(database_path: Path) -> None:
                 },
             )
         upgrade_database(database)
-        assert current_revision(database) == "0015_m20_d6_planning_interactions"
+        assert current_revision(database) == "0016_m20_e2_preparation"
         with database._migration_engine.connect() as connection:
             row = connection.execute(
                 text("SELECT owner_kind,node_id,run_id,planning_attempt_id FROM interactions")
@@ -42,7 +42,7 @@ def test_fresh_migration_has_planning_owner_columns(database_path: Path) -> None
     database = CoreDatabase(DatabaseConfig.sqlite(database_path))
     try:
         upgrade_database(database)
-        assert current_revision(database) == "0015_m20_d6_planning_interactions"
+        assert current_revision(database) == "0016_m20_e2_preparation"
         columns = {
             item["name"] for item in inspect(database._migration_engine).get_columns("interactions")
         }

@@ -17,7 +17,7 @@ def test_upgrade_from_d2_preserves_planning_attempt(database_path: Path) -> None
         with database.unit_of_work() as work:
             work.planning_attempts.add(attempt)
         upgrade_database(database)
-        assert current_revision(database) == "0015_m20_d6_planning_interactions"
+        assert current_revision(database) == "0016_m20_e2_preparation"
         with database.unit_of_work() as work:
             assert work.planning_attempts.get(attempt.planning_attempt_ref) == attempt
         indexes = inspect(database._migration_engine).get_indexes("plan_decisions")

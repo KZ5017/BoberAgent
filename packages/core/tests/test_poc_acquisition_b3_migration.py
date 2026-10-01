@@ -61,7 +61,7 @@ def test_upgrade_from_b1_keeps_acquisition_identity_and_defaults_to_github(
                 },
             )
         upgrade_database(database)
-        assert current_revision(database) == "0015_m20_d6_planning_interactions"
+        assert current_revision(database) == "0016_m20_e2_preparation"
         storage = FilesystemArtifactStorage(ArtifactStorageConfiguration(root=tmp_path / "store"))
         service = CorePoCAcquisitionService(database, CoreArtifactService(database, storage))
         restored = service.get(acquisition_ref)

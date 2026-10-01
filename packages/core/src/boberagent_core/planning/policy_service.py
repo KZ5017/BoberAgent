@@ -99,6 +99,21 @@ class CorePlanPolicyService:
             return PolicyAssessmentResult(record=record, policy_sha256=digest)
 
     def evaluate(self, plan_ref: ExecutionPlanRef) -> PolicyAssessmentResult:
+        result = self._assess(plan_ref, persist=True)
+        assert result is not None
+        return result
+
+    def current_assessment(self, plan_ref: ExecutionPlanRef) -> PolicyAssessmentResult | None:
+        """Return only an already-recorded D5 assessment for today's trusted context.
+
+        This is deliberately read-only: a preparation admission cannot silently run D5.
+        Missing trusted policy configuration or changed context fails closed.
+        """
+        return self._assess(plan_ref, persist=False)
+
+    def _assess(
+        self, plan_ref: ExecutionPlanRef, *, persist: bool
+    ) -> PolicyAssessmentResult | None:
         try:
             with self._database.unit_of_work() as work:
                 stored = work.execution_plans.get(plan_ref)
@@ -188,6 +203,8 @@ class CorePlanPolicyService:
                     ):
                         raise PlanningConflict("policy context identifies conflicting history")
                     return PolicyAssessmentResult(record=existing, policy_sha256=profile.digest)
+                if not persist:
+                    return None
                 now = self._clock()
                 if now.tzinfo is None or now.utcoffset() != timedelta(0):
                     raise PolicyAssessmentError("POLICY_CLOCK_INVALID")

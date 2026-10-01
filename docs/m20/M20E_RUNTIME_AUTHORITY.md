@@ -1,6 +1,6 @@
 # M20-E runtime preparation authority
 
-**Status:** Specified; E1 types complete, issuance/admission unimplemented. [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md)
+**Status:** Specified; E1 types and E2 Core issuance/admission complete. E3 trusted Node admission unimplemented. [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md)
 is authoritative. M20-D is CLOSED; production `execute_plan()` remains denied.
 
 ## Owned records and flow
@@ -49,6 +49,14 @@ and mismatched-principal import/invocation as well as replay.
 `PlanValidation != PlanPolicyAssessment != OperatorPlanApproval != PreparationPermit !=
 ExecutionAuthorization`. Operator approval after plan finalization does not reopen the
 PlanningAttempt. It never creates execution authorization.
+
+E2 reserves one future `CapabilityRunRef` on each eligible Core preparation attempt and its
+permit. It intentionally creates no `CapabilityRun` row: in the current runtime model that
+row would imply executable work before E3's authenticated admission/dispatch exists. D5's
+composition-owned profile must be present and an exactly current assessment must already
+exist. E2's read-only check never turns historical ALLOW into a fresh assessment. Rejected
+attempts have no permit or Run reservation. Historical permit lookup is not a dispatch gate;
+`current_admission()` rechecks the current D, source and provider context and permit interval.
 
 ## Lifecycle, identity and applicability
 

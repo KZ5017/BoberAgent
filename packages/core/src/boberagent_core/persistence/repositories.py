@@ -729,6 +729,7 @@ class CoreUnitOfWork:
             PlanDecisionRepository,
             PlanningAttemptRepository,
         )
+        from boberagent_core.preparation.repository import RuntimePreparationRepository
         from boberagent_core.research.repository import ResearchRepository
         from boberagent_core.results.repository import ResultIngestionRepository
         from boberagent_core.secrets.repository import SecretRepository
@@ -758,6 +759,7 @@ class CoreUnitOfWork:
         self.planning_attempts = PlanningAttemptRepository(session)
         self.execution_plans = ExecutionPlanRepository(session)
         self.plan_decisions = PlanDecisionRepository(session)
+        self.runtime_preparations = RuntimePreparationRepository(session)
 
 
 def _flush_identity(session: Session, logical_ref: DomainRef) -> None:

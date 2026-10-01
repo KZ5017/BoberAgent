@@ -1,6 +1,6 @@
 # M20-E — Runtime Preparation implementation plan
 
-**Architecture status:** SPECIFIED. **Implementation status:** E1 COMPLETE; E2–E9 NOT STARTED;
+**Architecture status:** SPECIFIED. **Implementation status:** E1–E2 COMPLETE; E3–E9 NOT STARTED;
 M20-E remains OPEN. M20-D remains CLOSED; M20-F has NOT STARTED. This plan authorizes no
 preparation. The architectural
 decisions are [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md),
@@ -60,7 +60,7 @@ profile switches fail validation. No E1 Core/Node migration, repository, protoco
 Artifact Import, workspace, Resource, venv, process, secret resolution or source execution
 exists. Production `execute_plan()` remains denied.
 
-## E2 — Core durable attempts and preparation admission
+## E2 — Core durable attempts and preparation admission (COMPLETE)
 
 - **Goal/authority:** Add explicit Core issuance only after current D plan/validation/policy,
   exact approval if required, Mission/source/profile/limits and target admission. DENY and
@@ -76,6 +76,23 @@ exists. Production `execute_plan()` remains denied.
 - **Acceptance/stop:** REQUESTED/REJECTED history and exactly bound permit can be persisted;
   no side effects or dispatch yet. Stop before Node import or capability launch.
 - **Non-goals:** Background scheduler, generic policy framework, F authorization.
+
+E2 adds a Core-only `CoreRuntimePreparationAdmissionService`, strict `PreparationRequest`,
+durable `RuntimePreparationAttempt` and immutable `PreparationPermit` history. A positive
+admission remains `REQUESTED / ELIGIBLE`: its RunRef is **reserved in Core preparation
+history only**, with no CapabilityRun row, routing decision, queue or Node invocation.
+Unsupported/currently inapplicable requests are durably `REJECTED` with a bounded reason;
+terminal rejection is not reopened. Fingerprints pin authoritative plan/D/source/C2/C3
+history and selected provider/profile/budgets; a database uniqueness constraint reuses an
+identical attempt and permit under concurrency. A changed authority context receives a new
+attempt. Permits have an explicit 15-minute issuance window, but are historical claims,
+not authenticated Node credentials. `current_admission()` is a separate read-only current
+applicability projection; a persisted permit or historical ALLOW is insufficient. D5 current
+assessment is checked without creating a D5 assessment, and D6 exact approval is required
+only when that current D5 decision requires it. The E baseline rejects missing confinement,
+unbounded budgets, external dependencies, target secrets, preparation egress and unsupported
+runtime/profile choices. This slice reads retained metadata only; it neither reads source
+bytes nor creates a preparation CapabilityRun. E3 owns dispatch and trusted Node admission.
 
 ## E3 — Node admission, routing and authorized Core→Node Artifact Import
 

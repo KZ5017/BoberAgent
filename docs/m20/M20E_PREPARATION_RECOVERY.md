@@ -1,6 +1,6 @@
 # M20-E preparation recovery, reuse and evidence
 
-**Status:** Specified; E1 evidence types exist, recovery behavior unimplemented. This refines [authority](M20E_RUNTIME_AUTHORITY.md)
+**Status:** Specified; E1 evidence types and E2 Core REQUESTED/REJECTED history exist. Node/reconciliation recovery is unimplemented. This refines [authority](M20E_RUNTIME_AUTHORITY.md)
 and [source/workspace](M20E_SOURCE_AND_WORKSPACE.md), not existing Node recovery behavior.
 
 ## Immutable preparation evidence
@@ -59,3 +59,10 @@ manifest identity/digest. F independently rechecks current policy, approval, exe
 authorization, Node/provider, exclusive/safe Resource lease, source/entrypoint/runtime
 integrity, target scope, network endpoints, F budgets and any separately authorized secret
 grants. It derives invocation only from V2 intent; it does not use preparation logs or prose.
+
+In E2, Core reopen restores the immutable request context, reserved RunRef and permit
+body/digest without starting work. The provider registry marks persisted providers stale until
+a fresh Node handshake; current preparation applicability is false until that refresh. A
+changed D policy, exact approval, scope or provider status changes current applicability
+without rewriting the historical permit. No E2 recovery path dispatches or automatically
+retries a Run.

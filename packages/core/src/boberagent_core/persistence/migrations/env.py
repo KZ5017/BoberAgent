@@ -11,10 +11,17 @@ from boberagent_core.persistence.planning_orm import (
     PlanDecisionRow,
     PlanningAttemptRow,
 )
+from boberagent_core.persistence.preparation_orm import (
+    PreparationPermitRow,
+    RuntimePreparationAttemptRow,
+)
 
 # Register D2 mappings on the existing Core metadata, never a parallel declarative base.
 assert all(
     row.metadata is Base.metadata for row in (ExecutionPlanRow, PlanDecisionRow, PlanningAttemptRow)
+)
+assert all(
+    row.metadata is Base.metadata for row in (RuntimePreparationAttemptRow, PreparationPermitRow)
 )
 
 config = context.config

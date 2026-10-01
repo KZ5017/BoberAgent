@@ -1,6 +1,8 @@
 # M20-E preparation recovery, reuse and evidence
 
-**Status:** E3 dispatch/import recovery implemented; E4–E9 preparation recovery remains future work. This refines [authority](M20E_RUNTIME_AUTHORITY.md)
+**Status:** E3 dispatch/import recovery COMPLETE, including real Core↔Kali restart/replay
+acceptance; E4–E9 preparation recovery remains future work. This refines
+[authority](M20E_RUNTIME_AUTHORITY.md).
 
 E3 persists Core import cursors and Node transfer cursors. A retry opens the same transfer;
 the Node returns its durable offset and checks duplicate chunks byte-for-byte. A conflicting
@@ -9,8 +11,14 @@ cursor; it remains unavailable until final hash/size verification. A lost final 
 is handled by re-verifying the immutable object and returning the same identity. Core restart
 loads the existing E2 attempt/reserved RunRef and does not silently create a new Run or
 redispatch an uncertain submission. A Core-side transport failure leaves DISPATCHED for
-explicit reconciliation; no automatic reroute or PoC retry is introduced.
-and [source/workspace](M20E_SOURCE_AND_WORKSPACE.md), not existing Node recovery behavior.
+explicit reconciliation; no automatic reroute or PoC retry is introduced. A persisted Core
+VERIFIED import is never reopened: identical replay rechecks current E2 applicability and
+uses exact Node import status/hash/size to reuse that terminal record. Missing or mismatched
+Node proof fails closed. The operator's real acceptance verified both exact imports,
+restarted the Kali Node with its original persistent runtime and Node ID, then repeated the
+same import successfully against the same Core runtime. The historical 15-minute permit
+window still applies; expiry is expected inapplicability, not import corruption. See
+[source/workspace](M20E_SOURCE_AND_WORKSPACE.md) for the import boundary.
 
 ## Immutable preparation evidence
 

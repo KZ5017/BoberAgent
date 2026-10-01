@@ -153,3 +153,7 @@ named environment variable), and accepts explicit capability paths and logical t
 Non-loopback plaintext binding is rejected unless the development override is deliberately set;
 TLS certificate and key paths are supported. Stopping or reconnecting a client does not clear the
 Node database, Artifact spool, or pending outboxes.
+Pass a deliberate non-empty `--runtime-directory` (absolute paths are recommended for
+operators). An empty or whitespace-only value is rejected before runtime initialization;
+non-empty relative paths retain their existing behavior. Reuse the same directory across
+ordinary restarts to preserve Node identity and local import/outbox state.

@@ -1,13 +1,35 @@
 # M20-E acceptance and stop conditions
 
-**Status:** E1/E2 complete; E3 automated synthetic and loopback-MCP validation implemented.
-Real Core↔Kali E3 acceptance remains pending operator execution. E4–E9 have not begun.
+**Status:** E1–E3 COMPLETE; real Core↔Kali E3 acceptance PASSED. E4–E9 have not begun.
+M20-E remains OPEN; M20-F has not begun.
 See [slice plan](M20E_IMPLEMENTATION.md).
 
 The manual E3 script has distinct `--check-config` (no import bytes) and explicit
 `--real-artifact-import` modes. It uses a harmless synthetic supported D→E2 chain, not the
 retained CERTCC D8 UNSUPPORTED case. Success verifies the two exact ArtifactRefs, hashes and
 sizes, reconnect/replay, and leaves the preparation attempt DISPATCHED—not COMPLETED.
+
+## E3 real CoreKali acceptance (PASSED)
+
+The operator ran the opt-in smoke against Node
+`node-38195224-06e1-480c-a7f9-fdacd26861d6` and Core runtime
+`/home/bober/boberagent-data/m20e3-core-smoke-final`. The durable identities were
+Preparation `preparation-7a156e8a25c647b591589689a0d374c3` and Run
+`run-preparation-287e2192955a4caf9b92c6fffe55ffda`.
+
+| Exact imported Artifact | SHA-256 | Size |
+| --- | --- | ---: |
+| `artifact-inspection-raw` | `1b79db425268bcc0d6234358220d9393a178af036065f729d4ab54792fb9c756` | 442 bytes |
+| `artifact-inspection-manifest` | `6bb6181e8808aab90a44060012bdde5f98b0f8a5612bf71139b9ed75f9ce6544` | 518 bytes |
+
+The no-byte preflight passed with current E2 authority and available Core bytes. First
+real import verified both Artifacts and reused identities across reconnect/replay. The Kali
+Node was restarted with the **same persistent runtime** and retained its Node ID; an
+identical real import against the **same Core runtime** again verified both Artifacts and
+reused identities. No extraction, workspace, Resource, venv, process or PoC execution
+occurred. E3 is accepted as opaque import only, not preparation completion or execution
+authorization. The 15-minute E2 permit window remains mandatory; a replay after expiry
+correctly fails closed and is not an Artifact replay defect.
 
 ## Automated acceptance layers
 

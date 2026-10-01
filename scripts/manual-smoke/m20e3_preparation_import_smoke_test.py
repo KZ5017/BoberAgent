@@ -9,13 +9,14 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import math
 import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
 from boberagent_cli.operator_env import operator_environment
-from boberagent_contracts import ExecutionPlanRef, RuntimePreparationRef
+from boberagent_contracts import ExecutionPlanRef, PreparationPermit, RuntimePreparationRef
 from boberagent_contracts.runtime_preparation import ConfinementFeature, PreparationAction
 from boberagent_core import (
     ArtifactStorageConfiguration,
@@ -35,6 +36,7 @@ from boberagent_core.planning.policy_service import CorePlanPolicyService, Polic
 from boberagent_core.preparation import (
     CorePreparationDispatchService,
     CoreRuntimePreparationAdmissionService,
+    PreparationAdmission,
     PreparationRequest,
 )
 from boberagent_transport import PREPARATION_IMPORT_PROTOCOL_VERSION
@@ -116,6 +118,27 @@ def _initialize(args: argparse.Namespace) -> tuple[CoreDatabase, Path, Execution
         raise
 
 
+def _require_current_permit(
+    admitted: PreparationAdmission | None, *, now: datetime
+) -> PreparationPermit:
+    if admitted is None or admitted.permit is None:
+        raise ValueError("E2 attempt/permit is unavailable")
+    permit = admitted.permit
+    remaining = max(0, math.ceil((permit.expires_at - now).total_seconds()))
+    print(f"Permit not_before: {permit.not_before.isoformat()}")
+    print(f"Permit expires_at: {permit.expires_at.isoformat()}")
+    print(f"Permit remaining validity: {remaining}s")
+    if now < permit.not_before:
+        raise ValueError("PreparationPermit is not yet valid; no Artifact Import attempted")
+    if now >= permit.expires_at:
+        raise ValueError("PreparationPermit expired; no Artifact Import attempted")
+    if remaining <= 60:
+        print("Permit validity warning: under 60s remain; import/replay may not finish in time")
+    if not admitted.current_applicable:
+        raise ValueError("E2 attempt/permit is not currently applicable for another reason")
+    return permit
+
+
 async def _run(
     args: argparse.Namespace, database: CoreDatabase, selection: Path, plan_ref: ExecutionPlanRef
 ) -> None:
@@ -165,9 +188,7 @@ async def _run(
                 actions=tuple(PreparationAction),
             )
             admitted = preparation.admit(request)
-        if admitted is None or not admitted.current_applicable or admitted.permit is None:
-            raise ValueError("E2 attempt/permit is not currently applicable")
-        permit = admitted.permit
+        permit = _require_current_permit(admitted, now=datetime.now(UTC))
         artifacts = CoreArtifactService(
             database,
             FilesystemArtifactStorage(ArtifactStorageConfiguration(root=root / "artifacts")),
@@ -212,6 +233,10 @@ async def _run(
             raise ValueError("Node did not verify both imported Artifacts")
         await transport.disconnect()
         await transport.connect()
+        _require_current_permit(
+            preparation.current_admission(admitted.attempt.preparation_ref),
+            now=datetime.now(UTC),
+        )
         replay = await dispatch.dispatch_and_import(admitted.attempt.preparation_ref)
         if replay != first:
             raise ValueError("reconnected identical import did not reuse durable identity")

@@ -1,6 +1,6 @@
 # M20-E — Runtime Preparation implementation plan
 
-**Architecture status:** SPECIFIED. **Implementation status:** E1–E2 COMPLETE; E3 IMPLEMENTED (real Core↔Kali acceptance pending); E4–E9 NOT STARTED;
+**Architecture status:** SPECIFIED. **Implementation status:** E1–E3 COMPLETE; E4–E9 NOT STARTED;
 M20-E remains OPEN. M20-D remains CLOSED; M20-F has NOT STARTED. This plan authorizes no
 preparation. The architectural
 decisions are [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md),
@@ -96,7 +96,7 @@ bytes nor creates a preparation CapabilityRun. E3 owns dispatch and trusted Node
 
 ## E3 — Node admission, routing and authorized Core→Node Artifact Import
 
-**Implemented, not yet accepted on the real Core↔Kali link.** Core rechecks current E2
+**COMPLETE, including real Core↔Kali acceptance.** Core rechecks current E2
 applicability, materializes the already reserved RunRef as a QUEUED CapabilityRun and changes
 the attempt from REQUESTED to DISPATCHED in one transaction. It selects the exact advertised
 provider through the normal Router. The Node's `runtime.prepare/prepare` advertisement is an
@@ -115,6 +115,18 @@ them under `imported-inputs`, separate from produced Artifact spool/outboxes. E3
 verified opaque bytes: no extraction, workspace, Resource, venv, process, secret grant,
 target/package/listener network, execution authorization or PoC execution. DISPATCHED is
 not preparation completion. E6 owns terminal preparation semantics.
+
+The operator's real E3 acceptance passed with Node
+`node-38195224-06e1-480c-a7f9-fdacd26861d6`, Core runtime
+`/home/bober/boberagent-data/m20e3-core-smoke-final`, Preparation
+`preparation-7a156e8a25c647b591589689a0d374c3`, and Run
+`run-preparation-287e2192955a4caf9b92c6fffe55ffda`. Preflight confirmed current
+E2 authority and available Core bytes with zero imported bytes. Both exact Artifacts
+verified, reconnect/replay reused identities, and the identical import passed after a
+Kali Node restart with the same persistent runtime and Node ID. The
+[acceptance record](M20E_ACCEPTANCE.md#e3-real-corekali-acceptance-passed) preserves the
+hashes and sizes. No extraction, workspace, Resource, venv, process or PoC execution
+occurred. This closes E3 only; a PreparationPermit is not execution authorization.
 
 - **Goal/authority:** Allocate the stable preparation RunRef, authorize/import the exact source,
   then route `runtime.prepare` through the existing Router/Run. Enforce the authenticated,

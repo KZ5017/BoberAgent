@@ -691,12 +691,13 @@ were all zero. Core reopen and identical admission reuse passed; retained upstre
 history remained unchanged. The three known blocker categories and further authoritative
 C3 reasons were preserved. See the [M20-D closure record](../../docs/m20/M20D_IMPLEMENTATION.md#m20-d-closed-real-retained-source-negative-acceptance)
 for exact C2/C3 refs and digests. This negative result is neither safety nor authorization.
-**M20-D CLOSED. M20-E1/E2 complete; E3 implemented pending real acceptance.** Production
+**M20-D CLOSED. M20-E1–E3 COMPLETE; real E3 acceptance PASSED.** Production
 `execute_plan()` remains denied.
 
 ## M20-E3 authenticated opaque Artifact import (operator-only)
 
-E3 is implemented but **real Core↔Kali acceptance remains pending**. This harness uses the
+E3 has **passed real Core↔Kali acceptance**, including identical import after a Kali Node
+restart using the same persistent runtime. This harness uses the
 existing harmless synthetic D7 fixture to produce a supported D→E2 chain and two retained
 small Artifacts in an **explicit dedicated Core runtime directory**. `--check-config` may
 create that local fixture and E2 attempt, then checks the real Node handshake, current permit
@@ -709,8 +710,11 @@ built into the Node; no source-preparation capability path, tool, or target is n
 
 ```shell
 export BOBERAGENT_MCP_TOKEN='<dedicated-test-token>'
+RUNTIME='/var/lib/boberagent-m20e3-smoke'
+sudo mkdir -p "$RUNTIME"
+sudo chown "$USER":"$USER" "$RUNTIME"
 uv run boberagent-node-mcp \
-  --runtime-directory /var/lib/boberagent-m20e3-smoke \
+  --runtime-directory "$RUNTIME" \
   --bind-host 0.0.0.0 --port 8443 \
   --tls-certificate /etc/boberagent/node.crt \
   --tls-private-key /etc/boberagent/node.key
@@ -740,5 +744,19 @@ execution occurs. For an explicitly isolated plaintext lab only, replace `--ca-f
 `--allow-insecure-remote-transport` and use `http://`; never send the bearer token over an
 untrusted plaintext network. This manual smoke is not run by pytest or automatically by Codex.
 
-M20-E3 remains unaccepted until the operator runs this cross-machine procedure. M20-E remains
-OPEN; E4–E9 and M20-F have not begun. Production `execute_plan()` remains denied.
+The script prints the permit's `not_before`, `expires_at` and remaining validity before
+import/replay. A warning under 60 seconds is operator guidance, not a changed authority
+rule. Positive restart/replay acceptance must complete while the PreparationPermit is
+currently applicable. The baseline E2 permit lifetime is **15 minutes**; after expiry,
+fail-closed inapplicability is expected and does **not** indicate an Artifact replay defect.
+Use a fresh dedicated Core runtime if a new permit is needed; never bypass the expiry.
+Keep `RUNTIME` set to the same non-empty path across Kali restarts. The Node CLI rejects
+an explicitly empty or whitespace-only `--runtime-directory` before initialization.
+
+The operator's acceptance used Node `node-38195224-06e1-480c-a7f9-fdacd26861d6`,
+Preparation `preparation-7a156e8a25c647b591589689a0d374c3` and Run
+`run-preparation-287e2192955a4caf9b92c6fffe55ffda`. Both exact Artifacts verified
+on the first import and again after Node restart against the same Core runtime; see the
+[E3 acceptance record](../../docs/m20/M20E_ACCEPTANCE.md#e3-real-corekali-acceptance-passed).
+**M20-E3 COMPLETE.** M20-E remains OPEN; E4–E9 and M20-F have not begun. Production
+`execute_plan()` remains denied.

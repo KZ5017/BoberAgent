@@ -1,6 +1,7 @@
 # M20-E runtime preparation authority
 
-**Status:** E1/E2 complete; E3 trusted Node admission implemented, real Core↔Kali acceptance pending. [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md)
+**Status:** E1–E3 COMPLETE; real Core↔Kali E3 acceptance PASSED. E4–E9 NOT STARTED;
+M20-E remains OPEN, M20-F NOT STARTED. [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md)
 
 E3 accepts `runtime.prepare/prepare` only through the authenticated Core transport
 boundary. On MCP, the existing verified bearer principal is checked independently of the
@@ -9,7 +10,9 @@ preparation admission. The Node binds the exact Run, preparation, Mission, plan/
 Node/provider/version, source pins, profile, actions, validity window and serialized delivery
 fingerprint into durable authority. Identical replay is accepted; conflicting replay is
 rejected. Node restart preserves an admitted QUEUED Run only with its authority row.
-is authoritative. M20-D is CLOSED; production `execute_plan()` remains denied.
+The operator verified identical import replay after a real Kali Node restart against the
+same Core and Node runtime directories. M20-D is CLOSED; production `execute_plan()`
+remains denied.
 
 ## Owned records and flow
 
@@ -65,6 +68,8 @@ composition-owned profile must be present and an exactly current assessment must
 exist. E2's read-only check never turns historical ALLOW into a fresh assessment. Rejected
 attempts have no permit or Run reservation. Historical permit lookup is not a dispatch gate;
 `current_admission()` rechecks the current D, source and provider context and permit interval.
+The baseline E2 PreparationPermit expires 15 minutes after issuance. Neither a persisted
+VERIFIED import nor a matching Node identity extends that window; expired replay is denied.
 
 ## Lifecycle, identity and applicability
 

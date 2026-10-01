@@ -16,9 +16,15 @@ from .node import ExecutionNode
 from .transport import ExecutionNodeTransportEndpoint, NodeMcpArtifactSource
 
 
+def _runtime_directory(value: str) -> Path:
+    if not value.strip():
+        raise argparse.ArgumentTypeError("--runtime-directory must not be empty")
+    return Path(value)
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run a BoberAgent Execution Node MCP server")
-    parser.add_argument("--runtime-directory", type=Path, required=True)
+    parser.add_argument("--runtime-directory", type=_runtime_directory, required=True)
     parser.add_argument("--bind-host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--capability-path", type=Path, action="append", default=[])

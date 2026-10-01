@@ -50,6 +50,7 @@ ALLOWED_IMPORTS = {
     "hashlib",
     "json",
     "datetime",
+    "uuid",
     "_base",
     "artifact",
     "enums",

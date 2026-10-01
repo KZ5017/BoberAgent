@@ -10,6 +10,9 @@ from boberagent_contracts import (
     MissionRef,
     Sha256Digest,
 )
+from boberagent_contracts import (
+    PlanDecisionRef as PlanDecisionRef,
+)
 from boberagent_contracts._base import FrozenContractModel, NonEmptyStr, SymbolicName
 from boberagent_contracts.execution_plan_v2 import ExecutionPlanV2, SensitiveRequirement
 from boberagent_contracts.plan_requirements import (
@@ -47,10 +50,6 @@ from boberagent_core.research.models import PoCCandidateRef, VulnerabilityHypoth
 
 class PlanningAttemptRef(DomainRef):
     """Core-owned planning identity, never an executable CapabilityRunRef."""
-
-
-class PlanDecisionRef(DomainRef):
-    """Core-owned identity of one immutable assessment or approval."""
 
 
 class PlanningAttemptLifecycle(StrEnum):

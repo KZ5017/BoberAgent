@@ -1,7 +1,8 @@
 # M20-E — Runtime Preparation implementation plan
 
-**Architecture status:** SPECIFIED. **Implementation status:** NOT STARTED. M20-D remains
-CLOSED; M20-F has NOT STARTED. This plan authorizes no preparation. The architectural
+**Architecture status:** SPECIFIED. **Implementation status:** E1 COMPLETE; E2–E9 NOT STARTED;
+M20-E remains OPEN. M20-D remains CLOSED; M20-F has NOT STARTED. This plan authorizes no
+preparation. The architectural
 decisions are [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md),
 [ADR 0019](../adr/0019-m20-e-immutable-source-import-and-prepared-resource.md), and
 [ADR 0020](../adr/0020-m20-e-trusted-python-preparation-boundary.md). Read
@@ -21,7 +22,7 @@ and architecture tests pass. Tests use isolated fixtures; E9 is optional/manual 
 validation of E only and never executes a PoC. Slice labels are design gates, not completed
 work. Any implementation discovery that changes an ADR requires review before widening scope.
 
-## E1 — Typed preparation contracts and authority boundary
+## E1 — Typed preparation contracts and authority boundary (COMPLETE)
 
 - **Goal/authority:** Define immutable, versioned `RuntimePreparationSpec`, `PreparationPermit`,
   `RuntimePreparationReceipt` and manifest schema/binding vocabulary. Intent and digest are
@@ -36,6 +37,28 @@ work. Any implementation discovery that changes an ADR requires review before wi
 - **Acceptance/stop:** Types express exact bindings and separate E/F authority without
   turning permit fields into trusted booleans. Stop before DB, dispatch, import or provider.
 - **Non-goals:** Policy engine, token signing implementation, source staging, runtime creation.
+
+E1 delivers `RuntimePreparationRef`, `PreparationPermitRef`, `RuntimePreparationManifestRef`
+and the shared `PlanDecisionRef` logical identity (the latter was previously Core-private;
+Core keeps decision ownership). `RuntimePreparationSpec` pins PlanRef/digest, Mission,
+Node/provider, exact source/entrypoint, initial closed Python profile, finite E-only budgets,
+network/secret denial, confinement requirements and a closed action set. `PreparationPermit`
+adds exact D decision identities/digests, policy context, conditional approval ref, one RunRef,
+bounded validity and explicit negative execution authority. This is a typed claim, not an
+authenticated permit; trusted issuer admission begins E3.
+
+The immutable `RuntimePreparationManifest`/`RuntimePreparationReceipt` distinguish Node
+evidence from Core acceptance. Baseline successful evidence requires empty external dependency
+set, complete confinement-feature evidence and bounded observed usage. Pure canonical helpers
+separate profile, spec, permit and manifest digests; only generated PreparationRef is excluded
+from the request fingerprint. The future `runtime.prepare`/`prepare` input and receipt have
+strict versioned JSON Schemas in the Contract v1 bundle; no implementation is registered or
+routable. The SDK has a separate typed `RuntimePreparationService` port and side-effect-free
+`FakeRuntimePreparationService`; it is **not** yet added to production `ExecutionContext` or
+backed by Node, which is E5/E6 work. Unknown versions, extra authority fields and forbidden
+profile switches fail validation. No E1 Core/Node migration, repository, protocol, dispatch,
+Artifact Import, workspace, Resource, venv, process, secret resolution or source execution
+exists. Production `execute_plan()` remains denied.
 
 ## E2 — Core durable attempts and preparation admission
 

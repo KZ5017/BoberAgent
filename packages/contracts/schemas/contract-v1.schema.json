@@ -732,6 +732,78 @@
       "title": "Checkpoint",
       "type": "object"
     },
+    "ConfinementEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "backend_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "backend_version": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "profile_id": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "profile_version": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "verified_features": {
+          "collection_semantics": "set",
+          "items": {
+            "$ref": "#/$defs/ConfinementFeature"
+          },
+          "title": "Verified Features",
+          "type": "array"
+        }
+      },
+      "required": [
+        "backend_id",
+        "backend_version",
+        "profile_id",
+        "profile_version",
+        "verified_features"
+      ],
+      "title": "ConfinementEvidence",
+      "type": "object"
+    },
+    "ConfinementFeature": {
+      "enum": [
+        "NO_SUBPROCESS_NETWORK",
+        "NO_INHERITED_SOCKETS",
+        "NO_HOST_CONTROL_SOCKETS",
+        "BOUNDED_WRITABLE_FILESYSTEM",
+        "MANAGED_SOURCE_VISIBILITY",
+        "PROCESS_LIMIT",
+        "MEMORY_LIMIT",
+        "RUNTIME_LIMIT",
+        "OUTPUT_LIMIT",
+        "STORAGE_LIMIT",
+        "DESCENDANT_CONTAINMENT",
+        "NO_ARBITRARY_HOST_FILESYSTEM"
+      ],
+      "title": "ConfinementFeature",
+      "type": "string"
+    },
+    "ConfinementRequirement": {
+      "additionalProperties": false,
+      "description": "Closed baseline property set; no backend or claimed verification lives here.",
+      "properties": {
+        "required_features": {
+          "collection_semantics": "set",
+          "items": {
+            "$ref": "#/$defs/ConfinementFeature"
+          },
+          "minItems": 12,
+          "title": "Required Features",
+          "type": "array"
+        }
+      },
+      "required": [
+        "required_features"
+      ],
+      "title": "ConfinementRequirement",
+      "type": "object"
+    },
     "CredentialRequirement": {
       "additionalProperties": false,
       "properties": {
@@ -1890,6 +1962,45 @@
       "title": "Finding",
       "type": "object"
     },
+    "FixedEnvironmentEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "activation_script_sourced": {
+          "const": false,
+          "title": "Activation Script Sourced",
+          "type": "boolean"
+        },
+        "ambient_package_manager_config": {
+          "const": false,
+          "title": "Ambient Package Manager Config",
+          "type": "boolean"
+        },
+        "ambient_pythonpath": {
+          "const": false,
+          "title": "Ambient Pythonpath",
+          "type": "boolean"
+        },
+        "ambient_user_site": {
+          "const": false,
+          "title": "Ambient User Site",
+          "type": "boolean"
+        },
+        "node_controlled_path": {
+          "const": true,
+          "title": "Node Controlled Path",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "node_controlled_path",
+        "ambient_pythonpath",
+        "ambient_user_site",
+        "ambient_package_manager_config",
+        "activation_script_sourced"
+      ],
+      "title": "FixedEnvironmentEvidence",
+      "type": "object"
+    },
     "FlagToken": {
       "additionalProperties": false,
       "properties": {
@@ -1914,6 +2025,111 @@
     "FullGitCommitSha": {
       "pattern": "^[0-9a-f]{40}$",
       "type": "string"
+    },
+    "InitialPythonPreparationProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "confinement": {
+          "$ref": "#/$defs/ConfinementRequirement"
+        },
+        "dependency_policy": {
+          "const": "STDLIB_ONLY",
+          "title": "Dependency Policy",
+          "type": "string"
+        },
+        "entrypoint_execution": {
+          "const": "DENY",
+          "title": "Entrypoint Execution",
+          "type": "string"
+        },
+        "external_dependency_installation": {
+          "const": "DENY",
+          "title": "External Dependency Installation",
+          "type": "string"
+        },
+        "location": {
+          "const": "ATTACKER_KALI",
+          "title": "Location",
+          "type": "string"
+        },
+        "network": {
+          "$ref": "#/$defs/PreparationNetworkPolicy"
+        },
+        "noninteractive": {
+          "const": true,
+          "title": "Noninteractive",
+          "type": "boolean"
+        },
+        "pip": {
+          "const": "DENY",
+          "title": "Pip",
+          "type": "string"
+        },
+        "profile_id": {
+          "const": "m20-e-python-stdlib-kali",
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "profile_version": {
+          "const": "1",
+          "title": "Profile Version",
+          "type": "string"
+        },
+        "python_family": {
+          "const": "3.12",
+          "title": "Python Family",
+          "type": "string"
+        },
+        "runtime_kind": {
+          "const": "python",
+          "title": "Runtime Kind",
+          "type": "string"
+        },
+        "secrets": {
+          "$ref": "#/$defs/PreparationSecretPolicy"
+        },
+        "single_target": {
+          "const": true,
+          "title": "Single Target",
+          "type": "boolean"
+        },
+        "source_import": {
+          "const": "DENY",
+          "title": "Source Import",
+          "type": "string"
+        },
+        "source_modification": {
+          "const": "DENY",
+          "title": "Source Modification",
+          "type": "string"
+        },
+        "user_space": {
+          "const": true,
+          "title": "User Space",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "profile_id",
+        "profile_version",
+        "location",
+        "runtime_kind",
+        "python_family",
+        "dependency_policy",
+        "external_dependency_installation",
+        "pip",
+        "source_modification",
+        "source_import",
+        "entrypoint_execution",
+        "user_space",
+        "noninteractive",
+        "single_target",
+        "network",
+        "secrets",
+        "confinement"
+      ],
+      "title": "InitialPythonPreparationProfile",
+      "type": "object"
     },
     "InteractionOption": {
       "additionalProperties": false,
@@ -2159,6 +2375,39 @@
       "title": "InteractionType",
       "type": "string"
     },
+    "InterpreterEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "abi": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "executable_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "platform": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "python_version": {
+          "$ref": "#/$defs/VersionString"
+        },
+        "registry_tool": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "runtime_fingerprint": {
+          "$ref": "#/$defs/Sha256Digest"
+        }
+      },
+      "required": [
+        "registry_tool",
+        "executable_sha256",
+        "python_version",
+        "platform",
+        "abi",
+        "runtime_fingerprint"
+      ],
+      "title": "InterpreterEvidence",
+      "type": "object"
+    },
     "InvocationLayout": {
       "additionalProperties": false,
       "description": "Reviewed ordered layout, not a shell command or observed source fact.",
@@ -2311,6 +2560,40 @@
         "relative_path"
       ],
       "title": "ManagedPathValue",
+      "type": "object"
+    },
+    "MaterializationEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "entrypoint_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "file_count": {
+          "minimum": 0,
+          "title": "File Count",
+          "type": "integer"
+        },
+        "total_bytes": {
+          "minimum": 0,
+          "title": "Total Bytes",
+          "type": "integer"
+        },
+        "tree_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "verified": {
+          "title": "Verified",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "verified",
+        "file_count",
+        "total_bytes",
+        "tree_sha256",
+        "entrypoint_sha256"
+      ],
+      "title": "MaterializationEvidence",
       "type": "object"
     },
     "MissionTargetValue": {
@@ -3312,6 +3595,514 @@
       "title": "PositionalToken",
       "type": "object"
     },
+    "PreparationAction": {
+      "enum": [
+        "IMPORT_AUTHORIZED_ARTIFACT",
+        "VERIFY_ARTIFACT",
+        "MATERIALIZE_SOURCE",
+        "CREATE_RUNTIME_RESOURCE",
+        "INSPECT_TRUSTED_INTERPRETER",
+        "CREATE_EMPTY_PYTHON_ENVIRONMENT",
+        "VERIFY_PYTHON_ENVIRONMENT",
+        "WRITE_PREPARATION_EVIDENCE",
+        "QUARANTINE_OWN_PARTIAL_STATE",
+        "CLEANUP_OWN_PREPARATION_STATE"
+      ],
+      "title": "PreparationAction",
+      "type": "string"
+    },
+    "PreparationAuthorityBoundary": {
+      "additionalProperties": false,
+      "description": "Explicit negative authority; cannot be widened by a serialized permit.",
+      "properties": {
+        "arbitrary_command_execution": {
+          "const": false,
+          "default": false,
+          "title": "Arbitrary Command Execution",
+          "type": "boolean"
+        },
+        "entrypoint_launch": {
+          "const": false,
+          "default": false,
+          "title": "Entrypoint Launch",
+          "type": "boolean"
+        },
+        "listener_or_session_creation": {
+          "const": false,
+          "default": false,
+          "title": "Listener Or Session Creation",
+          "type": "boolean"
+        },
+        "package_installation_or_download": {
+          "const": false,
+          "default": false,
+          "title": "Package Installation Or Download",
+          "type": "boolean"
+        },
+        "target_execution": {
+          "const": false,
+          "default": false,
+          "title": "Target Execution",
+          "type": "boolean"
+        },
+        "target_network": {
+          "const": false,
+          "default": false,
+          "title": "Target Network",
+          "type": "boolean"
+        },
+        "target_secret_resolution": {
+          "const": false,
+          "default": false,
+          "title": "Target Secret Resolution",
+          "type": "boolean"
+        }
+      },
+      "title": "PreparationAuthorityBoundary",
+      "type": "object"
+    },
+    "PreparationBudgets": {
+      "additionalProperties": false,
+      "description": "Finite E-only limits; never reuse ExecutionPlan's later execution budgets.",
+      "properties": {
+        "max_captured_output_bytes": {
+          "maximum": 1073741824,
+          "minimum": 1,
+          "title": "Max Captured Output Bytes",
+          "type": "integer"
+        },
+        "max_file_count": {
+          "maximum": 1000000,
+          "minimum": 1,
+          "title": "Max File Count",
+          "type": "integer"
+        },
+        "max_imported_artifact_bytes": {
+          "maximum": 17179869184,
+          "minimum": 1,
+          "title": "Max Imported Artifact Bytes",
+          "type": "integer"
+        },
+        "max_materialized_bytes": {
+          "maximum": 68719476736,
+          "minimum": 1,
+          "title": "Max Materialized Bytes",
+          "type": "integer"
+        },
+        "max_memory_bytes": {
+          "maximum": 1099511627776,
+          "minimum": 1,
+          "title": "Max Memory Bytes",
+          "type": "integer"
+        },
+        "max_path_depth": {
+          "maximum": 256,
+          "minimum": 1,
+          "title": "Max Path Depth",
+          "type": "integer"
+        },
+        "max_preparation_write_bytes": {
+          "maximum": 68719476736,
+          "minimum": 1,
+          "title": "Max Preparation Write Bytes",
+          "type": "integer"
+        },
+        "max_process_runtime_seconds": {
+          "maximum": 86400,
+          "minimum": 1,
+          "title": "Max Process Runtime Seconds",
+          "type": "integer"
+        },
+        "max_processes": {
+          "maximum": 128,
+          "minimum": 1,
+          "title": "Max Processes",
+          "type": "integer"
+        },
+        "max_temporary_bytes": {
+          "maximum": 68719476736,
+          "minimum": 1,
+          "title": "Max Temporary Bytes",
+          "type": "integer"
+        },
+        "max_total_runtime_seconds": {
+          "maximum": 86400,
+          "minimum": 1,
+          "title": "Max Total Runtime Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_imported_artifact_bytes",
+        "max_materialized_bytes",
+        "max_file_count",
+        "max_path_depth",
+        "max_temporary_bytes",
+        "max_preparation_write_bytes",
+        "max_processes",
+        "max_process_runtime_seconds",
+        "max_total_runtime_seconds",
+        "max_captured_output_bytes",
+        "max_memory_bytes"
+      ],
+      "title": "PreparationBudgets",
+      "type": "object"
+    },
+    "PreparationNetworkPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "infrastructure": {
+          "const": "CONTROL_AND_AUTHORIZED_IMPORT_ONLY",
+          "title": "Infrastructure",
+          "type": "string"
+        },
+        "listener_session_network": {
+          "const": "DENY",
+          "title": "Listener Session Network",
+          "type": "string"
+        },
+        "package_network": {
+          "const": "DENY",
+          "title": "Package Network",
+          "type": "string"
+        },
+        "subprocess_network": {
+          "const": "DENY",
+          "title": "Subprocess Network",
+          "type": "string"
+        },
+        "target_network": {
+          "const": "DENY",
+          "title": "Target Network",
+          "type": "string"
+        }
+      },
+      "required": [
+        "infrastructure",
+        "subprocess_network",
+        "package_network",
+        "target_network",
+        "listener_session_network"
+      ],
+      "title": "PreparationNetworkPolicy",
+      "type": "object"
+    },
+    "PreparationNodeId": {
+      "maxLength": 255,
+      "minLength": 3,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "type": "string"
+    },
+    "PreparationOutcome": {
+      "enum": [
+        "PREPARED",
+        "REJECTED",
+        "FAILED",
+        "INTERRUPTED",
+        "CANCELLED"
+      ],
+      "title": "PreparationOutcome",
+      "type": "string"
+    },
+    "PreparationPermit": {
+      "additionalProperties": false,
+      "description": "Core-issued claim, usable only after trusted admission by a future Node adapter.",
+      "properties": {
+        "admission_nonce": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "approval_decision_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Approval Decision Ref"
+        },
+        "boundary": {
+          "$ref": "#/$defs/PreparationAuthorityBoundary"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        },
+        "issued_at": {
+          "format": "date-time",
+          "title": "Issued At",
+          "type": "string"
+        },
+        "maximum_preparation_runs": {
+          "const": 1,
+          "title": "Maximum Preparation Runs",
+          "type": "integer"
+        },
+        "not_before": {
+          "format": "date-time",
+          "title": "Not Before",
+          "type": "string"
+        },
+        "permit_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Permit Ref",
+          "type": "string"
+        },
+        "policy_context_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "policy_decision": {
+          "enum": [
+            "ALLOW",
+            "REQUIRES_APPROVAL"
+          ],
+          "title": "Policy Decision",
+          "type": "string"
+        },
+        "policy_decision_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Policy Decision Ref",
+          "type": "string"
+        },
+        "run_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Run Ref",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "preparation-permit-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "spec": {
+          "$ref": "#/$defs/RuntimePreparationSpec"
+        },
+        "spec_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "validation_decision_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Validation Decision Ref",
+          "type": "string"
+        },
+        "validation_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        }
+      },
+      "required": [
+        "schema_version",
+        "permit_ref",
+        "spec",
+        "spec_sha256",
+        "run_ref",
+        "validation_decision_ref",
+        "validation_sha256",
+        "policy_decision_ref",
+        "policy_context_sha256",
+        "policy_decision",
+        "approval_decision_ref",
+        "issued_at",
+        "not_before",
+        "expires_at",
+        "admission_nonce",
+        "maximum_preparation_runs",
+        "boundary"
+      ],
+      "title": "PreparationPermit",
+      "type": "object"
+    },
+    "PreparationReasonCode": {
+      "enum": [
+        "PREPARATION_NOT_AUTHORIZED",
+        "AUTHORITY_STALE",
+        "POLICY_DENIED",
+        "APPROVAL_INAPPLICABLE",
+        "DEPENDENCY_POLICY_DENIED",
+        "BUILD_UNSUPPORTED",
+        "SECRET_REQUIREMENT_UNSUPPORTED",
+        "SOURCE_INTEGRITY_FAILURE",
+        "MANIFEST_MISMATCH",
+        "PREPARED_CONTENT_MISMATCH",
+        "RUNTIME_UNAVAILABLE",
+        "NODE_CAPABILITY_MISMATCH",
+        "CONFINEMENT_UNAVAILABLE",
+        "WORKSPACE_LIMIT_EXCEEDED",
+        "PREPARATION_TIMEOUT",
+        "STORAGE_UNAVAILABLE",
+        "PREPARATION_INTERRUPTED",
+        "PREPARATION_CANCELLED"
+      ],
+      "title": "PreparationReasonCode",
+      "type": "string"
+    },
+    "PreparationSecretPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "target_secret_grants": {
+          "const": "DENY",
+          "title": "Target Secret Grants",
+          "type": "string"
+        },
+        "target_secret_resolution": {
+          "const": "DENY",
+          "title": "Target Secret Resolution",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target_secret_grants",
+        "target_secret_resolution"
+      ],
+      "title": "PreparationSecretPolicy",
+      "type": "object"
+    },
+    "PreparationSource": {
+      "additionalProperties": false,
+      "properties": {
+        "manifest_size_bytes": {
+          "maximum": 17179869184,
+          "minimum": 0,
+          "title": "Manifest Size Bytes",
+          "type": "integer"
+        },
+        "plan_source": {
+          "$ref": "#/$defs/PlanSource"
+        }
+      },
+      "required": [
+        "plan_source",
+        "manifest_size_bytes"
+      ],
+      "title": "PreparationSource",
+      "type": "object"
+    },
+    "PreparationUsage": {
+      "additionalProperties": false,
+      "properties": {
+        "captured_output_bytes": {
+          "minimum": 0,
+          "title": "Captured Output Bytes",
+          "type": "integer"
+        },
+        "file_count": {
+          "minimum": 0,
+          "title": "File Count",
+          "type": "integer"
+        },
+        "imported_bytes": {
+          "minimum": 0,
+          "title": "Imported Bytes",
+          "type": "integer"
+        },
+        "materialized_bytes": {
+          "minimum": 0,
+          "title": "Materialized Bytes",
+          "type": "integer"
+        },
+        "peak_memory_bytes": {
+          "minimum": 0,
+          "title": "Peak Memory Bytes",
+          "type": "integer"
+        },
+        "peak_processes": {
+          "minimum": 0,
+          "title": "Peak Processes",
+          "type": "integer"
+        },
+        "preparation_write_bytes": {
+          "minimum": 0,
+          "title": "Preparation Write Bytes",
+          "type": "integer"
+        },
+        "process_runtime_seconds": {
+          "minimum": 0,
+          "title": "Process Runtime Seconds",
+          "type": "integer"
+        },
+        "temporary_bytes": {
+          "minimum": 0,
+          "title": "Temporary Bytes",
+          "type": "integer"
+        },
+        "total_runtime_seconds": {
+          "minimum": 0,
+          "title": "Total Runtime Seconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "imported_bytes",
+        "materialized_bytes",
+        "file_count",
+        "temporary_bytes",
+        "preparation_write_bytes",
+        "peak_processes",
+        "process_runtime_seconds",
+        "total_runtime_seconds",
+        "captured_output_bytes",
+        "peak_memory_bytes"
+      ],
+      "title": "PreparationUsage",
+      "type": "object"
+    },
+    "PythonEnvironmentEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "entrypoint_executed": {
+          "const": false,
+          "title": "Entrypoint Executed",
+          "type": "boolean"
+        },
+        "pip_bootstrapped": {
+          "const": false,
+          "title": "Pip Bootstrapped",
+          "type": "boolean"
+        },
+        "pip_used": {
+          "const": false,
+          "title": "Pip Used",
+          "type": "boolean"
+        },
+        "source_compiled": {
+          "const": false,
+          "title": "Source Compiled",
+          "type": "boolean"
+        },
+        "source_imported": {
+          "const": false,
+          "title": "Source Imported",
+          "type": "boolean"
+        },
+        "system_site_packages": {
+          "const": false,
+          "title": "System Site Packages",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "system_site_packages",
+        "pip_bootstrapped",
+        "pip_used",
+        "source_imported",
+        "source_compiled",
+        "entrypoint_executed"
+      ],
+      "title": "PythonEnvironmentEvidence",
+      "type": "object"
+    },
     "RelativeSourcePath": {
       "maxLength": 1024,
       "minLength": 1,
@@ -3467,6 +4258,377 @@
       ],
       "title": "RetrySemantics",
       "type": "string"
+    },
+    "RuntimePreparationInput": {
+      "additionalProperties": false,
+      "description": "Future `runtime.prepare` operation input; decoding grants no authority.",
+      "properties": {
+        "permit": {
+          "$ref": "#/$defs/PreparationPermit"
+        },
+        "schema_version": {
+          "const": "runtime-preparation-input-v1",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "permit"
+      ],
+      "title": "RuntimePreparationInput",
+      "type": "object"
+    },
+    "RuntimePreparationManifest": {
+      "additionalProperties": false,
+      "description": "Node observation, not Core acceptance, hardware attestation or authorization.",
+      "properties": {
+        "completed_at": {
+          "format": "date-time",
+          "title": "Completed At",
+          "type": "string"
+        },
+        "confinement": {
+          "$ref": "#/$defs/ConfinementEvidence"
+        },
+        "environment": {
+          "$ref": "#/$defs/PythonEnvironmentEvidence"
+        },
+        "evidence_artifact_refs": {
+          "collection_semantics": "set",
+          "items": {
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+            "type": "string"
+          },
+          "title": "Evidence Artifact Refs",
+          "type": "array"
+        },
+        "external_installed_dependencies": {
+          "items": {
+            "$ref": "#/$defs/SymbolicName"
+          },
+          "title": "External Installed Dependencies",
+          "type": "array"
+        },
+        "fixed_environment": {
+          "$ref": "#/$defs/FixedEnvironmentEvidence"
+        },
+        "interpreter": {
+          "$ref": "#/$defs/InterpreterEvidence"
+        },
+        "manifest_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Manifest Ref",
+          "type": "string"
+        },
+        "materialization": {
+          "$ref": "#/$defs/MaterializationEvidence"
+        },
+        "outcome": {
+          "$ref": "#/$defs/PreparationOutcome"
+        },
+        "permit_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Permit Ref",
+          "type": "string"
+        },
+        "permit_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "reason_code": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PreparationReasonCode"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resource_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Resource Ref"
+        },
+        "run_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Run Ref",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "runtime-preparation-manifest-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "spec": {
+          "$ref": "#/$defs/RuntimePreparationSpec"
+        },
+        "started_at": {
+          "format": "date-time",
+          "title": "Started At",
+          "type": "string"
+        },
+        "usage": {
+          "$ref": "#/$defs/PreparationUsage"
+        },
+        "workspace_correlation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolicName"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "manifest_ref",
+        "spec",
+        "run_ref",
+        "permit_ref",
+        "permit_sha256",
+        "resource_ref",
+        "workspace_correlation",
+        "materialization",
+        "interpreter",
+        "environment",
+        "external_installed_dependencies",
+        "usage",
+        "confinement",
+        "fixed_environment",
+        "started_at",
+        "completed_at",
+        "outcome",
+        "reason_code",
+        "evidence_artifact_refs"
+      ],
+      "title": "RuntimePreparationManifest",
+      "type": "object"
+    },
+    "RuntimePreparationReceipt": {
+      "additionalProperties": false,
+      "description": "Typed future Result detail; receipt does not establish Core Artifact availability.",
+      "properties": {
+        "manifest_artifact_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Manifest Artifact Ref",
+          "type": "string"
+        },
+        "manifest_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Manifest Ref",
+          "type": "string"
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "manifest_size_bytes": {
+          "minimum": 0,
+          "title": "Manifest Size Bytes",
+          "type": "integer"
+        },
+        "node_id": {
+          "$ref": "#/$defs/PreparationNodeId"
+        },
+        "outcome": {
+          "$ref": "#/$defs/PreparationOutcome"
+        },
+        "permit_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Permit Ref",
+          "type": "string"
+        },
+        "permit_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "preparation_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Preparation Ref",
+          "type": "string"
+        },
+        "provider_id": {
+          "format": "uuid",
+          "title": "Provider Id",
+          "type": "string"
+        },
+        "provider_version": {
+          "$ref": "#/$defs/VersionString"
+        },
+        "reason_code": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PreparationReasonCode"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resource_ref": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "minLength": 1,
+              "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Resource Ref"
+        },
+        "run_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Run Ref",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "runtime-preparation-receipt-v1",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "preparation_ref",
+        "run_ref",
+        "resource_ref",
+        "manifest_ref",
+        "manifest_artifact_ref",
+        "manifest_sha256",
+        "manifest_size_bytes",
+        "permit_ref",
+        "permit_sha256",
+        "node_id",
+        "provider_id",
+        "provider_version",
+        "outcome",
+        "reason_code"
+      ],
+      "title": "RuntimePreparationReceipt",
+      "type": "object"
+    },
+    "RuntimePreparationSpec": {
+      "additionalProperties": false,
+      "description": "Exact proposed preparation intent, not current Core admission or Node authority.",
+      "properties": {
+        "allowed_actions": {
+          "collection_semantics": "set",
+          "items": {
+            "$ref": "#/$defs/PreparationAction"
+          },
+          "minItems": 1,
+          "title": "Allowed Actions",
+          "type": "array"
+        },
+        "budgets": {
+          "$ref": "#/$defs/PreparationBudgets"
+        },
+        "entrypoint": {
+          "$ref": "#/$defs/EntrypointIntent"
+        },
+        "mission_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Mission Ref",
+          "type": "string"
+        },
+        "node_id": {
+          "$ref": "#/$defs/PreparationNodeId"
+        },
+        "plan_intent_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "plan_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Plan Ref",
+          "type": "string"
+        },
+        "preparation_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Preparation Ref",
+          "type": "string"
+        },
+        "profile": {
+          "$ref": "#/$defs/InitialPythonPreparationProfile"
+        },
+        "profile_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "provider_id": {
+          "format": "uuid",
+          "title": "Provider Id",
+          "type": "string"
+        },
+        "provider_version": {
+          "$ref": "#/$defs/VersionString"
+        },
+        "runtime": {
+          "$ref": "#/$defs/RuntimeRequirement"
+        },
+        "schema_version": {
+          "const": "runtime-preparation-spec-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/PreparationSource"
+        }
+      },
+      "required": [
+        "schema_version",
+        "preparation_ref",
+        "mission_ref",
+        "plan_ref",
+        "plan_intent_sha256",
+        "node_id",
+        "provider_id",
+        "provider_version",
+        "source",
+        "entrypoint",
+        "runtime",
+        "profile",
+        "profile_sha256",
+        "budgets",
+        "allowed_actions"
+      ],
+      "title": "RuntimePreparationSpec",
+      "type": "object"
     },
     "RuntimeRequirement": {
       "additionalProperties": false,

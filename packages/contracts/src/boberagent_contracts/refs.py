@@ -128,8 +128,24 @@ class ExecutionPlanRef(DomainRef):
     """Reference to structured execution intent."""
 
 
+class PlanDecisionRef(DomainRef):
+    """Reference to one Core-owned immutable planning decision, not authority."""
+
+
 class PoCAcquisitionRef(DomainRef):
     """Core-owned acquisition identity used for cross-machine correlation."""
+
+
+class RuntimePreparationRef(DomainRef):
+    """Reference to one Core-owned runtime preparation attempt."""
+
+
+class PreparationPermitRef(DomainRef):
+    """Reference to a preparation-only authority record."""
+
+
+class RuntimePreparationManifestRef(DomainRef):
+    """Reference to immutable preparation evidence, distinct from its ArtifactRef."""
 
 
 class EventRef(DomainRef):

@@ -14,6 +14,7 @@ from .entities import (
 from .events import EventService
 from .interactions import InteractionService
 from .logging import CapabilityLogger
+from .preparation import RuntimePreparationService
 from .processes import ProcessResult, ProcessService
 from .resources import ResourceLease, ResourceService
 from .scope import ScopeService
@@ -61,6 +62,7 @@ __all__ = [
     "ProcessService",
     "ResourceLease",
     "ResourceService",
+    "RuntimePreparationService",
     "ScopeService",
     "SecretService",
     "SensitiveValue",

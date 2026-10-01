@@ -2,6 +2,7 @@
 
 from .context import FakeExecutionContext
 from .fixtures import make_fake_context
+from .preparation import FakeRuntimePreparationService
 from .services import (
     FakeArtifactService,
     FakeCancellationService,
@@ -34,6 +35,7 @@ __all__ = [
     "FakeInteractionService",
     "FakeProcessService",
     "FakeResourceService",
+    "FakeRuntimePreparationService",
     "FakeScopeService",
     "FakeSecretService",
     "FakeSessionService",

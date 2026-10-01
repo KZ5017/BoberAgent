@@ -30,6 +30,11 @@ def test_schema_bundle_contains_required_contract_models() -> None:
         "CapabilityResult",
         "Observation",
         "ExecutionPlan",
+        "RuntimePreparationSpec",
+        "PreparationPermit",
+        "RuntimePreparationInput",
+        "RuntimePreparationManifest",
+        "RuntimePreparationReceipt",
     } <= definitions.keys()
 
 

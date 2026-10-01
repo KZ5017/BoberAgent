@@ -27,6 +27,13 @@ from .poc_acquisition import PoCSourceAcquisitionInput, PoCSourceAcquisitionRece
 from .resource import ResourceDescriptor
 from .result import CapabilityOutcome, CapabilityResult
 from .run import CapabilityRun
+from .runtime_preparation import (
+    PreparationPermit,
+    RuntimePreparationInput,
+    RuntimePreparationManifest,
+    RuntimePreparationReceipt,
+    RuntimePreparationSpec,
+)
 from .session import SessionDescriptor
 from .version import CONTRACT_VERSION
 
@@ -52,6 +59,11 @@ EXCHANGED_MODEL_TYPES: tuple[type[BaseModel], ...] = (
     ExecutionPlanV2,
     PoCSourceAcquisitionInput,
     PoCSourceAcquisitionReceipt,
+    RuntimePreparationSpec,
+    PreparationPermit,
+    RuntimePreparationInput,
+    RuntimePreparationManifest,
+    RuntimePreparationReceipt,
 )
 
 

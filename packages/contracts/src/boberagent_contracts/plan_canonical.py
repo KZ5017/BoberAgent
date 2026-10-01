@@ -4,6 +4,7 @@ import hashlib
 import json
 from datetime import datetime
 from enum import Enum
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -38,6 +39,8 @@ def canonical_value(value: object, *, exclude: frozenset[str] = frozenset()) -> 
         return canonical_value(value.value)
     if isinstance(value, datetime):
         return value.isoformat()
+    if isinstance(value, UUID):
+        return str(value)
     if value is None or isinstance(value, str | bool | int | float):
         return value
     if isinstance(value, tuple | list):

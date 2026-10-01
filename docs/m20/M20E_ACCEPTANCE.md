@@ -1,7 +1,7 @@
 # M20-E acceptance and stop conditions
 
-**Status:** Specified test plan; no test or preparation has run for E. E implementation is not
-started. See [slice plan](M20E_IMPLEMENTATION.md).
+**Status:** Specified test plan; E1 pure model/SDK tests pass, but no preparation has run.
+E2–E9 have not begun. See [slice plan](M20E_IMPLEMENTATION.md).
 
 ## Automated acceptance layers
 

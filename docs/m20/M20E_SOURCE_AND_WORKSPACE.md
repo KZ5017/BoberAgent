@@ -1,6 +1,6 @@
 # M20-E exact source import, materialization and workspace
 
-**Status:** Specified, not implemented. See [ADR 0019](../adr/0019-m20-e-immutable-source-import-and-prepared-resource.md).
+**Status:** Specified; E1 source identities typed, import/materialization unimplemented. See [ADR 0019](../adr/0019-m20-e-immutable-source-import-and-prepared-resource.md).
 
 ## Exact retained source
 

@@ -1,6 +1,6 @@
 # M20-E preparation recovery, reuse and evidence
 
-**Status:** Specified, not implemented. This refines [authority](M20E_RUNTIME_AUTHORITY.md)
+**Status:** Specified; E1 evidence types exist, recovery behavior unimplemented. This refines [authority](M20E_RUNTIME_AUTHORITY.md)
 and [source/workspace](M20E_SOURCE_AND_WORKSPACE.md), not existing Node recovery behavior.
 
 ## Immutable preparation evidence

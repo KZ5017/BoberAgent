@@ -1,6 +1,6 @@
 # M20-E trusted Python preparation profile
 
-**Status:** Specified, not implemented. See [ADR 0020](../adr/0020-m20-e-trusted-python-preparation-boundary.md).
+**Status:** Specified; E1 profile/confinement requirements typed, provider unimplemented. See [ADR 0020](../adr/0020-m20-e-trusted-python-preparation-boundary.md).
 
 ## Initial profile and rejection rule
 

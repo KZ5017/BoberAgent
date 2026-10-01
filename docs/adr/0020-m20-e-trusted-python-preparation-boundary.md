@@ -1,6 +1,6 @@
 # ADR 0020: M20-E trusted Python preparation and E/F boundary
 
-**Status:** Accepted for M20-E architecture. Implementation has not begun.
+**Status:** Accepted for M20-E architecture. E1 typed boundary is complete; runtime behavior has not begun.
 
 ## Decision
 

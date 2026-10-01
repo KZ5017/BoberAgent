@@ -1,6 +1,6 @@
 # ADR 0018: M20-E preparation ownership, authority and applicability
 
-**Status:** Accepted for M20-E architecture. Implementation has not begun.
+**Status:** Accepted for M20-E architecture. E1 typed boundary is complete; E2+ behavior has not begun.
 
 ## Decision
 

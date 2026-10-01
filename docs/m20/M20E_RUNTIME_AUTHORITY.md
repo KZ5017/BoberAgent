@@ -1,6 +1,6 @@
 # M20-E runtime preparation authority
 
-**Status:** Specified, not implemented. [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md)
+**Status:** Specified; E1 types complete, issuance/admission unimplemented. [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md)
 is authoritative. M20-D is CLOSED; production `execute_plan()` remains denied.
 
 ## Owned records and flow
@@ -17,9 +17,9 @@ boundaries; it does not own policy or the canonical attempt.
 profile/version, Node/provider, interpreter class, permitted operations and preparation limits.
 It is not caller-supplied authority. `PreparationPermit` is a distinct immutable Core-issued
 authorization for these actions only. A future execution authorization is another decision.
-The permit and receipt should be typed at the narrow shared boundary; the Core attempt and
-policy evaluation stay Core-private. Exact schema/fields need E1 tests and versioning before
-transport exchange; no current Contract or transport schema is changed by this document.
+The permit and receipt are typed at the narrow shared boundary in E1; the Core attempt and
+policy evaluation stay Core-private. E1 changes Contract schemas only, not transport schemas,
+issuance or trusted admission. The SDK typed port is not production-backed yet.
 
 ## Admission and trusted path
 

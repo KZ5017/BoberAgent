@@ -26,6 +26,7 @@ from boberagent_transport import (
     ImportReady,
     ImportRejected,
     ImportStart,
+    ImportStatus,
     InvocationDelivery,
     MissionProjection,
     PreparationTransport,
@@ -234,6 +235,37 @@ class CorePreparationDispatchService:
         ref = admission.attempt.preparation_ref
         node_id = permit.spec.node_id
         import_id = preparation_import_id(permit.permit_ref, artifact_ref)
+        with self._database.unit_of_work() as work:
+            existing = work.preparation_imports.get(import_id)
+        if existing is not None and (
+            existing.preparation_ref != ref
+            or existing.artifact_ref != artifact_ref
+            or existing.sha256 != sha256
+            or existing.size_bytes != size
+        ):
+            raise PreparationDispatchError("IMPORT_IDENTITY_CONFLICT")
+        if existing is not None and existing.state is ImportProgressState.VERIFIED:
+            # A completed Core import is immutable. Reconcile the exact Node state
+            # instead of sending Start and accidentally reopening its progress row.
+            self._current(ref)
+            status = ImportStatus(
+                node_id=node_id,
+                preparation_ref=ref,
+                permit_ref=permit.permit_ref,
+                run_ref=permit.run_ref,
+                import_id=import_id,
+                artifact_ref=artifact_ref,
+                message_id=import_message_id(import_id, "status"),
+                timestamp=self._clock(),
+            )
+            response = await self._transport.exchange_preparation_import(status)
+            if not isinstance(response, ImportCompleted):
+                raise PreparationDispatchError("IMPORT_VERIFIED_RECONCILIATION_FAILED")
+            self._check_completed(
+                response, status.message_id, node_id, import_id, artifact_ref, sha256, size
+            )
+            self._current(ref)
+            return existing
         start = ImportStart(
             node_id=node_id,
             preparation_ref=ref,
@@ -247,6 +279,7 @@ class CorePreparationDispatchService:
             timestamp=self._clock(),
         )
         response = await self._transport.exchange_preparation_import(start)
+        self._check_response_identity(response, start.message_id, node_id, import_id, artifact_ref)
         if isinstance(response, ImportRejected):
             self._record(
                 import_id,
@@ -355,6 +388,37 @@ class CorePreparationDispatchService:
         return self._record(
             import_id, ref, artifact_ref, sha256, size, size, ImportProgressState.VERIFIED
         )
+
+    @staticmethod
+    def _check_response_identity(
+        response: ImportReady | ImportCompleted | ImportRejected,
+        message_id: object,
+        node_id: str,
+        import_id: object,
+        artifact_ref: ArtifactRef,
+    ) -> None:
+        if (
+            response.request_message_id != message_id
+            or response.node_id != node_id
+            or response.import_id != import_id
+            or response.artifact_ref != artifact_ref
+        ):
+            raise PreparationDispatchError("IMPORT_RESPONSE_IDENTITY_MISMATCH")
+
+    @classmethod
+    def _check_completed(
+        cls,
+        response: ImportCompleted,
+        message_id: object,
+        node_id: str,
+        import_id: object,
+        artifact_ref: ArtifactRef,
+        sha256: str,
+        size: int,
+    ) -> None:
+        cls._check_response_identity(response, message_id, node_id, import_id, artifact_ref)
+        if response.sha256 != sha256 or response.size_bytes != size:
+            raise PreparationDispatchError("IMPORT_ACK_IDENTITY_MISMATCH")
 
     def _record(
         self,

@@ -264,10 +264,6 @@ class NodePreparationService:
                 or record.size_bytes != expected_size
             ):
                 raise PreparationAdmissionError("IMPORT_IDENTITY_CONFLICT")
-            if now - record.started_at > timedelta(
-                seconds=permit.spec.budgets.max_total_runtime_seconds
-            ):
-                raise PreparationAdmissionError("IMPORT_TIMEOUT")
             if record.state == "VERIFIED":
                 self._verify_file(self._object_path(expected_hash), expected_hash, expected_size)
                 return ImportCompleted(
@@ -279,6 +275,10 @@ class NodePreparationService:
                     size_bytes=expected_size,
                     deduplicated=True,
                 )
+            if now - record.started_at > timedelta(
+                seconds=permit.spec.budgets.max_total_runtime_seconds
+            ):
+                raise PreparationAdmissionError("IMPORT_TIMEOUT")
             if record.state != "PARTIAL":
                 raise PreparationAdmissionError("IMPORT_NOT_RESUMABLE")
             path = self._partial_path(request.import_id)

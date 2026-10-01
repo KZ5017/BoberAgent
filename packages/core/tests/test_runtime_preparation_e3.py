@@ -1,7 +1,7 @@
 """E3 imports opaque synthetic retained bytes after a routed, admitted Run."""
 
 import asyncio
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -34,8 +34,12 @@ from boberagent_execution_node.persistence.migrations import current_revision as
 from boberagent_execution_node.persistence.migrations import (
     upgrade_database as upgrade_node_database,
 )
+from boberagent_execution_node.persistence.orm import PreparationImportRow
 from boberagent_transport import (
     ImportChunk,
+    ImportCompleted,
+    ImportReady,
+    ImportStatus,
     InMemoryTransport,
     TransportDisconnected,
     parse_advertisement,
@@ -55,7 +59,7 @@ from test_runtime_preparation_e2 import NODE, _setup
 
 def test_synthetic_e2_to_e3_exact_import_reopen_and_replay(tmp_path: Path) -> None:
     database, _plan, policy, approvals, registry, _old_service, request = _setup(tmp_path)
-    asyncio.run(_synthetic_flow(tmp_path, database, policy, approvals, registry, request))
+    asyncio.run(_synthetic_flow(tmp_path, database, _plan, policy, approvals, registry, request))
 
 
 def test_e3_forward_migrations_preserve_prior_schema(tmp_path: Path) -> None:
@@ -265,7 +269,7 @@ def test_stale_policy_and_unsupported_import_protocol_stop_before_run(tmp_path: 
 
 
 async def _synthetic_flow(  # type: ignore[no-untyped-def]
-    tmp_path: Path, database, policy, approvals, registry, request
+    tmp_path: Path, database, plan, policy, approvals, registry, request
 ) -> None:
     node = ExecutionNode(
         NodeConfiguration.for_runtime_directory(tmp_path / "node", configured_node_id=NODE)
@@ -327,13 +331,146 @@ async def _synthetic_flow(  # type: ignore[no-untyped-def]
         await transport.disconnect()
         transport.register_node(ExecutionNodeTransportEndpoint(node), replace=True)
         await transport.connect()
-        assert await dispatch.dispatch_and_import(admitted.attempt.preparation_ref) == first
+        # Recreate both sides as in a second standalone operator invocation.
+        # Completed imports remain queryable after their active-transfer budget.
+        assert node.database is not None
+        with node.database.transaction() as session:
+            for item in first:
+                row = session.get(PreparationImportRow, str(item.import_id))
+                assert row is not None and row.state == "VERIFIED"
+                row.started_at -= timedelta(seconds=130)
         database.dispose()
         reopened = CoreDatabase(database.config)
         try:
+            fresh_policy = CorePlanPolicyService(reopened, policy._registry, clock=clock)
+            fresh_registry = type(registry)(reopened, clock=clock)
+            fresh_admission = CoreRuntimePreparationAdmissionService(
+                reopened,
+                fresh_policy,
+                CorePlanApprovalService(reopened, fresh_policy, clock=clock),
+                fresh_registry,
+                clock=clock,
+            )
+            fresh_artifacts = CoreArtifactService(
+                reopened,
+                FilesystemArtifactStorage(
+                    ArtifactStorageConfiguration(root=tmp_path / "artifacts")
+                ),
+            )
+            fresh_dispatch = CorePreparationDispatchService(
+                reopened,
+                fresh_admission,
+                fresh_registry,
+                CapabilityRouter(fresh_registry, transport, clock=clock),
+                transport,
+                fresh_artifacts,
+                clock=clock,
+            )
+            requests: list[ImportStatus] = []
+            corrupt_reply = False
+            partial_reply = False
+            original_exchange = transport.exchange_preparation_import
+
+            async def observe_status(message):  # type: ignore[no-untyped-def]
+                if isinstance(message, ImportStatus):
+                    requests.append(message)
+                reply = await original_exchange(message)
+                if partial_reply and isinstance(message, ImportStatus):
+                    return ImportReady(
+                        request_message_id=message.message_id,
+                        node_id=message.node_id,
+                        import_id=message.import_id,
+                        artifact_ref=message.artifact_ref,
+                        next_offset=0,
+                    )
+                if (
+                    corrupt_reply
+                    and isinstance(message, ImportStatus)
+                    and isinstance(reply, ImportCompleted)
+                ):
+                    return reply.model_copy(update={"sha256": "0" * 64})
+                return reply
+
+            transport.exchange_preparation_import = observe_status  # type: ignore[method-assign]
+            assert (
+                await fresh_dispatch.dispatch_and_import(admitted.attempt.preparation_ref) == first
+            )
+            assert {item.import_id for item in requests} == {item.import_id for item in first}
+            assert all(item.permit_ref == admitted.permit.permit_ref for item in requests)
+            assert all(item.run_ref == run_ref for item in requests)
             with reopened.unit_of_work() as work:
                 assert work.runs.get(run_ref) is not None
-                assert work.preparation_imports.get(first[0].import_id) == first[0]
+                assert (
+                    tuple(work.preparation_imports.get(item.import_id) for item in first) == first
+                )
+
+            corrupt_reply = True
+            with pytest.raises(PreparationDispatchError, match="IMPORT_ACK_IDENTITY_MISMATCH"):
+                await fresh_dispatch.dispatch_and_import(admitted.attempt.preparation_ref)
+            corrupt_reply = False
+            partial_reply = True
+            with pytest.raises(
+                PreparationDispatchError, match="IMPORT_VERIFIED_RECONCILIATION_FAILED"
+            ):
+                await fresh_dispatch.dispatch_and_import(admitted.attempt.preparation_ref)
+            partial_reply = False
+            current = fresh_admission.current_admission(admitted.attempt.preparation_ref)
+            assert current is not None
+            with pytest.raises(PreparationDispatchError, match="IMPORT_IDENTITY_CONFLICT"):
+                await fresh_dispatch._import_one(
+                    current,
+                    artifact_ref=first[0].artifact_ref,
+                    sha256="0" * 64,
+                    size=first[0].size_bytes,
+                    chunk_size=17,
+                )
+            with pytest.raises(PreparationDispatchError, match="IMPORT_IDENTITY_CONFLICT"):
+                await fresh_dispatch._import_one(
+                    current,
+                    artifact_ref=first[0].artifact_ref,
+                    sha256=str(first[0].sha256),
+                    size=first[0].size_bytes + 1,
+                    chunk_size=17,
+                )
+            with node.database.transaction() as session:
+                row = session.get(PreparationImportRow, str(first[0].import_id))
+                assert row is not None
+                session.delete(row)
+            with pytest.raises(
+                PreparationDispatchError, match="IMPORT_VERIFIED_RECONCILIATION_FAILED"
+            ):
+                await fresh_dispatch.dispatch_and_import(admitted.attempt.preparation_ref)
+            with reopened.unit_of_work() as work:
+                assert (
+                    tuple(work.preparation_imports.get(item.import_id) for item in first) == first
+                )
+
+            changed = _profile(plan, approval=False).model_copy(
+                update={"require_operator_approval": True}
+            )
+            stale_policy = CorePlanPolicyService(
+                reopened, PolicyProfileRegistry((changed,)), clock=clock
+            )
+            stale_admission = CoreRuntimePreparationAdmissionService(
+                reopened,
+                stale_policy,
+                CorePlanApprovalService(reopened, stale_policy, clock=clock),
+                fresh_registry,
+                clock=clock,
+            )
+            stale_dispatch = CorePreparationDispatchService(
+                reopened,
+                stale_admission,
+                fresh_registry,
+                CapabilityRouter(fresh_registry, transport, clock=clock),
+                transport,
+                fresh_artifacts,
+                clock=clock,
+            )
+            count = len(requests)
+            with pytest.raises(PreparationDispatchError, match="PREPARATION_AUTHORITY_STALE"):
+                await stale_dispatch.dispatch_and_import(admitted.attempt.preparation_ref)
+            assert len(requests) == count
         finally:
             reopened.dispose()
     finally:

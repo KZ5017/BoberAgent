@@ -9,7 +9,8 @@ C2@2 and C3@2. C5 is optional advisory future work, not a closure prerequisite.
 **M20-D — ExecutionPlan + Deterministic Validation/Policy is CLOSED.** D1–D6 implement
 typed intent, durable admission/construction, validation, policy and Core-owned assistance/
 approval. D7 synthetic vertical acceptance and operator-run D8 real retained-source negative
-acceptance both passed. E–H remain planned. See the
+acceptance both passed. **M20-E architecture is SPECIFIED; E implementation has NOT STARTED;
+M20-F has NOT STARTED.** E1–E9 are planned, not completed. See the
 [M20-D closure record](m20/M20D_IMPLEMENTATION.md#m20-d-closed-real-retained-source-negative-acceptance) and the
 [retained-source acceptance record](m20/M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
 ADR 0014 fixes M20-B architecture; [ADR 0015](adr/0015-m20-c-source-inspection-ownership-evidence-and-authority.md)
@@ -63,8 +64,8 @@ hypothesis; scope and the selected target never expand implicitly.
 | Inspect | completed acquisition's exact Core-retained raw ZIP + structural manifest → versioned `PoCInspection` + conditional classification and reasons | Core-owned, read-only, deterministic-first; rehash and cite verified bytes; optional later advisory Reasoner; no PoC execution or plan |
 | Plan | inspection + target → Core proposal/revisions → immutable ExecutionPlan v2 | Core constructs intent, no side effects |
 | Validate | intent → separate validation, policy assessment, optional operator approval | Core decisions; STOP, not execution authorization |
-| Prepare | exact intent + decisions + E/F permission envelope → runtime Resource + Workspace | Node admission/enforcement; no README install command |
-| Execute | exact intent + E/F execution permission + runtime → managed evidence and `CapabilityResult` | Node via SDK `ProcessService.execute_plan`; no shell string by default |
+| Prepare | exact intent + current decisions + PreparationPermit + retained raw/manifest Artifacts → runtime Resource, immutable manifest/receipt | Core attempt/admission; neutral Core→Node Artifact Import; routed `runtime.prepare`; Node enforcement; Core evidence reconciliation; no install/entrypoint |
+| Execute | exact intent + accepted preparation evidence + separate F execution authorization → managed evidence and `CapabilityResult` | Future Node execution gate; `execute_plan()` remains denied in E |
 | Interpret | plan + evidence + relevant state/Knowledge → bounded interpretation | Core; do not equate exit code with vulnerability confirmation |
 | Adapt/HITL | interpretation → one bounded declared adjustment, durable request, or stop | Core Workflow/Attempt + M15 Interaction; policy approval separate |
 
@@ -98,7 +99,8 @@ be representable in plan intent but have no M20-v1 automatic adapter.
 | M20-B | [Acquisition and provenance](m20/02_ACQUISITION_AND_PROVENANCE.md) | pinned, hashed Artifact; no execution |
 | M20-C | [Inspection and classification](m20/03_INSPECTION_AND_CLASSIFICATION.md) | **CLOSED:** typed facts, explicit reasons, fail-closed uncertainty; calibrated real C4 accepted |
 | M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | **CLOSED:** D1–D8, synthetic D7 and real retained-source negative D8 accepted; STOP before permission/dispatch |
-| M20-E/F | [Runtime preparation and execution](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | enforceable isolation and managed evidence capture |
+| M20-E | [Runtime preparation](m20/M20E_IMPLEMENTATION.md) and [E/F boundary](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | **Architecture SPECIFIED, implementation NOT STARTED:** E1–E9; exact source import, preparation-only permit, confined Python Resource, accepted manifest; no source execution |
+| M20-F | [Controlled execution](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md#m20-f-execute-and-capture-evidence) | **NOT STARTED:** separate execution authorization, managed evidence and honest Result |
 | M20-G | [Interpretation, adaptation, HITL](m20/06_INTERPRETATION_ADAPTATION_AND_HITL.md) | separate outcome, bounded attempts, durable wait/stop |
 | M20-H | [Vertical smoke and acceptance](m20/07_VERTICAL_SMOKE_AND_ACCEPTANCE.md) | controlled fixture then authorized real unknown PoC |
 
@@ -163,10 +165,16 @@ synthetic positive case; invalid input has no plan and bounded input gaps may wa
 D4 leaves policy NOT_EVALUATED. D5 evaluates a registered Mission/target-scoped profile and appends
 ALLOW, DENY or REQUIRES_APPROVAL as history; readiness stays NOT_ASSESSED and authorization absent.
 D6 now adds bounded assistance and separate exact policy approval without reopening finalized
-attempts; [D6 details](m20/M20D6_PLANNING_HITL.md). E/F remain unimplemented.
-Even VALID + ALLOW + operator approval is not execution authorization. E/F must separately
-bind permission to exact digest, Mission/action/Run/Node/provider/scope/limits. Later-phase
-implementation and confinement decisions remain open.
+attempts; [D6 details](m20/M20D6_PLANNING_HITL.md). E architecture is specified in
+[ADRs 0018](adr/0018-m20-e-preparation-authority-and-applicability.md),
+[0019](adr/0019-m20-e-immutable-source-import-and-prepared-resource.md), and
+[0020](adr/0020-m20-e-trusted-python-preparation-boundary.md), with the
+[E1–E9 slice plan](m20/M20E_IMPLEMENTATION.md). E and F implementation remain unstarted.
+Even VALID + ALLOW + operator approval is not preparation or execution authorization. E must
+issue a separate PreparationPermit bound to exact digest, Mission, action, Run, Node/provider,
+source, profile and limits. F must separately authorize execution and revalidate current
+applicability. E implementation and Kali confinement-backend validation remain open; F's
+execution gate is not specified by E.
 
 D7 now proves six offline, migration-backed D3→D6 vertical cases using synthetic
 retained evidence and production Core pumps: automatic ALLOW; exact bounded planning
@@ -180,5 +188,6 @@ The operator completed D8 against the retained CERTCC C2@2/C3@2 chain: Core D3 p
 and created no plan, decision, Interaction or execution-side record. Core reopen and identical
 admission reuse passed; upstream acquisition and inspection history remained unchanged.
 This negative classification is not safety or authorization. Planning validity, policy,
-operator approval and execution authorization remain separate. Production `execute_plan()`
-is denied; M20-E/F have not begun. **M20-D is CLOSED.**
+operator approval, preparation permit and execution authorization remain separate. Production
+`execute_plan()` is denied. M20-E architecture is specified but not implemented; M20-F has not
+begun. **M20-D is CLOSED.**

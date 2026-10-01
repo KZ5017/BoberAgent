@@ -1,62 +1,58 @@
 # M20-E/F — Attacker-side runtime preparation and controlled execution
 
-M20-E and M20-F have distinct contracts even if one future capability implementation coordinates
-them. Both depend on exact immutable v2 intent, separate current D decisions and a later E/F
-permission envelope bound to intent digest, Mission/action/Run/Node/provider/scope/limits,
-a verified M20-B source Artifact,
-and one in-scope Mission target. Initial automatic support is attacker-side, source-visible,
-non-interactive, user-space Python on the Kali Execution Node. Other languages and target-side or
-remote-Session execution are representable future adapter classes, not automatic M20-v1 support.
+M20-E and M20-F have distinct authority and implementation gates. **M20-E architecture is
+SPECIFIED; implementation has NOT STARTED. M20-F has NOT STARTED.** Both depend on exact
+immutable v2 intent and current D decisions, but E uses a preparation-only permit and F later
+requires its own execution authorization. Initial E support is attacker-side, source-visible,
+non-interactive, user-space, apparently standard-library-only CPython 3.12 on Kali. Other
+languages and target-side or remote-Session execution are future adapter classes.
 
 D5 now records a separate deterministic `ALLOW`, `DENY` or `REQUIRES_APPROVAL` assessment
 under an explicit Core-owned Mission/target policy profile. These are append-only planning
 decisions, not permission envelopes or readiness. A historical ALLOW may be stale after scope,
-profile or validation changes. D6 approval remains separate; E/F must define and enforce
-fresh execution admission before staging or launch. See [D5 policy](M20D5_POLICY.md).
+profile or validation changes. D6 approval remains separate; current D applicability and
+preparation-profile admission precede a distinct E permit. F must define a distinct execution
+authorization. See [D5 policy](M20D5_POLICY.md) and [E authority](M20E_RUNTIME_AUTHORITY.md).
 
 ## M20-E: prepare runtime
 
 | Input | Output |
 | --- | --- |
-| Exact v2 intent/digest, separate D decisions, E/F preparation permission, pinned source/dependencies and limits | Run-owned managed Workspace, staged source with verified hash, isolated Python runtime Resource/venv with recorded provenance, readiness or explicit failure |
+| Exact v2 intent/digest, current D decisions, distinct PreparationPermit, pinned raw/manifest Artifacts and preparation limits | Resource-owned managed Workspace, verified read-only source, isolated Python Resource/venv, immutable manifest/receipt and explicit Core reconciliation |
 
-Reuse Node Workspace manager, Artifact spool/verified Core bytes, Tool Registry/Dependency
-Resolver, Resource identity and SDK abstractions. A runtime-preparation adapter is new. A venv
-only separates Python packages; it does **not** confine filesystem, processes or network. Before
-untrusted code runs, the Node needs a reviewed, enforceable execution isolation profile with
-bounded filesystem/network destinations, privileges, process/resource limits, and cancellation.
-If those controls are unavailable on the Node, M20 must remain `ASSISTED`/blocked, not silently
-fall back to `run_tool("python", ...)`.
+Core owns a durable RuntimePreparationAttempt and exact PreparationPermit; one ordinary routed
+CapabilityRun invokes `runtime.prepare`. A separate authorized Core→Node Artifact Import moves
+the existing retained raw ZIP and structural manifest without re-fetching. Node verifies and
+materializes them under bounded rules in a Resource-owned Workspace. The Node emits a
+RuntimePreparationManifest/receipt, and Core waits for normal Node→Core Artifact synchronization
+before completing the attempt. Artifact Import, materialization and preparation are separate;
+none is PoC execution.
 
-Stage source only from the pinned Artifact, with path confinement; verify hashes after extraction
-and before launch. Dependencies are installed only from explicit inspected declarations under
-policy, with locked versions/hashes or a documented equivalent provenance strategy. No arbitrary
-README `pip install`, editable install, build hook, dependency resolver network access, or
-subprocess is implicitly trusted. A dependency install that executes package code is an
-execution-risk event in its own right and may need a separate gate. Never make an unknown
-repository trusted by placing it in a Workspace. Record runtime/interpreter version, dependency
-resolution, prepared Resource/Workspace refs and cleanup ownership.
+The initial profile creates a fresh CPython 3.12 venv through a trusted interpreter and closed
+provider operations, with no pip bootstrap/use, no external dependency installation, no source
+import/compilation or entrypoint execution, and no preparation-subprocess network. Its manifest
+explicitly records an empty external installed dependency set. A venv is **not** confinement.
+The typed ConfinementBackend must prove no network/host sockets, bounded writable filesystem,
+processes, memory, time, output and storage on the intended Kali environment; a rootless Linux
+mechanism is a candidate, not an assumption. Missing enforcement fails closed. Unsupported
+dependencies, target credentials or runtime prerequisites stop explicitly; no E WAITING_INPUT.
 
-Stop on hash drift, missing/ambiguous dependency, unapproved install network destination or
-build step, failed confinement, missing runtime, resource exhaustion, or privilege request. A
-partially prepared Resource is not `READY`; cleanup is recorded and safe across restart.
-
-Tests: source hash/revision remains stable; path/symlink confinement; pinned vs mutable
-dependency; setup-hook refusal; isolated workspace/venv; unavailable confinement fails closed;
-Resource ownership/cleanup; restart of partially prepared state. Manual preparation uses only a
-harmless controlled fixture. **M20-E done** when the ready runtime records exact source and
-dependency provenance and no PoC entrypoint has yet run.
+Read the [M20-E implementation sequence](M20E_IMPLEMENTATION.md),
+[authority](M20E_RUNTIME_AUTHORITY.md), [source/workspace](M20E_SOURCE_AND_WORKSPACE.md),
+[Python baseline](M20E_PYTHON_RUNTIME.md), [recovery/evidence](M20E_PREPARATION_RECOVERY.md)
+and [acceptance](M20E_ACCEPTANCE.md). E is complete only after E1–E9 acceptance; none has
+begun. Production `execute_plan()` remains denied.
 
 ## M20-F: execute and capture evidence
 
 | Input | Output |
 | --- | --- |
-| Exact v2 intent/digest, ready runtime, explicit single target and current E/F execution permission | Managed Process record and `CapabilityResult` with execution status, raw stdout/stderr/output Artifacts, timing, exit/timeout/cancel state, Diagnostics and declared Effects/Resources/Sessions actually observed |
+| Exact v2 intent/digest, accepted preparation manifest and ready Resource, explicit single target and separate current F execution authorization | Managed Process record and `CapabilityResult` with execution status, raw stdout/stderr/output Artifacts, timing, exit/timeout/cancel state, Diagnostics and declared Effects/Resources/Sessions actually observed |
 
 Reuse SDK `ProcessService.execute_plan`, `ExecutionContext` scope/secrets/cancellation/logger,
 Node Process Manager, Artifact spool/sync, Event/Result outboxes, and normal Core Result ingestion.
 The production `ManagedProcessService.execute_plan()` currently raises `PolicyDenied`; a narrow
-Node plan executor and runtime adapter are required. E/F owns permission-envelope admission
+Node plan executor and runtime adapter are required. F owns execution-authorization admission
 and forged-plan enforcement tests before staging or launch. Legacy APPROVED, VALID + ALLOW,
 and operator approval alone are not execution credentials. Reject legacy-only, unpermitted,
 stale, forged, or out-of-scope intent even if a caller bypasses higher-level sequencing. Do not make
@@ -94,7 +90,10 @@ modification, compiler repair, listener creation by model whim, or multi-host pr
 `ASSISTED` prerequisites such as existing listener/Session/credential must be separately bound
 and authorized; absence does not trigger an unsafe fallback.
 
-**OPEN DECISION (M20-E/F ADR required):** concrete attacker-side confinement mechanism and
-testable guarantees, dependency acquisition/lock format and install approval boundary, runtime
-Resource lifecycle, and how destination constraints are enforced for both preparation and PoC
-execution. Existing venv and process management alone do not satisfy these guarantees.
+E's authority, source/Resource ownership, Python baseline and confinement properties are fixed
+by [ADRs 0018–0020](../adr/0018-m20-e-preparation-authority-and-applicability.md). The
+concrete rootless Kali backend must pass E9 preflight; its absence blocks E. Dependency
+installation is unsupported baseline E and needs separate future review. F-specific execution
+authorization, target-network enforcement and execution confinement remain M20-F decisions;
+E completion cannot imply them. Existing venv and process management alone do not satisfy E
+or F confinement.

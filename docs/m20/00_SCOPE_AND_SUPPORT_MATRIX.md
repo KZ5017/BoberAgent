@@ -28,7 +28,7 @@ machine-readable reason codes, not an opaque risk score.
 | Read-only checker or validator | AUTOMATIC | Explicit target and verifiable/interpretably negative output still required |
 | Single-target authentication-bypass or remote-service/RCE reproduction | AUTOMATIC | Only if it fits the Python class, target effects are bounded/declared, and distinct Core policy authorizes them; otherwise ASSISTED or UNSUPPORTED |
 | Shell script | ASSISTED | Shell semantics and command boundaries need explicit inspection/policy; no automatic shell-string adapter |
-| Dependency installation | ASSISTED | Exact pinned package/source and install side effects require review; arbitrary README `pip install` is not authorized |
+| Dependency installation | ASSISTED for a future reviewed adapter; **unsupported in baseline M20-E** | Exact pinned package/source and install side effects require a separate versioned profile and review; arbitrary README `pip install` is not authorized |
 | Compiled user-space source | ASSISTED | Explicit build chain, source provenance, artifacts and side effects need a later reviewed adapter |
 | Credential-required PoC | ASSISTED | Mission-owned `CredentialRef`/`SecretRef` grant and declared purpose; no plaintext in plans |
 | Listener-required PoC | ASSISTED | Existing listener Resource and expected callback binding must be explicitly provisioned/authorized |
@@ -57,5 +57,8 @@ the exact profile version used; repeated inspection must not silently change a p
 
 Current C3@2 implements the bounded reason vocabulary described in
 [the implementation note](M20C_IMPLEMENTATION.md#c3-deterministic-conditional-support).
-**OPEN DECISION (M20-D/E):** whether a reviewed shell/build adapter is delivered within M20 or
-remains a documented assisted stop. The initial `AUTOMATIC` class does not depend on that choice.
+For M20-E, only current D4-compatible, apparently standard-library-only CPython 3.12
+attacker-side preparation is admitted. The matrix's broader M20-v1 classifications do not
+grant E support or execution authority. Shell/build adapters and dependency installation remain
+documented assisted/unsupported stops for baseline E; a future reviewed extension must define
+their own authority and confinement. See [M20-E profile](M20E_PYTHON_RUNTIME.md).

@@ -229,7 +229,8 @@ class CoreRuntimePreparationAdmissionService:
             return PreparationAdmission(
                 attempt=attempt,
                 permit=permit,
-                current_applicable=attempt.lifecycle is PreparationLifecycle.REQUESTED,
+                current_applicable=attempt.lifecycle
+                in {PreparationLifecycle.REQUESTED, PreparationLifecycle.DISPATCHED},
                 current_reason=attempt.reason_code,
             )
 

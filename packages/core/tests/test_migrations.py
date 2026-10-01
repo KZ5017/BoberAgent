@@ -24,6 +24,7 @@ EXPECTED_TABLES = {
     "planning_attempts",
     "runtime_preparation_attempts",
     "preparation_permits",
+    "preparation_import_progress",
     "execution_plans",
     "plan_decisions",
     "research_attempts",
@@ -45,7 +46,7 @@ def test_migration_upgrades_empty_database(database_path: Path) -> None:
         assert not database_path.exists()
         upgrade_database(database)
         assert set(inspect(database._migration_engine).get_table_names()) == EXPECTED_TABLES
-        assert current_revision(database) == "0016_m20_e2_preparation"
+        assert current_revision(database) == "0017_m20_e3_import_progress"
     finally:
         database.dispose()
 
@@ -58,7 +59,7 @@ def test_migrated_database_can_be_reopened(database_path: Path) -> None:
     reopened = CoreDatabase(DatabaseConfig.sqlite(database_path))
     try:
         upgrade_database(reopened)
-        assert current_revision(reopened) == "0016_m20_e2_preparation"
+        assert current_revision(reopened) == "0017_m20_e3_import_progress"
     finally:
         reopened.dispose()
 
@@ -73,7 +74,7 @@ def test_transport_inbox_migration_upgrades_milestone_2_schema(
         assert "transport_inbox" not in inspect(database._migration_engine).get_table_names()
 
         upgrade_database(database)
-        assert current_revision(database) == "0016_m20_e2_preparation"
+        assert current_revision(database) == "0017_m20_e3_import_progress"
         assert "transport_inbox" in inspect(database._migration_engine).get_table_names()
     finally:
         database.dispose()
@@ -90,7 +91,7 @@ def test_capability_registry_migration_upgrades_milestone_7_schema(
         assert "capability_providers" not in tables
 
         upgrade_database(database)
-        assert current_revision(database) == "0016_m20_e2_preparation"
+        assert current_revision(database) == "0017_m20_e3_import_progress"
         tables = set(inspect(database._migration_engine).get_table_names())
         assert {"capability_providers", "capability_routing_decisions"} <= tables
     finally:
@@ -131,7 +132,7 @@ def test_artifact_content_migration_preserves_milestone_5_metadata(
             )
 
         upgrade_database(database)
-        assert current_revision(database) == "0016_m20_e2_preparation"
+        assert current_revision(database) == "0017_m20_e3_import_progress"
         columns = {
             str(column["name"])
             for column in inspect(database._migration_engine).get_columns("artifacts")
@@ -222,7 +223,7 @@ def test_result_ingestion_migration_upgrades_milestone_8_without_data_loss(
                 )
             )
         upgrade_database(database)
-        assert current_revision(database) == "0016_m20_e2_preparation"
+        assert current_revision(database) == "0017_m20_e3_import_progress"
         assert "result_ingestions" in inspect(database._migration_engine).get_table_names()
         with database._migration_engine.connect() as connection:
             assert (
@@ -275,7 +276,7 @@ def test_workflow_engine_migration_preserves_existing_workflow_metadata(
             )
 
         upgrade_database(database)
-        assert current_revision(database) == "0016_m20_e2_preparation"
+        assert current_revision(database) == "0017_m20_e3_import_progress"
         with database._migration_engine.connect() as connection:
             row = connection.execute(
                 text(
@@ -326,7 +327,7 @@ def test_secret_credential_migration_upgrades_milestone_15_schema(
             )
 
         upgrade_database(database)
-        assert current_revision(database) == "0016_m20_e2_preparation"
+        assert current_revision(database) == "0017_m20_e3_import_progress"
         tables = set(inspect(database._migration_engine).get_table_names())
         assert {"secrets", "credentials", "secret_access_records", "core_events"} <= tables
         with database._migration_engine.connect() as connection:

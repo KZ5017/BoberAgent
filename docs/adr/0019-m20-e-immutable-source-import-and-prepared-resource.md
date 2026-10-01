@@ -1,6 +1,6 @@
 # ADR 0019: M20-E immutable source delivery and prepared Resource identity
 
-**Status:** Accepted for M20-E architecture. E1 typed boundary and E2 Core admission are complete; import/resource behavior has not begun.
+**Status:** Accepted for M20-E architecture. E1/E2 are complete; E3 opaque import is implemented pending real Core↔Kali acceptance; materialization/Resource behavior has not begun.
 
 ## Decision
 

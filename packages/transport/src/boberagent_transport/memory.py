@@ -28,6 +28,7 @@ from .interfaces import (
     TransportArtifactReceiver,
     TransportInteractionEndpoint,
     TransportNodeEndpoint,
+    TransportPreparationEndpoint,
 )
 from .models import (
     DeliveryAcknowledgement,
@@ -49,12 +50,23 @@ from .models import (
     parse_run_status_response,
     serialize_message,
 )
+from .preparation_import import (
+    ImportRequest,
+    ImportResponse,
+    parse_import_response,
+)
 
 
 class InMemoryTransport:
     """A protocol adapter, not a shortcut around serialized transport envelopes."""
 
-    def __init__(self, *, queue_capacity: int = 100, max_in_flight: int = 10) -> None:
+    def __init__(
+        self,
+        *,
+        queue_capacity: int = 100,
+        max_in_flight: int = 10,
+        trusted_core_principal: str | None = None,
+    ) -> None:
         if queue_capacity < 1 or max_in_flight < 1:
             raise ValueError("queue_capacity and max_in_flight must be positive")
         self._endpoints: dict[str, TransportNodeEndpoint] = {}
@@ -67,6 +79,8 @@ class InMemoryTransport:
         self._connected = False
         self._worker: asyncio.Task[None] | None = None
         self._node_tasks: set[asyncio.Task[None]] = set()
+        # Explicit fixture registration is the in-process analogue of MCP bearer auth.
+        self._trusted_core_principal = trusted_core_principal
 
     @property
     def connected(self) -> bool:
@@ -121,8 +135,36 @@ class InMemoryTransport:
             timestamp=datetime.now(UTC),
             delivery=delivery,
         )
-        await self.send_serialized_invocation(node_id, serialize_message(envelope))
+        if str(delivery.invocation.capability_id) == "runtime.prepare":
+            self._require_connected()
+            if self._trusted_core_principal is None:
+                raise ProtocolError("preparation admission requires a trusted Core peer")
+            endpoint = cast(TransportPreparationEndpoint, self._endpoint(node_id))
+            await endpoint.accept_preparation_invocation(
+                serialize_message(envelope), principal=self._trusted_core_principal
+            )
+        else:
+            await self.send_serialized_invocation(node_id, serialize_message(envelope))
         return envelope.message_id
+
+    async def exchange_preparation_import(self, request: ImportRequest) -> ImportResponse:
+        self._require_connected()
+        if self._trusted_core_principal is None:
+            raise ProtocolError("preparation import requires a trusted Core peer")
+        endpoint = cast(TransportPreparationEndpoint, self._endpoint(request.node_id))
+        response = parse_import_response(
+            await endpoint.accept_preparation_import(
+                serialize_message(request), principal=self._trusted_core_principal
+            )
+        )
+        if (
+            response.request_message_id != request.message_id
+            or response.node_id != request.node_id
+            or response.import_id != request.import_id
+            or response.artifact_ref != request.artifact_ref
+        ):
+            raise ProtocolError("preparation import response does not match request")
+        return response
 
     async def send_serialized_invocation(self, node_id: str, message: bytes) -> None:
         self._require_connected()

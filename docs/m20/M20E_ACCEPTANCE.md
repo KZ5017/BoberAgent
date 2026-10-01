@@ -1,7 +1,13 @@
 # M20-E acceptance and stop conditions
 
-**Status:** Specified test plan; E1 typed and E2 Core admission tests pass, but no preparation
-has run. E3–E9 have not begun. See [slice plan](M20E_IMPLEMENTATION.md).
+**Status:** E1/E2 complete; E3 automated synthetic and loopback-MCP validation implemented.
+Real Core↔Kali E3 acceptance remains pending operator execution. E4–E9 have not begun.
+See [slice plan](M20E_IMPLEMENTATION.md).
+
+The manual E3 script has distinct `--check-config` (no import bytes) and explicit
+`--real-artifact-import` modes. It uses a harmless synthetic supported D→E2 chain, not the
+retained CERTCC D8 UNSUPPORTED case. Success verifies the two exact ArtifactRefs, hashes and
+sizes, reconnect/replay, and leaves the preparation attempt DISPATCHED—not COMPLETED.
 
 ## Automated acceptance layers
 

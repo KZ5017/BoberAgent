@@ -13,6 +13,7 @@ from .models import (
     TransportFailure,
     TransportMessageId,
 )
+from .preparation_import import ImportRequest, ImportResponse
 
 
 class TransportNodeEndpoint(Protocol):
@@ -36,6 +37,21 @@ class TransportArtifactReceiver(Protocol):
 
 class TransportInteractionEndpoint(Protocol):
     async def accept_interaction_response(self, message: bytes) -> bytes: ...
+
+
+class TransportPreparationEndpoint(Protocol):
+    """Authenticated Core admission; principal is transport-provided, never JSON."""
+
+    async def accept_preparation_invocation(self, message: bytes, *, principal: str) -> None: ...
+
+    async def accept_preparation_import(self, message: bytes, *, principal: str) -> bytes: ...
+
+
+class PreparationImportTransport(Protocol):
+    @property
+    def connected(self) -> bool: ...
+
+    async def exchange_preparation_import(self, request: ImportRequest) -> ImportResponse: ...
 
 
 class ArtifactTransport(Protocol):
@@ -78,3 +94,7 @@ class CapabilityTransport(Protocol):
     async def acknowledge(self, acknowledgement: DeliveryAcknowledgement) -> None: ...
 
     async def receive_failure(self) -> TransportFailure: ...
+
+
+class PreparationTransport(CapabilityTransport, PreparationImportTransport, Protocol):
+    """Normal capability routing plus distinct authorized import infrastructure."""

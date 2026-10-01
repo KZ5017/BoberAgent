@@ -2,6 +2,7 @@
 
 import asyncio
 import hashlib
+import json
 from datetime import UTC, datetime
 
 import pytest
@@ -11,25 +12,37 @@ from boberagent_contracts import (
     CapabilityInvocation,
     CapabilityRunRef,
     MissionRef,
+    PreparationPermitRef,
+    RuntimePreparationRef,
     SecretRef,
 )
 from boberagent_transport import (
     ArtifactChunk,
     AssetProjection,
+    ImportChunk,
+    ImportStart,
     InMemoryTransport,
     InvocationDelivery,
     InvocationEnvelope,
+    MalformedMessage,
     MissionProjection,
+    NodeAdvertisement,
+    ProtocolError,
     SecretGrant,
     TransportBackpressure,
     TransportDisconnected,
+    TransportMessageId,
     UnknownNode,
     artifact_chunk_message_id,
     artifact_transfer_id,
+    ensure_supported_protocol,
+    import_message_id,
     invocation_fingerprint,
     invocation_message_id,
     parse_artifact_request,
+    parse_import_request,
     parse_invocation,
+    preparation_import_id,
     serialize_message,
 )
 from pydantic import ValidationError
@@ -180,3 +193,59 @@ def test_binary_artifact_chunk_crosses_json_boundary() -> None:
             data=data,
             chunk_sha256="0" * 64,
         )
+
+
+def test_preparation_import_protocol_is_versioned_bounded_and_byte_exact() -> None:
+    permit = PreparationPermitRef("preparation-permit-protocol")
+    ref = ArtifactRef("artifact-preparation-protocol")
+    transfer = preparation_import_id(permit, ref)
+    start = ImportStart(
+        message_id=import_message_id(transfer, "start"),
+        node_id="node-preparation-protocol",
+        preparation_ref=RuntimePreparationRef("preparation-protocol"),
+        permit_ref=permit,
+        run_ref=CapabilityRunRef("run-preparation-protocol"),
+        import_id=transfer,
+        artifact_ref=ref,
+        sha256=hashlib.sha256(b"data").hexdigest(),
+        size_bytes=4,
+        timestamp=datetime(2026, 9, 17, tzinfo=UTC),
+    )
+    assert parse_import_request(serialize_message(start)) == start
+    payload = json.loads(serialize_message(start))
+    payload["protocol_version"] = "preparation-import-v0"
+    with pytest.raises(MalformedMessage):
+        parse_import_request(json.dumps(payload).encode())
+    payload = json.loads(serialize_message(start))
+    payload["destination_path"] = "/tmp/unsafe"
+    with pytest.raises(MalformedMessage):
+        parse_import_request(json.dumps(payload).encode())
+    with pytest.raises(ValidationError):
+        ImportChunk(
+            message_id=import_message_id(transfer, "chunk:0"),
+            node_id=start.node_id,
+            preparation_ref=start.preparation_ref,
+            permit_ref=permit,
+            run_ref=start.run_ref,
+            import_id=transfer,
+            artifact_ref=ref,
+            offset=0,
+            data=b"x" * (1024 * 1024 + 1),
+            chunk_sha256=hashlib.sha256(b"x" * (1024 * 1024 + 1)).hexdigest(),
+            timestamp=start.timestamp,
+        )
+
+
+def test_previous_transport_protocol_is_rejected_explicitly() -> None:
+    advertisement = NodeAdvertisement(
+        request_message_id=TransportMessageId("transport-handshake:previous-version"),
+        node_id="node-previous-version",
+        timestamp=datetime(2026, 9, 17, tzinfo=UTC),
+        lifecycle="READY",
+        database_ready=True,
+        capabilities=(),
+        capability_statuses=(),
+    )
+    with pytest.raises(ProtocolError, match="unsupported"):
+        ensure_supported_protocol("1.4")
+    assert advertisement.protocol_version == "1.5"

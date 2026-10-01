@@ -40,6 +40,12 @@ class NodeConfiguration(BaseModel):
 
         return self.runtime_directory / "process-output"
 
+    @property
+    def imported_artifact_root(self) -> Path:
+        """Opaque verified Core imports; distinct from Node-produced evidence spool."""
+
+        return self.runtime_directory / "imported-inputs"
+
     @field_validator(
         "runtime_directory",
         "database_path",
@@ -87,3 +93,4 @@ class NodeConfiguration(BaseModel):
         self.workspace_root.mkdir(parents=True, exist_ok=True)
         self.artifact_spool_root.mkdir(parents=True, exist_ok=True)
         self.process_output_root.mkdir(parents=True, exist_ok=True)
+        self.imported_artifact_root.mkdir(parents=True, exist_ok=True)

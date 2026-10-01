@@ -1,6 +1,6 @@
 # M20-E — Runtime Preparation implementation plan
 
-**Architecture status:** SPECIFIED. **Implementation status:** E1–E2 COMPLETE; E3–E9 NOT STARTED;
+**Architecture status:** SPECIFIED. **Implementation status:** E1–E2 COMPLETE; E3 IMPLEMENTED (real Core↔Kali acceptance pending); E4–E9 NOT STARTED;
 M20-E remains OPEN. M20-D remains CLOSED; M20-F has NOT STARTED. This plan authorizes no
 preparation. The architectural
 decisions are [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md),
@@ -95,6 +95,26 @@ runtime/profile choices. This slice reads retained metadata only; it neither rea
 bytes nor creates a preparation CapabilityRun. E3 owns dispatch and trusted Node admission.
 
 ## E3 — Node admission, routing and authorized Core→Node Artifact Import
+
+**Implemented, not yet accepted on the real Core↔Kali link.** Core rechecks current E2
+applicability, materializes the already reserved RunRef as a QUEUED CapabilityRun and changes
+the attempt from REQUESTED to DISPATCHED in one transaction. It selects the exact advertised
+provider through the normal Router. The Node's `runtime.prepare/prepare` advertisement is an
+E3 admission-only provider boundary, not an executable source-preparation implementation; no
+Capability Runtime `execute()` is called yet. Core and Node retain their separate databases.
+
+The neutral transport revision is **1.5**. E3 requires the separate
+`preparation-import-v1` capability advertisement. MCP carries the neutral invocation and
+import envelopes; the MCP bearer verifier supplies a request-scoped trusted Core principal.
+The permit digest detects mutation/replay conflicts but is not, by itself, authentication.
+The Core import-progress migration is `0017_m20_e3_import_progress`; Node authority/import
+records and immutable imported-input identities use `0006_preparation_import`.
+
+Only the permit-pinned raw archive and structural manifest are imported. The Node stores
+them under `imported-inputs`, separate from produced Artifact spool/outboxes. E3 stops at
+verified opaque bytes: no extraction, workspace, Resource, venv, process, secret grant,
+target/package/listener network, execution authorization or PoC execution. DISPATCHED is
+not preparation completion. E6 owns terminal preparation semantics.
 
 - **Goal/authority:** Allocate the stable preparation RunRef, authorize/import the exact source,
   then route `runtime.prepare` through the existing Router/Run. Enforce the authenticated,

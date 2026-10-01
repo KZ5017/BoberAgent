@@ -30,7 +30,7 @@ def test_upgrade_keeps_old_same_context_policy_variants(database_path: Path) -> 
             work.plan_decisions.append(original)
             work.plan_decisions.append(denied)
         upgrade_database(database)
-        assert current_revision(database) == "0016_m20_e2_preparation"
+        assert current_revision(database) == "0017_m20_e3_import_progress"
         with database.unit_of_work() as work:
             assert work.plan_decisions.get(original.decision_ref) == original
             assert work.plan_decisions.get(denied.decision_ref) == denied

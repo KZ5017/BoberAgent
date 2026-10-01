@@ -1,6 +1,16 @@
 # M20-E exact source import, materialization and workspace
 
-**Status:** Specified; E1 source identities typed, import/materialization unimplemented. See [ADR 0019](../adr/0019-m20-e-immutable-source-import-and-prepared-resource.md).
+**Status:** E3 opaque import implemented (real Core↔Kali acceptance pending); E4 materialization/workspace not started. See [ADR 0019](../adr/0019-m20-e-immutable-source-import-and-prepared-resource.md).
+
+`preparation-import-v1` uses a stable permit+Artifact import ID, explicit byte offsets,
+bounded (at most 1 MiB) chunks, per-chunk SHA-256, start/status/finalize and authenticated
+Core principal. The Node checks the permit's exact ArtifactRef/hash/size and E1 import/temporary
+budgets before accepting bytes. Partial files live only in the Node's managed
+`imported-inputs/partial` area; complete SHA-256/size-verified bytes are atomically published
+under `imported-inputs/objects`. No caller supplies a destination path. Published identities
+are not Node-produced evidence and are never queued for Node→Core Artifact sync. Existing
+exact content can be reused only after current authority and on-disk hash/size verification.
+E3 does not extract or semantically inspect the raw archive or manifest.
 
 ## Exact retained source
 

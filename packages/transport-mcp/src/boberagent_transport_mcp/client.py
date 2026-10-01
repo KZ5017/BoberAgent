@@ -29,6 +29,8 @@ from boberagent_transport import (
     ArtifactTransferStart,
     DeliveryAcknowledgement,
     HandshakeRequest,
+    ImportRequest,
+    ImportResponse,
     InteractionResponseAcknowledgement,
     InteractionResponseEnvelope,
     InvocationDelivery,
@@ -51,6 +53,7 @@ from boberagent_transport import (
     invocation_message_id,
     parse_advertisement,
     parse_artifact_response,
+    parse_import_response,
     parse_interaction_acknowledgement,
     parse_outbound,
     parse_run_status_response,
@@ -180,6 +183,22 @@ class McpTransport:
         if response != str(envelope.message_id):
             raise ProtocolError("MCP invocation acceptance identity mismatch", node_id=node_id)
         return envelope.message_id
+
+    async def exchange_preparation_import(self, request: ImportRequest) -> ImportResponse:
+        self._validate_target(request.node_id)
+        raw = await self._call_text(
+            "boberagent.preparation.import",
+            {"payload": serialize_message(request).decode("utf-8")},
+        )
+        response = parse_import_response(raw.encode("utf-8"))
+        if (
+            response.request_message_id != request.message_id
+            or response.node_id != request.node_id
+            or response.import_id != request.import_id
+            or response.artifact_ref != request.artifact_ref
+        ):
+            raise ProtocolError("MCP preparation import response identity mismatch")
+        return response
 
     async def send_serialized_invocation(self, node_id: str, message: bytes) -> str:
         """Protocol-test hook that still crosses MCP and the Node validation boundary."""

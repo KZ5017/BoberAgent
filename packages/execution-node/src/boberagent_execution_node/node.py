@@ -25,6 +25,7 @@ from .lifecycle import NodeLifecycle, NodeLifecycleState
 from .listener import ListenerRuntimeManager
 from .persistence import RuntimeDatabase, RuntimeStore
 from .persistence.migrations import upgrade_database
+from .preparation import NodePreparationService, PreparationAdmissionError
 from .results import ResultOutbox
 from .services import ExecutionContextFactory, LocalInvocationEnvironment
 from .tools import DependencyResolver, ToolAvailability, ToolRegistry
@@ -52,6 +53,7 @@ class ExecutionNode:
         self.browser_runtime: BrowserRuntimeManager | None = None
         self.listener_runtime: ListenerRuntimeManager | None = None
         self.interaction_runtime: InteractionRuntime | None = None
+        self.preparation: NodePreparationService | None = None
         self._browser_backend = browser_backend
         self._clock = UtcClock()
         self._degraded_reasons: list[str] = []
@@ -73,6 +75,9 @@ class ExecutionNode:
             upgrade_database(self.database)
             self._database_ready = True
             self.store = RuntimeStore(self.database)
+            self.preparation = NodePreparationService(
+                self.database, self.configuration.imported_artifact_root, str(self.identity.node_id)
+            )
             self.events = EventOutbox(self.store)
             self.results = ResultOutbox(self.store)
             self.interaction_runtime = InteractionRuntime(self.store, clock=self._clock.now)
@@ -207,6 +212,9 @@ class ExecutionNode:
         invocation_fingerprint: str | None = None,
     ) -> CapabilityResult:
         """Execute through the local harness; this is intentionally not a transport API."""
+
+        if str(invocation.capability_id) == "runtime.prepare":
+            raise PreparationAdmissionError("TRUSTED_PREPARATION_ADMISSION_REQUIRED")
 
         if self.lifecycle.state not in {
             NodeLifecycleState.READY,

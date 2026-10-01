@@ -1,6 +1,14 @@
 # M20-E runtime preparation authority
 
-**Status:** Specified; E1 types and E2 Core issuance/admission complete. E3 trusted Node admission unimplemented. [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md)
+**Status:** E1/E2 complete; E3 trusted Node admission implemented, real Core↔Kali acceptance pending. [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md)
+
+E3 accepts `runtime.prepare/prepare` only through the authenticated Core transport
+boundary. On MCP, the existing verified bearer principal is checked independently of the
+serialized permit. Local `execute_local()` and the generic invocation endpoint deny direct
+preparation admission. The Node binds the exact Run, preparation, Mission, plan/intent,
+Node/provider/version, source pins, profile, actions, validity window and serialized delivery
+fingerprint into durable authority. Identical replay is accepted; conflicting replay is
+rejected. Node restart preserves an admitted QUEUED Run only with its authority row.
 is authoritative. M20-D is CLOSED; production `execute_plan()` remains denied.
 
 ## Owned records and flow

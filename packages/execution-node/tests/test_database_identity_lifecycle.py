@@ -21,12 +21,15 @@ def test_empty_database_migrates_and_survives_reopen(tmp_path: Path) -> None:
     assert current_revision(database) is None
 
     upgrade_database(database)
-    assert current_revision(database) == "0005_durable_interactions"
+    assert current_revision(database) == "0006_preparation_import"
     assert set(inspect(database.migration_engine).get_table_names()) == {
         "alembic_version",
         "artifact_spool",
         "event_outbox",
         "managed_processes",
+        "preparation_authorities",
+        "preparation_imports",
+        "imported_artifacts",
         "result_outbox",
         "runtime_interactions",
         "runtime_resources",
@@ -38,7 +41,7 @@ def test_empty_database_migrates_and_survives_reopen(tmp_path: Path) -> None:
 
     reopened = RuntimeDatabase(database_path)
     try:
-        assert current_revision(reopened) == "0005_durable_interactions"
+        assert current_revision(reopened) == "0006_preparation_import"
         upgrade_database(reopened)
     finally:
         reopened.close()
@@ -58,7 +61,7 @@ def test_invocation_fingerprint_migration_upgrades_milestone_4_schema(
         assert "invocation_fingerprint" not in columns
 
         upgrade_database(database)
-        assert current_revision(database) == "0005_durable_interactions"
+        assert current_revision(database) == "0006_preparation_import"
         columns = {
             column["name"]
             for column in inspect(database.migration_engine).get_columns("runtime_runs")
@@ -96,7 +99,7 @@ def test_artifact_sync_migration_preserves_milestone_5_spool_metadata(
             )
 
         upgrade_database(database)
-        assert current_revision(database) == "0005_durable_interactions"
+        assert current_revision(database) == "0006_preparation_import"
         with database.migration_engine.connect() as connection:
             row = connection.execute(
                 text(
@@ -126,7 +129,7 @@ def test_resource_session_migration_upgrades_previous_node_schema(tmp_path: Path
             )
 
         upgrade_database(database)
-        assert current_revision(database) == "0005_durable_interactions"
+        assert current_revision(database) == "0006_preparation_import"
         tables = set(inspect(database.migration_engine).get_table_names())
         assert {"runtime_interactions", "runtime_resources", "runtime_sessions"} <= tables
         with database.migration_engine.connect() as connection:

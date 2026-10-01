@@ -39,7 +39,7 @@ from pydantic import (
 
 from .errors import MalformedMessage, UnsupportedProtocolVersion
 
-TRANSPORT_PROTOCOL_VERSION = "1.4"
+TRANSPORT_PROTOCOL_VERSION = "1.5"
 
 type NodeIdentifier = Annotated[
     str,
@@ -242,6 +242,7 @@ class NodeAdvertisement(TransportModel):
     database_ready: bool
     capabilities: tuple[CapabilityDefinition, ...]
     capability_statuses: tuple[CapabilityStatusAdvertisement, ...]
+    preparation_import_versions: tuple[str, ...] = ()
     degraded_reasons: tuple[str, ...] = ()
 
     @model_validator(mode="after")

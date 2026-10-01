@@ -124,9 +124,9 @@ def test_end_to_end_outbox_delivery_lost_ack_and_core_restart(tmp_path: Path) ->
         advertisement = await client.discover_node(endpoint.node_id)
         assert advertisement.node_id == endpoint.node_id
         assert advertisement.lifecycle == NodeLifecycleState.READY.value
-        assert [definition.capability_id for definition in advertisement.capabilities] == [
-            "test.transport_synthetic"
-        ]
+        assert "test.transport_synthetic" in {
+            str(definition.capability_id) for definition in advertisement.capabilities
+        }
         assert advertisement.capability_statuses[0].status.value == "AVAILABLE"
 
         await client.submit_invocation(endpoint.node_id, delivery)

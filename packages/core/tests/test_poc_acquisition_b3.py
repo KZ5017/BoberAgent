@@ -225,7 +225,13 @@ def test_real_b3_result_before_artifacts_and_replay_after_core_node_restart(
             transport.register_node(endpoint)
             await transport.connect()
             providers = (await registration.refresh_node(endpoint.node_id))[1]
-            assert len(providers) == 1 and providers[0].availability.value == "AVAILABLE"
+            acquisition_providers = tuple(
+                provider
+                for provider in providers
+                if provider.capability_id == invocation.capability_id
+            )
+            assert len(acquisition_providers) == 1
+            assert acquisition_providers[0].availability.value == "AVAILABLE"
             with database.unit_of_work() as work:
                 work.runs.add(
                     CapabilityRun(

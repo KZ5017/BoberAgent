@@ -13,9 +13,11 @@ from boberagent_transport import (
     TransportFailure,
     TransportInteractionEndpoint,
     TransportNodeEndpoint,
+    TransportPreparationEndpoint,
     parse_invocation,
 )
 from mcp.server import MCPServer
+from mcp.server.auth.middleware.auth_context import get_access_token
 from mcp.server.auth.settings import AuthSettings
 from mcp.server.transport_security import TransportSecuritySettings
 from pydantic import AnyHttpUrl
@@ -161,6 +163,12 @@ class McpTransportServer:
             envelope = parse_invocation(payload.encode("utf-8"))
             if envelope.node_id != self.node_id:
                 raise ValueError("invocation targets a different Execution Node")
+            if str(envelope.delivery.invocation.capability_id) == "runtime.prepare":
+                endpoint = cast(TransportPreparationEndpoint, self._endpoint)
+                await endpoint.accept_preparation_invocation(
+                    payload.encode("utf-8"), principal=self._core_principal()
+                )
+                return str(envelope.message_id)
             task = asyncio.create_task(
                 self._execute_invocation(payload.encode("utf-8")),
                 name=f"mcp-invocation:{envelope.correlation_id}",
@@ -168,6 +176,15 @@ class McpTransportServer:
             self._tasks.add(task)
             task.add_done_callback(self._tasks.discard)
             return str(envelope.message_id)
+
+        @self._mcp.tool(name="boberagent.preparation.import")
+        async def preparation_import(payload: str) -> str:
+            endpoint = cast(TransportPreparationEndpoint, self._endpoint)
+            return (
+                await endpoint.accept_preparation_import(
+                    payload.encode("utf-8"), principal=self._core_principal()
+                )
+            ).decode("utf-8")
 
         @self._mcp.tool(name="boberagent.poll_outbound")
         async def poll_outbound(limit: int = 100) -> list[str]:
@@ -268,3 +285,14 @@ class McpTransportServer:
         if self._artifact_source is None:
             raise RuntimeError("Artifact synchronization is unavailable")
         return self._artifact_source
+
+    @staticmethod
+    def _core_principal() -> str:
+        token = get_access_token()
+        if (
+            token is None
+            or token.client_id != "boberagent-core"
+            or ("boberagent.transport" not in token.scopes)
+        ):
+            raise PermissionError("authenticated Core control principal is required")
+        return token.client_id

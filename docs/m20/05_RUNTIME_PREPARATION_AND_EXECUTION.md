@@ -1,7 +1,8 @@
 # M20-E/F — Attacker-side runtime preparation and controlled execution
 
 M20-E and M20-F have distinct authority and implementation gates. **M20-E architecture is
-SPECIFIED; E1–E2 are COMPLETE, E3–E9 have NOT STARTED, and M20-E remains OPEN.
+SPECIFIED; E1–E2 are COMPLETE, E3 is IMPLEMENTED pending real Core↔Kali acceptance,
+E4–E9 have NOT STARTED, and M20-E remains OPEN.
 M20-F has NOT STARTED.** Both depend on exact
 immutable v2 intent and current D decisions, but E uses a preparation-only permit and F later
 requires its own execution authorization. Initial E support is attacker-side, source-visible,

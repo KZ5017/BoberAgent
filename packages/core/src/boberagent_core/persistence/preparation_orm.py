@@ -89,3 +89,26 @@ class PreparationPermitRow(Base):
     permit_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+
+
+class PreparationImportProgressRow(Base):
+    __tablename__ = "preparation_import_progress"
+    __table_args__ = (
+        UniqueConstraint("preparation_id", "artifact_id", name="uq_preparation_import_artifact"),
+        CheckConstraint(
+            "received_bytes >= 0 AND received_bytes <= size_bytes",
+            name="ck_core_preparation_import_bounds",
+        ),
+    )
+
+    import_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    preparation_id: Mapped[str] = mapped_column(
+        ForeignKey("runtime_preparation_attempts.preparation_id"), nullable=False
+    )
+    artifact_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    received_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    error_code: Mapped[str | None] = mapped_column(String(128))

@@ -12,6 +12,7 @@ from boberagent_core.persistence.planning_orm import (
     PlanningAttemptRow,
 )
 from boberagent_core.persistence.preparation_orm import (
+    PreparationImportProgressRow,
     PreparationPermitRow,
     RuntimePreparationAttemptRow,
 )
@@ -21,7 +22,8 @@ assert all(
     row.metadata is Base.metadata for row in (ExecutionPlanRow, PlanDecisionRow, PlanningAttemptRow)
 )
 assert all(
-    row.metadata is Base.metadata for row in (RuntimePreparationAttemptRow, PreparationPermitRow)
+    row.metadata is Base.metadata
+    for row in (RuntimePreparationAttemptRow, PreparationPermitRow, PreparationImportProgressRow)
 )
 
 config = context.config

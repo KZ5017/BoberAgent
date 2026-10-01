@@ -236,6 +236,38 @@ class RuntimePreparationRepository:
         assert loaded is not None
         return loaded
 
+    def mark_dispatched(
+        self, ref: RuntimePreparationRef, *, expected_revision: int, updated_at: object
+    ) -> PreparationAttempt:
+        """CAS the reserved Run identity into a submitted preparation lifecycle."""
+        from datetime import datetime
+
+        if not isinstance(updated_at, datetime):
+            raise PreparationConflict("invalid dispatch timestamp")
+        current = self.get(ref)
+        if current is None or current.lifecycle is not PreparationLifecycle.REQUESTED:
+            raise PreparationConflict("only a requested preparation can be dispatched")
+        if updated_at < current.updated_at:
+            raise PreparationConflict("dispatch timestamp cannot regress")
+        result = self._session.execute(
+            update(RuntimePreparationAttemptRow)
+            .where(
+                RuntimePreparationAttemptRow.preparation_id == str(ref),
+                RuntimePreparationAttemptRow.lifecycle == PreparationLifecycle.REQUESTED.value,
+                RuntimePreparationAttemptRow.revision == expected_revision,
+            )
+            .values(
+                lifecycle=PreparationLifecycle.DISPATCHED.value,
+                revision=expected_revision + 1,
+                updated_at=updated_at,
+            )
+        )
+        if getattr(result, "rowcount", None) != 1:
+            raise PreparationConflict("stale preparation dispatch revision")
+        loaded = self.get(ref)
+        assert loaded is not None
+        return loaded
+
     @staticmethod
     def _load(row: RuntimePreparationAttemptRow) -> PreparationAttempt:
         try:

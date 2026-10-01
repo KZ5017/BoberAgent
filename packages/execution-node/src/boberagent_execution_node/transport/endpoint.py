@@ -17,6 +17,7 @@ from boberagent_sdk import (
     MissionContext,
 )
 from boberagent_transport import (
+    PREPARATION_IMPORT_PROTOCOL_VERSION,
     AdvertisedCapabilityStatus,
     CapabilityStatusAdvertisement,
     ConflictingInvocation,
@@ -32,6 +33,7 @@ from boberagent_transport import (
     invocation_fingerprint,
     parse_acknowledgement,
     parse_handshake_request,
+    parse_import_request,
     parse_interaction_response,
     parse_invocation,
     parse_run_status_request,
@@ -41,6 +43,7 @@ from boberagent_transport import (
 
 from boberagent_execution_node.node import ExecutionNode
 from boberagent_execution_node.persistence import RuntimeStore
+from boberagent_execution_node.preparation.metadata import admission_definition
 from boberagent_execution_node.services import LocalInvocationEnvironment
 
 
@@ -71,21 +74,35 @@ class ExecutionNodeTransportEndpoint:
             for provider in self._node.capabilities.providers()
             if provider.availability.value != "DISABLED"
         )
+        definitions = tuple(provider.definition for provider in providers)
+        statuses = tuple(
+            CapabilityStatusAdvertisement(
+                capability_id=provider.definition.capability_id,
+                status=AdvertisedCapabilityStatus(provider.availability.value),
+                reason=provider.failure or provider.availability_reason,
+            )
+            for provider in providers
+        )
+        if self._node.preparation is not None and not any(
+            str(definition.capability_id) == "runtime.prepare" for definition in definitions
+        ):
+            definitions += (admission_definition(),)
+            statuses += (
+                CapabilityStatusAdvertisement(
+                    capability_id="runtime.prepare",
+                    status=AdvertisedCapabilityStatus.AVAILABLE,
+                    reason=None,
+                ),
+            )
         response = NodeAdvertisement(
             request_message_id=envelope.message_id,
             node_id=self.node_id,
             timestamp=health.checked_at,
             lifecycle=health.lifecycle.value,
             database_ready=health.database_ready,
-            capabilities=tuple(provider.definition for provider in providers),
-            capability_statuses=tuple(
-                CapabilityStatusAdvertisement(
-                    capability_id=provider.definition.capability_id,
-                    status=AdvertisedCapabilityStatus(provider.availability.value),
-                    reason=provider.failure or provider.availability_reason,
-                )
-                for provider in providers
-            ),
+            capabilities=definitions,
+            capability_statuses=statuses,
+            preparation_import_versions=(PREPARATION_IMPORT_PROTOCOL_VERSION,),
             degraded_reasons=health.degraded_reasons,
         )
         return serialize_message(response)
@@ -93,6 +110,8 @@ class ExecutionNodeTransportEndpoint:
     async def accept_invocation(self, message: bytes) -> None:
         envelope = parse_invocation(message)
         ensure_supported_protocol(envelope.protocol_version)
+        if str(envelope.delivery.invocation.capability_id) == "runtime.prepare":
+            raise ProtocolError("preparation requires authenticated admission")
         if envelope.node_id != self.node_id:
             raise ProtocolError(
                 "invocation targeted a different Node",
@@ -152,6 +171,23 @@ class ExecutionNodeTransportEndpoint:
                 environment,
                 invocation_fingerprint=fingerprint,
             )
+
+    async def accept_preparation_invocation(self, message: bytes, *, principal: str) -> None:
+        envelope = parse_invocation(message)
+        ensure_supported_protocol(envelope.protocol_version)
+        if envelope.node_id != self.node_id or self._node.preparation is None:
+            raise ProtocolError("preparation admission is unavailable on this Node")
+        lock = self._locks.setdefault(str(envelope.correlation_id), asyncio.Lock())
+        async with lock:
+            self._node.preparation.admit(envelope, principal=principal)
+
+    async def accept_preparation_import(self, message: bytes, *, principal: str) -> bytes:
+        request = parse_import_request(message)
+        if self._node.preparation is None:
+            raise ProtocolError("preparation import is unavailable on this Node")
+        lock = self._locks.setdefault(str(request.import_id), asyncio.Lock())
+        async with lock:
+            return serialize_message(self._node.preparation.exchange(request, principal=principal))
 
     async def pending_outbound(self) -> tuple[bytes, ...]:
         store = self._require_store()

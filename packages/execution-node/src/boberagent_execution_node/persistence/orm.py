@@ -171,3 +171,44 @@ class RuntimeInteractionRow(Base):
     responded_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     cancelled_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     cancellation_reason: Mapped[str | None] = mapped_column(Text)
+
+
+class PreparationAuthorityRow(Base):
+    __tablename__ = "preparation_authorities"
+
+    permit_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    preparation_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("runtime_runs.run_id", ondelete="RESTRICT"), unique=True, nullable=False
+    )
+    authority_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    principal_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    permit_json: Mapped[JsonObject] = mapped_column(JSON, nullable=False)
+    admitted_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+
+
+class PreparationImportRow(Base):
+    __tablename__ = "preparation_imports"
+
+    import_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    permit_id: Mapped[str] = mapped_column(
+        ForeignKey("preparation_authorities.permit_id", ondelete="RESTRICT"), nullable=False
+    )
+    artifact_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    received_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    error_code: Mapped[str | None] = mapped_column(String(128))
+
+
+class ImportedArtifactRow(Base):
+    __tablename__ = "imported_artifacts"
+
+    artifact_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    verified_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)

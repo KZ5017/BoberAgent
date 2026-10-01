@@ -56,6 +56,7 @@ from .models import (
 from .orm import (
     ArtifactRow,
     EventOutboxRow,
+    PreparationAuthorityRow,
     ProcessRow,
     ResultOutboxRow,
     RunRow,
@@ -773,6 +774,19 @@ class RuntimeStore:
                 )
             )
             for run in runs:
+                if (
+                    run.capability_id == "runtime.prepare"
+                    and run.status == CapabilityRunStatus.QUEUED.value
+                    and session.scalar(
+                        select(PreparationAuthorityRow.permit_id).where(
+                            PreparationAuthorityRow.run_id == run.run_id
+                        )
+                    )
+                    is not None
+                ):
+                    # E3 admission is durable but no preparation coroutine exists yet.
+                    # Preserve the queued identity and exact import cursor across restart.
+                    continue
                 run.status = CapabilityRunStatus.FAILED.value
                 run.finished_at = recovered_at
                 run.error_code = "INTERRUPTED_EXECUTION_STATE_UNKNOWN"

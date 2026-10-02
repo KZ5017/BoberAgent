@@ -17,6 +17,7 @@ from boberagent_sdk import (
     MissionContext,
 )
 from boberagent_transport import (
+    MATERIALIZATION_PROTOCOL_VERSION,
     PREPARATION_IMPORT_PROTOCOL_VERSION,
     AdvertisedCapabilityStatus,
     CapabilityStatusAdvertisement,
@@ -103,6 +104,7 @@ class ExecutionNodeTransportEndpoint:
             capabilities=definitions,
             capability_statuses=statuses,
             preparation_import_versions=(PREPARATION_IMPORT_PROTOCOL_VERSION,),
+            preparation_materialization_versions=(MATERIALIZATION_PROTOCOL_VERSION,),
             degraded_reasons=health.degraded_reasons,
         )
         return serialize_message(response)
@@ -188,6 +190,18 @@ class ExecutionNodeTransportEndpoint:
         lock = self._locks.setdefault(str(request.import_id), asyncio.Lock())
         async with lock:
             return serialize_message(self._node.preparation.exchange(request, principal=principal))
+
+    async def accept_preparation_materialization(self, message: bytes, *, principal: str) -> bytes:
+        from boberagent_transport import parse_materialization_request
+
+        request = parse_materialization_request(message)
+        if self._node.preparation is None:
+            raise ProtocolError("preparation materialization is unavailable on this Node")
+        lock = self._locks.setdefault(str(request.preparation_ref), asyncio.Lock())
+        async with lock:
+            return serialize_message(
+                self._node.preparation.materialize(request, principal=principal)
+            )
 
     async def pending_outbound(self) -> tuple[bytes, ...]:
         store = self._require_store()

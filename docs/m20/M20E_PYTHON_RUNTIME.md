@@ -1,6 +1,7 @@
 # M20-E trusted Python preparation profile
 
-**Status:** Specified; E1 profile/confinement requirements typed, provider unimplemented. See [ADR 0020](../adr/0020-m20-e-trusted-python-preparation-boundary.md).
+**Status:** E1 profile typed; E4 source materializer and bubblewrap *preflight* implemented
+offline, real Kali acceptance pending. E5 Python provider/venv unimplemented. See [ADR 0020](../adr/0020-m20-e-trusted-python-preparation-boundary.md).
 
 ## Initial profile and rejection rule
 
@@ -31,6 +32,17 @@ ambient PYTHONPATH, user-site and package-manager configuration. Work in a trust
 directory, not the source tree. No system-wide installation or root/admin.
 
 ## ConfinementBackend acceptance
+
+The E4 backend constructs a closed trusted `python3 -I` probe under rootless bubblewrap:
+new user/PID/network namespaces, no whole-root bind, read-only `/usr` and system library
+binds where present, minimal `/dev`/`proc`, private `/tmp`, one explicit managed writable
+directory, clean environment and closed inherited FDs. A controlled host-loopback listener
+must be unreachable from the namespace. The probe has bounded time/output and is killed as
+a process group on timeout. It never receives acquired-source argv or filesystem paths.
+The evidence records only the E4 properties actually probed (network/FD/host-control and
+arbitrary host-path isolation). It **does not** claim process-count, memory, storage quota,
+descendant or managed-source runtime enforcement. Those are E5 subprocess admission gates;
+E4 does no acquired-code execution and cannot claim full E1 confinement completion.
 
 The typed backend must prove the following properties on the intended Kali Node before a
 positive real-environment claim:

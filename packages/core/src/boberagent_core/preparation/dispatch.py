@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Callable
 from datetime import datetime
+from typing import Literal
 
 from boberagent_contracts import (
     ArtifactRef,
@@ -16,7 +17,9 @@ from boberagent_contracts import (
     RuntimePreparationRef,
 )
 from boberagent_contracts.plan_values import NetworkTarget
+from boberagent_contracts.runtime_preparation import preparation_permit_digest
 from boberagent_transport import (
+    MATERIALIZATION_PROTOCOL_VERSION,
     MAX_IMPORT_CHUNK_BYTES,
     PREPARATION_IMPORT_PROTOCOL_VERSION,
     AssetProjection,
@@ -28,9 +31,14 @@ from boberagent_transport import (
     ImportStart,
     ImportStatus,
     InvocationDelivery,
+    MaterializationEvidence,
+    MaterializationPreflight,
+    MaterializationRejected,
+    MaterializeSourceRequest,
     MissionProjection,
     PreparationTransport,
     import_message_id,
+    materialization_message_id,
     preparation_import_id,
 )
 
@@ -170,6 +178,105 @@ class CorePreparationDispatchService:
                 )
             )
         return progress[0], progress[1]
+
+    async def check_materialization(self, ref: RuntimePreparationRef) -> MaterializationPreflight:
+        """Check exact E3 imports and trusted Node confinement; do not create workspace."""
+        response = await self._exchange_materialization(ref, action="CHECK")
+        if not isinstance(response, MaterializationPreflight):
+            raise PreparationDispatchError("MATERIALIZATION_RESPONSE_INVALID")
+        return response
+
+    async def materialize_source(self, ref: RuntimePreparationRef) -> MaterializationEvidence:
+        """Explicit E4 pump after E3 import; never authorizes E5 or execution."""
+        response = await self._exchange_materialization(ref, action="MATERIALIZE")
+        if not isinstance(response, MaterializationEvidence):
+            raise PreparationDispatchError("MATERIALIZATION_RESPONSE_INVALID")
+        return response
+
+    async def _exchange_materialization(
+        self, ref: RuntimePreparationRef, *, action: Literal["CHECK", "MATERIALIZE"]
+    ) -> MaterializationEvidence | MaterializationPreflight:
+        historical = self._admission.get_attempt(ref)
+        if historical is None:
+            raise PreparationDispatchError("PREPARATION_NOT_FOUND")
+        node_id = historical.context.request.node_id
+        advertisement, _ = await CapabilityRegistrationClient(
+            self._transport, self._registry
+        ).refresh_node(node_id)
+        if (
+            MATERIALIZATION_PROTOCOL_VERSION
+            not in advertisement.preparation_materialization_versions
+        ):
+            raise PreparationDispatchError("MATERIALIZATION_PROTOCOL_UNSUPPORTED")
+        current = self._current(ref)
+        permit = current.permit
+        assert permit is not None
+        if current.attempt.lifecycle is not PreparationLifecycle.DISPATCHED:
+            raise PreparationDispatchError("PREPARATION_STATE_INELIGIBLE")
+        provider = self._router.select_provider(
+            capability_id="runtime.prepare",
+            operation="prepare",
+            provider_id=current.attempt.context.request.provider_id,
+            node_id=node_id,
+        )
+        if provider.implementation_version != permit.spec.provider_version:
+            raise PreparationDispatchError("PREPARATION_PROVIDER_CHANGED")
+        source = permit.spec.source
+        pins = (
+            source.plan_source.raw_artifact_ref,
+            source.plan_source.manifest_artifact_ref,
+        )
+        with self._database.unit_of_work() as work:
+            for artifact_ref in pins:
+                row = work.preparation_imports.get(
+                    preparation_import_id(permit.permit_ref, artifact_ref)
+                )
+                if row is None or row.state is not ImportProgressState.VERIFIED:
+                    raise PreparationDispatchError("IMPORTED_SOURCE_NOT_VERIFIED")
+        status = await self._transport.query_run_status(node_id, permit.run_ref)
+        if status is not CapabilityRunStatus.QUEUED:
+            raise PreparationDispatchError("PREPARATION_DISPATCH_UNCERTAIN")
+        request = MaterializeSourceRequest(
+            message_id=materialization_message_id(permit.permit_ref, action),
+            node_id=node_id,
+            preparation_ref=ref,
+            permit_ref=permit.permit_ref,
+            permit_sha256=preparation_permit_digest(permit),
+            run_ref=permit.run_ref,
+            action=action,
+            timestamp=self._clock(),
+        )
+        response = await self._transport.exchange_preparation_materialization(request)
+        self._current(ref)
+        if isinstance(response, MaterializationRejected):
+            raise PreparationDispatchError(response.code)
+        if isinstance(response, MaterializationPreflight):
+            if (
+                action != "CHECK"
+                or response.permit_ref != permit.permit_ref
+                or response.run_ref != permit.run_ref
+                or response.raw_artifact_ref != pins[0]
+                or response.manifest_artifact_ref != pins[1]
+                or response.raw_sha256 != source.plan_source.raw_sha256
+                or response.manifest_sha256 != source.plan_source.manifest_sha256
+            ):
+                raise PreparationDispatchError("MATERIALIZATION_EVIDENCE_MISMATCH")
+            return response
+        if action != "MATERIALIZE":
+            raise PreparationDispatchError("MATERIALIZATION_EVIDENCE_MISMATCH")
+        if (
+            response.request_message_id != request.message_id
+            or response.permit_ref != permit.permit_ref
+            or response.permit_sha256 != request.permit_sha256
+            or response.run_ref != permit.run_ref
+            or response.raw_artifact_ref != pins[0]
+            or response.manifest_artifact_ref != pins[1]
+            or response.raw_sha256 != source.plan_source.raw_sha256
+            or response.manifest_sha256 != source.plan_source.manifest_sha256
+            or response.plan_intent_sha256 != permit.spec.plan_intent_sha256
+        ):
+            raise PreparationDispatchError("MATERIALIZATION_EVIDENCE_MISMATCH")
+        return response
 
     def _current(self, ref: RuntimePreparationRef) -> PreparationAdmission:
         admission = self._admission.current_admission(ref)

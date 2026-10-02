@@ -1,8 +1,16 @@
 # M20-E acceptance and stop conditions
 
-**Status:** E1–E3 COMPLETE; real Core↔Kali E3 acceptance PASSED. E4–E9 have not begun.
+**Status:** E1–E3 COMPLETE; real Core↔Kali E3 acceptance PASSED. E4 IMPLEMENTED offline,
+real Kali acceptance PENDING. E5–E9 have not begun.
 M20-E remains OPEN; M20-F has not begun.
 See [slice plan](M20E_IMPLEMENTATION.md).
+
+E4's synthetic E2→E3→E4 test uses a controlled confinement proof and therefore does not
+substitute for the real Kali bubblewrap check. The Linux integration test skips explicitly
+when bubblewrap or requisite kernel/socket privileges are unavailable. Operator-run E4
+`--check-config` must prove the real Node's imported inputs and trusted confinement probe;
+`--real-materialization` is a separate opt-in action on a harmless synthetic ZIP within
+the E2 permit window. No E4 real acceptance has been recorded yet.
 
 The manual E3 script has distinct `--check-config` (no import bytes) and explicit
 `--real-artifact-import` modes. It uses a harmless synthetic supported D→E2 chain, not the

@@ -1,7 +1,7 @@
 # M20-E exact source import, materialization and workspace
 
 **Status:** E3 opaque import COMPLETE (real Core↔Kali acceptance PASSED); E4
-materialization/workspace NOT STARTED. See
+materialization IMPLEMENTED offline, real Kali acceptance PENDING. See
 [ADR 0019](../adr/0019-m20-e-immutable-source-import-and-prepared-resource.md).
 
 `preparation-import-v1` uses a stable permit+Artifact import ID, explicit byte offsets,
@@ -45,6 +45,20 @@ protocol changes are explicitly deferred to E3 and belong in the shared neutral 
 not Core/Node models or MCP-specific domain types.
 
 ## Materialization
+
+The E4 Node materializer consumes only the two E3 imported object identities from its
+admitted permit. It checks ref/hash/size, Node/Run/permit binding, import-row VERIFIED
+status and actual bytes again. The neutral E4 request has CHECK and MATERIALIZE actions;
+Core rechecks current D/E applicability immediately before each request. CHECK creates no
+workspace. Materialization streams regular ZIP members through no-follow directory FDs,
+enforces E1 entry/depth/byte/write/temporary/time budgets and a fixed compression-ratio
+ceiling, and reconciles every path/type/mode/size/SHA-256 with the retained structural
+manifest. The private generated `preparation-source/staging` tree is marked read-only and
+atomically renamed under `published` only after complete reconciliation. A stored PUBLISHED
+row is reused only after full on-disk tree revalidation. A partial or tampered tree is
+quarantined; restart quarantines INCOMPLETE/VERIFIED state. Physical paths never leave the
+Node in protocol evidence. E4's logical materialization identity is preparation-owned;
+it is **not** a READY ResourceRef. E5 owns eventual Python Resource creation.
 
 Only after both imports verify may the Node materialize. It allocates a generated managed
 workspace rooted under its configured directory; no caller-controlled physical path. It

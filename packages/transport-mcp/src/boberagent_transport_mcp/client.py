@@ -35,6 +35,8 @@ from boberagent_transport import (
     InteractionResponseEnvelope,
     InvocationDelivery,
     InvocationEnvelope,
+    MaterializationResponse,
+    MaterializeSourceRequest,
     NodeAdvertisement,
     ProtocolError,
     RunStatusRequest,
@@ -55,6 +57,7 @@ from boberagent_transport import (
     parse_artifact_response,
     parse_import_response,
     parse_interaction_acknowledgement,
+    parse_materialization_response,
     parse_outbound,
     parse_run_status_response,
     serialize_message,
@@ -198,6 +201,23 @@ class McpTransport:
             or response.artifact_ref != request.artifact_ref
         ):
             raise ProtocolError("MCP preparation import response identity mismatch")
+        return response
+
+    async def exchange_preparation_materialization(
+        self, request: MaterializeSourceRequest
+    ) -> MaterializationResponse:
+        self._validate_target(request.node_id)
+        raw = await self._call_text(
+            "boberagent.preparation.materialize",
+            {"payload": serialize_message(request).decode("utf-8")},
+        )
+        response = parse_materialization_response(raw.encode("utf-8"))
+        if (
+            response.request_message_id != request.message_id
+            or response.node_id != request.node_id
+            or response.preparation_ref != request.preparation_ref
+        ):
+            raise ProtocolError("MCP materialization response identity mismatch")
         return response
 
     async def send_serialized_invocation(self, node_id: str, message: bytes) -> str:

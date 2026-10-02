@@ -760,3 +760,40 @@ on the first import and again after Node restart against the same Core runtime; 
 [E3 acceptance record](../../docs/m20/M20E_ACCEPTANCE.md#e3-real-corekali-acceptance-passed).
 **M20-E3 COMPLETE.** M20-E remains OPEN; E4–E9 and M20-F have not begun. Production
 `execute_plan()` remains denied.
+
+## M20-E4 exact source materialization (operator-only; acceptance pending)
+
+Use a new dedicated Core directory and the same Kali Node/runtime setup shown for E3.
+The operator separately preflighted Kali Linux 6.12.25, bubblewrap 0.11.0, working
+unprivileged user namespaces (`kernel.unprivileged_userns_clone=1`,
+`user.max_user_namespaces=15097`), controlled tmpfs writes, blocked host `/etc` writes,
+and an isolated network namespace unable to reach the external Node listener. That
+exploratory command used `--ro-bind / /`; **the production E4 probe does not**.
+
+On Kali, start the normal MCP Node command above with an isolated, persistent runtime
+directory (for example `/var/lib/boberagent-m20e4-smoke`) and the same bearer/TLS
+conventions. On WSL/Core, first run the E3 `--check-config` and
+`--real-artifact-import` commands above against a fresh
+`/absolute/path/to/m20e4-core-smoke` directory. Then, within the same 15-minute permit
+window, run E4's no-materialization check:
+
+```shell
+uv run python scripts/manual-smoke/m20e4_source_materialization_smoke_test.py \
+  --check-config \
+  --core-runtime-directory /absolute/path/to/m20e4-core-smoke \
+  --endpoint https://kali.example.test:8443/mcp \
+  --node-id 'node-from-Kali-startup' \
+  --ca-file /absolute/path/to/lab-ca.pem
+```
+
+After reviewing the exact retained refs/hashes and real bubblewrap proof, replace
+`--check-config` with `--real-materialization` using the same arguments. It publishes only
+the harmless synthetic archive already imported by E3 and prints logical identities,
+file/byte counts, digest, backend/version/features and PUBLISHED state; it never prints
+source contents. Repeating the command revalidates/reuses the exact published tree. No
+PoC entrypoint, Python environment, package/network operation or target is invoked.
+The harness is manual-only and is not executed by pytest or automatically by Codex. Until
+the operator runs both real E4 modes, **E4 real Kali acceptance remains pending**.
+
+**M20-E4 IMPLEMENTED offline.** E5–E9 and M20-F have not begun. Production
+`execute_plan()` remains denied.

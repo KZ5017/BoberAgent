@@ -1,7 +1,8 @@
 # M20-E preparation recovery, reuse and evidence
 
 **Status:** E3 dispatch/import recovery COMPLETE, including real Core↔Kali restart/replay
-acceptance; E4–E9 preparation recovery remains future work. This refines
+acceptance; E4 source recovery is implemented offline with real Kali acceptance pending;
+E5–E9 preparation recovery remains future work. This refines
 [authority](M20E_RUNTIME_AUTHORITY.md).
 
 E3 persists Core import cursors and Node transfer cursors. A retry opens the same transfer;
@@ -21,6 +22,15 @@ window still applies; expiry is expected inapplicability, not import corruption.
 [source/workspace](M20E_SOURCE_AND_WORKSPACE.md) for the import boundary.
 
 ## Immutable preparation evidence
+
+E4 has a separate durable typed materialization receipt, not the final E6
+RuntimePreparationManifest. Its Node row records INCOMPLETE, VERIFIED, PUBLISHED or
+QUARANTINED, exact permit/Run/materialization identity, hashes, file/byte counts, tree digest,
+observed bubblewrap identity/version/features, authorized limits, observed E4 usage and
+timestamps. A process restart moves any
+INCOMPLETE/VERIFIED tree to quarantine; PUBLISHED is revalidated from every expected file
+before reuse. A corrupted published tree is quarantined and never treated as ready. No
+automatic half-extraction resume or re-run follows a failed E4 attempt.
 
 The Node publishes a versioned, immutable `RuntimePreparationManifest` as a normal Artifact,
 with a small typed `RuntimePreparationReceipt` in the Result. The manifest records at least:

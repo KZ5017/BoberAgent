@@ -21,7 +21,7 @@ def test_empty_database_migrates_and_survives_reopen(tmp_path: Path) -> None:
     assert current_revision(database) is None
 
     upgrade_database(database)
-    assert current_revision(database) == "0006_preparation_import"
+    assert current_revision(database) == "0007_preparation_materialization"
     assert set(inspect(database.migration_engine).get_table_names()) == {
         "alembic_version",
         "artifact_spool",
@@ -29,6 +29,7 @@ def test_empty_database_migrates_and_survives_reopen(tmp_path: Path) -> None:
         "managed_processes",
         "preparation_authorities",
         "preparation_imports",
+        "preparation_materializations",
         "imported_artifacts",
         "result_outbox",
         "runtime_interactions",
@@ -41,7 +42,7 @@ def test_empty_database_migrates_and_survives_reopen(tmp_path: Path) -> None:
 
     reopened = RuntimeDatabase(database_path)
     try:
-        assert current_revision(reopened) == "0006_preparation_import"
+        assert current_revision(reopened) == "0007_preparation_materialization"
         upgrade_database(reopened)
     finally:
         reopened.close()
@@ -61,7 +62,7 @@ def test_invocation_fingerprint_migration_upgrades_milestone_4_schema(
         assert "invocation_fingerprint" not in columns
 
         upgrade_database(database)
-        assert current_revision(database) == "0006_preparation_import"
+        assert current_revision(database) == "0007_preparation_materialization"
         columns = {
             column["name"]
             for column in inspect(database.migration_engine).get_columns("runtime_runs")
@@ -99,7 +100,7 @@ def test_artifact_sync_migration_preserves_milestone_5_spool_metadata(
             )
 
         upgrade_database(database)
-        assert current_revision(database) == "0006_preparation_import"
+        assert current_revision(database) == "0007_preparation_materialization"
         with database.migration_engine.connect() as connection:
             row = connection.execute(
                 text(
@@ -129,7 +130,7 @@ def test_resource_session_migration_upgrades_previous_node_schema(tmp_path: Path
             )
 
         upgrade_database(database)
-        assert current_revision(database) == "0006_preparation_import"
+        assert current_revision(database) == "0007_preparation_materialization"
         tables = set(inspect(database.migration_engine).get_table_names())
         assert {"runtime_interactions", "runtime_resources", "runtime_sessions"} <= tables
         with database.migration_engine.connect() as connection:
@@ -156,6 +157,34 @@ def test_node_identity_is_generated_once_and_configurable(tmp_path: Path) -> Non
     assert configured.node_id == NodeId("node-lab-01")
     with pytest.raises(ValueError, match="does not match"):
         load_or_create_identity(explicit_path, NodeId("node-lab-02"))
+
+
+def test_e4_migration_upgrades_e3_without_rewriting_import_state(tmp_path: Path) -> None:
+    database = RuntimeDatabase(tmp_path / "e3-to-e4.sqlite3")
+    try:
+        upgrade_database(database, "0006_preparation_import")
+        assert current_revision(database) == "0006_preparation_import"
+        with database.migration_engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO imported_artifacts "
+                    "(artifact_id, sha256, size_bytes, content_key, verified_at) "
+                    "VALUES ('artifact-old', :digest, 0, :digest, '2026-01-01T00:00:00+00:00')"
+                ),
+                {"digest": "a" * 64},
+            )
+        upgrade_database(database)
+        assert current_revision(database) == "0007_preparation_materialization"
+        assert (
+            "preparation_materializations" in inspect(database.migration_engine).get_table_names()
+        )
+        with database.migration_engine.connect() as connection:
+            assert (
+                connection.execute(text("SELECT artifact_id FROM imported_artifacts")).scalar_one()
+                == "artifact-old"
+            )
+    finally:
+        database.close()
 
 
 def test_configuration_derives_owned_runtime_paths(tmp_path: Path) -> None:

@@ -212,3 +212,23 @@ class ImportedArtifactRow(Base):
     size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     content_key: Mapped[str] = mapped_column(String(64), nullable=False)
     verified_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+
+
+class PreparationMaterializationRow(Base):
+    __tablename__ = "preparation_materializations"
+
+    preparation_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    permit_id: Mapped[str] = mapped_column(
+        ForeignKey("preparation_authorities.permit_id", ondelete="RESTRICT"),
+        unique=True,
+        nullable=False,
+    )
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("runtime_runs.run_id", ondelete="RESTRICT"), nullable=False
+    )
+    materialization_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    evidence_json: Mapped[JsonObject | None] = mapped_column(JSON)
+    error_code: Mapped[str | None] = mapped_column(String(128))
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)

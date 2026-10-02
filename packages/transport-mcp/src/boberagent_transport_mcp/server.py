@@ -186,6 +186,15 @@ class McpTransportServer:
                 )
             ).decode("utf-8")
 
+        @self._mcp.tool(name="boberagent.preparation.materialize")
+        async def preparation_materialize(payload: str) -> str:
+            endpoint = cast(TransportPreparationEndpoint, self._endpoint)
+            return (
+                await endpoint.accept_preparation_materialization(
+                    payload.encode("utf-8"), principal=self._core_principal()
+                )
+            ).decode("utf-8")
+
         @self._mcp.tool(name="boberagent.poll_outbound")
         async def poll_outbound(limit: int = 100) -> list[str]:
             bounded = max(1, min(limit, self.configuration.outbound_batch_size))

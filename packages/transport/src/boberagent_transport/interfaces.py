@@ -14,6 +14,7 @@ from .models import (
     TransportMessageId,
 )
 from .preparation_import import ImportRequest, ImportResponse
+from .preparation_materialization import MaterializationResponse, MaterializeSourceRequest
 
 
 class TransportNodeEndpoint(Protocol):
@@ -46,12 +47,22 @@ class TransportPreparationEndpoint(Protocol):
 
     async def accept_preparation_import(self, message: bytes, *, principal: str) -> bytes: ...
 
+    async def accept_preparation_materialization(
+        self, message: bytes, *, principal: str
+    ) -> bytes: ...
+
 
 class PreparationImportTransport(Protocol):
     @property
     def connected(self) -> bool: ...
 
     async def exchange_preparation_import(self, request: ImportRequest) -> ImportResponse: ...
+
+
+class PreparationMaterializationTransport(Protocol):
+    async def exchange_preparation_materialization(
+        self, request: MaterializeSourceRequest
+    ) -> MaterializationResponse: ...
 
 
 class ArtifactTransport(Protocol):
@@ -96,5 +107,7 @@ class CapabilityTransport(Protocol):
     async def receive_failure(self) -> TransportFailure: ...
 
 
-class PreparationTransport(CapabilityTransport, PreparationImportTransport, Protocol):
+class PreparationTransport(
+    CapabilityTransport, PreparationImportTransport, PreparationMaterializationTransport, Protocol
+):
     """Normal capability routing plus distinct authorized import infrastructure."""

@@ -157,3 +157,22 @@ Pass a deliberate non-empty `--runtime-directory` (absolute paths are recommende
 operators). An empty or whitespace-only value is rejected before runtime initialization;
 non-empty relative paths retain their existing behavior. Reuse the same directory across
 ordinary restarts to preserve Node identity and local import/outbox state.
+
+## M20-E4 preparation-owned source materialization
+
+After authenticated E3 import, Core can explicitly request E4 CHECK or MATERIALIZE for the
+same admitted `runtime.prepare` Run. CHECK re-verifies both exact imported Artifacts and
+runs a fresh closed Linux bubblewrap probe without creating a workspace. MATERIALIZE creates
+only a generated preparation-owned source area under
+`<workspace-root>/preparation-source/{staging,published,quarantine}`. The Node persists
+INCOMPLETE/VERIFIED/PUBLISHED/QUARANTINED state in migration
+`0007_preparation_materialization`; it never publishes a partial tree. Reuse re-hashes every
+file, and restart quarantines incomplete state. Physical paths are private to the Node.
+
+The probe does not bind host `/`, `/etc`, `/home` or `/run`; it mounts only trusted `/usr`
+and library directories read-only, minimal device/proc views and one managed writable
+directory. It verifies a new network namespace against a controlled host listener. It
+reports only E4 properties actually tested. E5 still needs hard process-count, memory,
+storage and descendant enforcement before any preparation subprocess can be ready.
+E4 creates no venv/Resource, imports or executes no acquired source, and grants no
+execution authorization. Real Kali E4 acceptance is operator-only and pending.

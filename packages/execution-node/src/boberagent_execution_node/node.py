@@ -26,6 +26,7 @@ from .listener import ListenerRuntimeManager
 from .persistence import RuntimeDatabase, RuntimeStore
 from .persistence.migrations import upgrade_database
 from .preparation import NodePreparationService, PreparationAdmissionError
+from .preparation.confinement import ConfinementBackend
 from .results import ResultOutbox
 from .services import ExecutionContextFactory, LocalInvocationEnvironment
 from .tools import DependencyResolver, ToolAvailability, ToolRegistry
@@ -39,6 +40,7 @@ class ExecutionNode:
         configuration: NodeConfiguration,
         *,
         browser_backend: BrowserBackend | None = None,
+        preparation_confinement: ConfinementBackend | None = None,
     ) -> None:
         self.configuration = configuration
         self.lifecycle = NodeLifecycle()
@@ -55,6 +57,7 @@ class ExecutionNode:
         self.interaction_runtime: InteractionRuntime | None = None
         self.preparation: NodePreparationService | None = None
         self._browser_backend = browser_backend
+        self._preparation_confinement = preparation_confinement
         self._clock = UtcClock()
         self._degraded_reasons: list[str] = []
         self._database_ready = False
@@ -76,7 +79,11 @@ class ExecutionNode:
             self._database_ready = True
             self.store = RuntimeStore(self.database)
             self.preparation = NodePreparationService(
-                self.database, self.configuration.imported_artifact_root, str(self.identity.node_id)
+                self.database,
+                self.configuration.imported_artifact_root,
+                str(self.identity.node_id),
+                self.configuration.workspace_root,
+                confinement=self._preparation_confinement,
             )
             self.events = EventOutbox(self.store)
             self.results = ResultOutbox(self.store)

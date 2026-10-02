@@ -55,6 +55,11 @@ from .preparation_import import (
     ImportResponse,
     parse_import_response,
 )
+from .preparation_materialization import (
+    MaterializationResponse,
+    MaterializeSourceRequest,
+    parse_materialization_response,
+)
 
 
 class InMemoryTransport:
@@ -164,6 +169,26 @@ class InMemoryTransport:
             or response.artifact_ref != request.artifact_ref
         ):
             raise ProtocolError("preparation import response does not match request")
+        return response
+
+    async def exchange_preparation_materialization(
+        self, request: MaterializeSourceRequest
+    ) -> MaterializationResponse:
+        self._require_connected()
+        if self._trusted_core_principal is None:
+            raise ProtocolError("preparation materialization requires a trusted Core peer")
+        endpoint = cast(TransportPreparationEndpoint, self._endpoint(request.node_id))
+        response = parse_materialization_response(
+            await endpoint.accept_preparation_materialization(
+                serialize_message(request), principal=self._trusted_core_principal
+            )
+        )
+        if (
+            response.request_message_id != request.message_id
+            or response.node_id != request.node_id
+            or response.preparation_ref != request.preparation_ref
+        ):
+            raise ProtocolError("preparation materialization response identity mismatch")
         return response
 
     async def send_serialized_invocation(self, node_id: str, message: bytes) -> None:

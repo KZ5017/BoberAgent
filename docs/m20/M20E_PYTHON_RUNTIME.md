@@ -39,6 +39,15 @@ binds where present, minimal `/dev`/`proc`, private `/tmp`, one explicit managed
 directory, clean environment and closed inherited FDs. A controlled host-loopback listener
 must be unreachable from the namespace. The probe has bounded time/output and is killed as
 a process group on timeout. It never receives acquired-source argv or filesystem paths.
+The closed probe selects `/usr/bin/python3`, not a PATH-selected venv interpreter. On
+supported usrmerge hosts, only exact standard compatibility links (`/bin`, `/sbin`, `/lib`,
+`/lib64` to their corresponding relative `usr/...` directories) are reconstructed inside
+the namespace. Real standard directories may be mounted read-only. Unexpected links, chains,
+missing targets or a symlinked `/usr` fail closed; neither the host root nor another host
+location is bound to compensate. The initial real Kali E4 `--check-config` failed before
+materialization because the original probe omitted these links, leaving the Python ELF
+interpreter under `/lib64` unreachable. The narrow topology fix is validated offline;
+**real Kali E4 acceptance must be rerun**.
 The evidence records only the E4 properties actually probed (network/FD/host-control and
 arbitrary host-path isolation). It **does not** claim process-count, memory, storage quota,
 descendant or managed-source runtime enforcement. Those are E5 subprocess admission gates;

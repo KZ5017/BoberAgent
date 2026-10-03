@@ -763,6 +763,12 @@ on the first import and again after Node restart against the same Core runtime; 
 
 ## M20-E4 exact source materialization (operator-only; acceptance pending)
 
+The first operator Kali `--check-config` failed closed after successful E3 import because
+the closed bubblewrap view omitted usrmerge `/lib64 → usr/lib64` (and other standard
+compatibility links), so trusted `/usr/bin/python3` could not find its ELF interpreter.
+No source was materialized. A narrow offline fix reconstructs only allowlisted links;
+real Kali CHECK and explicit MATERIALIZE must be rerun before acceptance.
+
 Use a new dedicated Core directory and the same Kali Node/runtime setup shown for E3.
 The operator separately preflighted Kali Linux 6.12.25, bubblewrap 0.11.0, working
 unprivileged user namespaces (`kernel.unprivileged_userns_clone=1`,

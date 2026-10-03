@@ -59,6 +59,11 @@ row is reused only after full on-disk tree revalidation. A partial or tampered t
 quarantined; restart quarantines INCOMPLETE/VERIFIED state. Physical paths never leave the
 Node in protocol evidence. E4's logical materialization identity is preparation-owned;
 it is **not** a READY ResourceRef. E5 owns eventual Python Resource creation.
+The confinement CHECK now recognizes only standard usrmerge compatibility links inside
+the closed bubblewrap view; it does not gain access to host root, imported objects or
+another preparation workspace. The first Kali CHECK exposed an omitted `/lib64` loader
+link and failed before any source bytes were materialized. Offline correction is in place;
+real Kali acceptance remains pending.
 
 Only after both imports verify may the Node materialize. It allocates a generated managed
 workspace rooted under its configured directory; no caller-controlled physical path. It

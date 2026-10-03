@@ -12,6 +12,15 @@ when bubblewrap or requisite kernel/socket privileges are unavailable. Operator-
 `--real-materialization` is a separate opt-in action on a harmless synthetic ZIP within
 the E2 permit window. No E4 real acceptance has been recorded yet.
 
+The first real Kali E4 `--check-config` failed closed with `CONFINEMENT_UNAVAILABLE` after
+E3 succeeded; no source was materialized. Manual reproduction identified usrmerge
+`/bin`, `/lib` and `/lib64` links to `/usr` as the omitted ELF-loader topology: a
+`--ro-bind /usr /usr`-only probe could not start `/usr/bin/python3` because its loader
+resolves through `/lib64`. The Node backend now reconstructs only allowlisted compatibility
+links and reports bounded, differentiated confinement failure codes. This fix has offline
+tests only. The operator must rerun real Kali CHECK and then explicitly opt in to
+MATERIALIZE before E4 can be accepted; E4 remains implemented with real acceptance pending.
+
 The manual E3 script has distinct `--check-config` (no import bytes) and explicit
 `--real-artifact-import` modes. It uses a harmless synthetic supported D→E2 chain, not the
 retained CERTCC D8 UNSUPPORTED case. Success verifies the two exact ArtifactRefs, hashes and

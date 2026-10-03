@@ -758,16 +758,17 @@ Preparation `preparation-7a156e8a25c647b591589689a0d374c3` and Run
 `run-preparation-287e2192955a4caf9b92c6fffe55ffda`. Both exact Artifacts verified
 on the first import and again after Node restart against the same Core runtime; see the
 [E3 acceptance record](../../docs/m20/M20E_ACCEPTANCE.md#e3-real-corekali-acceptance-passed).
-**M20-E3 COMPLETE.** M20-E remains OPEN; E4–E9 and M20-F have not begun. Production
+**M20-E3 COMPLETE.** E4 real acceptance is recorded below; M20-E remains OPEN, and
+E5–E9 and M20-F have not begun. Production
 `execute_plan()` remains denied.
 
-## M20-E4 exact source materialization (operator-only; acceptance pending)
+## M20-E4 exact source materialization (operator-only; accepted)
 
 The first operator Kali `--check-config` failed closed after successful E3 import because
 the closed bubblewrap view omitted usrmerge `/lib64 → usr/lib64` (and other standard
 compatibility links), so trusted `/usr/bin/python3` could not find its ELF interpreter.
-No source was materialized. A narrow offline fix reconstructs only allowlisted links;
-real Kali CHECK and explicit MATERIALIZE must be rerun before acceptance.
+No source was materialized. A narrow fix reconstructs only allowlisted links, with no
+host-root bind. The subsequent real Kali CHECK and explicit MATERIALIZE passed.
 
 Use a new dedicated Core directory and the same Kali Node/runtime setup shown for E3.
 The operator separately preflighted Kali Linux 6.12.25, bubblewrap 0.11.0, working
@@ -798,8 +799,17 @@ the harmless synthetic archive already imported by E3 and prints logical identit
 file/byte counts, digest, backend/version/features and PUBLISHED state; it never prints
 source contents. Repeating the command revalidates/reuses the exact published tree. No
 PoC entrypoint, Python environment, package/network operation or target is invoked.
-The harness is manual-only and is not executed by pytest or automatically by Codex. Until
-the operator runs both real E4 modes, **E4 real Kali acceptance remains pending**.
+The harness is manual-only and is not executed by pytest or automatically by Codex. The
+operator ran both real E4 modes and repeated MATERIALIZE after a same-runtime Node restart.
+Node `node-8207f75c-8905-4fc4-ab96-863e52d9d51a`, Preparation
+`preparation-128f07e383204665be425c85da36c6f6` and Run
+`run-preparation-5e05d913809a45e7885294c2753ec44a` retained logical materialization
+`materialization:93a92832d388166dc92fd53d069fef96d6aaf615d1b57f2562de60aae8683895`:
+one file, 336 bytes, tree SHA-256
+`3468149cb07e1a4d3058f6a5326758b2b4fa215e53d1c93e784cb4854228a59b`,
+`PUBLISHED` both before and after restart. CHECK proved `linux-bubblewrap` /
+`bubblewrap 0.11.0` with only the four reported E4 features and created no workspace. See the
+[E4 acceptance record](../../docs/m20/M20E_ACCEPTANCE.md#e4-real-corekali-acceptance-passed).
 
-**M20-E4 IMPLEMENTED offline.** E5–E9 and M20-F have not begun. Production
+**M20-E4 CLOSED.** M20-E remains OPEN; E5–E9 and M20-F have not begun. Production
 `execute_plan()` remains denied.

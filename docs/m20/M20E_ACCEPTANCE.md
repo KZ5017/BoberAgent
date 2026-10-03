@@ -1,25 +1,25 @@
 # M20-E acceptance and stop conditions
 
-**Status:** E1–E3 COMPLETE; real Core↔Kali E3 acceptance PASSED. E4 IMPLEMENTED offline,
-real Kali acceptance PENDING. E5–E9 have not begun.
-M20-E remains OPEN; M20-F has not begun.
-See [slice plan](M20E_IMPLEMENTATION.md).
+**Status:** E1–E4 COMPLETE; real Core↔Kali E3 and E4 acceptance PASSED.
+E5–E9 have not begun.
+**M20-E4 CLOSED. M20-E remains OPEN. M20-E5 has not begun.**
+M20-F has not begun. See [slice plan](M20E_IMPLEMENTATION.md).
 
 E4's synthetic E2→E3→E4 test uses a controlled confinement proof and therefore does not
 substitute for the real Kali bubblewrap check. The Linux integration test skips explicitly
 when bubblewrap or requisite kernel/socket privileges are unavailable. Operator-run E4
 `--check-config` must prove the real Node's imported inputs and trusted confinement probe;
 `--real-materialization` is a separate opt-in action on a harmless synthetic ZIP within
-the E2 permit window. No E4 real acceptance has been recorded yet.
+the E2 permit window. The operator completed both modes on Kali, including restart/reuse.
 
 The first real Kali E4 `--check-config` failed closed with `CONFINEMENT_UNAVAILABLE` after
 E3 succeeded; no source was materialized. Manual reproduction identified usrmerge
 `/bin`, `/lib` and `/lib64` links to `/usr` as the omitted ELF-loader topology: a
 `--ro-bind /usr /usr`-only probe could not start `/usr/bin/python3` because its loader
-resolves through `/lib64`. The Node backend now reconstructs only allowlisted compatibility
-links and reports bounded, differentiated confinement failure codes. This fix has offline
-tests only. The operator must rerun real Kali CHECK and then explicitly opt in to
-MATERIALIZE before E4 can be accepted; E4 remains implemented with real acceptance pending.
+resolves through `/lib64/ld-linux-x86-64.so.2`. The Node backend now reconstructs only
+allowlisted compatibility links and reports bounded, differentiated confinement failure
+codes. It did **not** add a host-root bind. The subsequent real Kali CHECK and explicit
+MATERIALIZE passed as recorded below.
 
 The manual E3 script has distinct `--check-config` (no import bytes) and explicit
 `--real-artifact-import` modes. It uses a harmless synthetic supported D→E2 chain, not the
@@ -47,6 +47,47 @@ reused identities. No extraction, workspace, Resource, venv, process or PoC exec
 occurred. E3 is accepted as opaque import only, not preparation completion or execution
 authorization. The 15-minute E2 permit window remains mandatory; a replay after expiry
 correctly fails closed and is not an Artifact replay defect.
+
+## E4 real Core↔Kali acceptance (PASSED)
+
+The operator used Node `node-8207f75c-8905-4fc4-ab96-863e52d9d51a` and Core runtime
+`/home/bober/boberagent-data/m20e4-core-smoke-final`. The accepted Preparation was
+`preparation-128f07e383204665be425c85da36c6f6`; its Run was
+`run-preparation-5e05d913809a45e7885294c2753ec44a`.
+
+| Exact E3 imported input | SHA-256 | Size |
+| --- | --- | ---: |
+| `artifact-inspection-raw` | `1b79db425268bcc0d6234358220d9393a178af036065f729d4ab54792fb9c756` | 442 bytes |
+| `artifact-inspection-manifest` | `6bb6181e8808aab90a44060012bdde5f98b0f8a5612bf71139b9ed75f9ce6544` | 518 bytes |
+
+E3 CHECK imported zero bytes; the real E3 import then verified both exact Artifacts, and
+reconnect/replay reused their identities. The production E4 CHECK passed with
+`linux-bubblewrap` / `bubblewrap 0.11.0`, proving the reported E4 subset:
+`NO_SUBPROCESS_NETWORK`, `NO_INHERITED_SOCKETS`, `NO_HOST_CONTROL_SOCKETS`, and
+`NO_ARBITRARY_HOST_FILESYSTEM`. It confirmed the imported inputs and trusted confinement
+probe **without creating a workspace**.
+
+The explicit real MATERIALIZE published logical materialization
+`materialization:93a92832d388166dc92fd53d069fef96d6aaf615d1b57f2562de60aae8683895`:
+one file, 336 materialized bytes, tree SHA-256
+`3468149cb07e1a4d3058f6a5326758b2b4fa215e53d1c93e784cb4854228a59b`, state
+`PUBLISHED`. The harness reported exact retained source publication and no runtime, venv,
+or PoC execution.
+
+The Kali Node was stopped and restarted with the **same persistent runtime**, retaining
+the same Node ID. While the PreparationPermit remained currently applicable, the operator
+repeated the identical real MATERIALIZE command against the **same Core runtime**. The
+PreparationRef, RunRef, materialization ID, file/byte counts, tree hash and `PUBLISHED`
+state were unchanged. This is real reopen/revalidation and exact reuse, not a second
+materialization or execution grant.
+
+E4 proves bounded exact source materialization, manifest reconciliation, read-only
+publication, restart revalidation, and only the four reported bubblewrap features. It
+does **not** prove a prepared Python runtime/venv, installation, acquired-source import
+or execution, arbitrary subprocess execution, process-count or memory enforcement, hard
+storage enforcement for PoC execution, full acquired-process descendant containment,
+target network, or execution authorization. E5 must fail closed for any runtime profile
+requiring properties not yet proven. Production `execute_plan()` remains denied.
 
 ## Automated acceptance layers
 

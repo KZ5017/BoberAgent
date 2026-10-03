@@ -1,7 +1,7 @@
 # M20-E exact source import, materialization and workspace
 
-**Status:** E3 opaque import COMPLETE (real Core↔Kali acceptance PASSED); E4
-materialization IMPLEMENTED offline, real Kali acceptance PENDING. See
+**Status:** E3 opaque import and E4 bounded materialization COMPLETE, including real
+Core↔Kali CHECK, publication and restart/revalidation acceptance. E5–E9 NOT STARTED. See
 [ADR 0019](../adr/0019-m20-e-immutable-source-import-and-prepared-resource.md).
 
 `preparation-import-v1` uses a stable permit+Artifact import ID, explicit byte offsets,
@@ -59,11 +59,15 @@ row is reused only after full on-disk tree revalidation. A partial or tampered t
 quarantined; restart quarantines INCOMPLETE/VERIFIED state. Physical paths never leave the
 Node in protocol evidence. E4's logical materialization identity is preparation-owned;
 it is **not** a READY ResourceRef. E5 owns eventual Python Resource creation.
-The confinement CHECK now recognizes only standard usrmerge compatibility links inside
+The confinement CHECK recognizes only standard usrmerge compatibility links inside
 the closed bubblewrap view; it does not gain access to host root, imported objects or
 another preparation workspace. The first Kali CHECK exposed an omitted `/lib64` loader
-link and failed before any source bytes were materialized. Offline correction is in place;
-real Kali acceptance remains pending.
+link and failed before any source bytes were materialized. The allowlisted-link correction
+did not add a host-root bind; the subsequent real Kali CHECK and MATERIALIZE passed. The
+published one-file/336-byte tree retained SHA-256
+`3468149cb07e1a4d3058f6a5326758b2b4fa215e53d1c93e784cb4854228a59b` after a
+same-runtime Node restart and exact revalidation. See the
+[E4 acceptance record](M20E_ACCEPTANCE.md#e4-real-corekali-acceptance-passed).
 
 Only after both imports verify may the Node materialize. It allocates a generated managed
 workspace rooted under its configured directory; no caller-controlled physical path. It

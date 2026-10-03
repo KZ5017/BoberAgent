@@ -1,7 +1,8 @@
 # M20-E trusted Python preparation profile
 
-**Status:** E1 profile typed; E4 source materializer and bubblewrap *preflight* implemented
-offline, real Kali acceptance pending. E5 Python provider/venv unimplemented. See [ADR 0020](../adr/0020-m20-e-trusted-python-preparation-boundary.md).
+**Status:** E1 profile typed; E4 source materializer and bubblewrap *preflight* COMPLETE
+after real Kali CHECK/materialization/restart acceptance. E5 Python provider/venv
+unimplemented. See [ADR 0020](../adr/0020-m20-e-trusted-python-preparation-boundary.md).
 
 ## Initial profile and rejection rule
 
@@ -46,8 +47,8 @@ the namespace. Real standard directories may be mounted read-only. Unexpected li
 missing targets or a symlinked `/usr` fail closed; neither the host root nor another host
 location is bound to compensate. The initial real Kali E4 `--check-config` failed before
 materialization because the original probe omitted these links, leaving the Python ELF
-interpreter under `/lib64` unreachable. The narrow topology fix is validated offline;
-**real Kali E4 acceptance must be rerun**.
+interpreter under `/lib64` unreachable. The narrow topology fix was validated offline;
+subsequent production CHECK and explicit source materialization passed on real Kali.
 The evidence records only the E4 properties actually probed (network/FD/host-control and
 arbitrary host-path isolation). It **does not** claim process-count, memory, storage quota,
 descendant or managed-source runtime enforcement. Those are E5 subprocess admission gates;

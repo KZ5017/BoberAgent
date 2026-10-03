@@ -1,6 +1,8 @@
 # ADR 0020: M20-E trusted Python preparation and E/F boundary
 
-**Status:** Accepted for M20-E architecture. E1/E2 are complete; E3 admission/opaque import is implemented pending real Core↔Kali acceptance; Python runtime behavior has not begun.
+**Status:** Accepted for M20-E architecture. E1–E4 are complete, including real Core↔Kali
+E3 import and E4 confinement/source-materialization acceptance; Python runtime behavior
+has not begun.
 
 ## Decision
 

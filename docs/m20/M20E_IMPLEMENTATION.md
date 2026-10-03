@@ -1,7 +1,7 @@
 # M20-E — Runtime Preparation implementation plan
 
-**Architecture status:** SPECIFIED. **Implementation status:** E1–E3 COMPLETE; E4 IMPLEMENTED,
-real Kali acceptance PENDING; E5–E9 NOT STARTED;
+**Architecture status:** SPECIFIED. **Implementation status:** E1–E4 COMPLETE, including
+real Core↔Kali E4 acceptance; E5–E9 NOT STARTED;
 M20-E remains OPEN. M20-D remains CLOSED; M20-F has NOT STARTED. This plan authorizes no
 preparation. The architectural
 decisions are [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md),
@@ -146,9 +146,9 @@ occurred. This closes E3 only; a PreparationPermit is not execution authorizatio
   under valid permit; invalid requests create no workspace. Stop before extraction or process.
 - **Non-goals:** Source parsing, venv, target traffic, F execution.
 
-## E4 — Bounded materialization and workspace/confinement integration
+## E4 — Bounded materialization and workspace/confinement integration (COMPLETE)
 
-**Offline implementation:** An explicit Core E4 pump rechecks current E2/D applicability,
+**Implementation:** An explicit Core E4 pump rechecks current E2/D applicability,
 the routed `runtime.prepare` provider and both Core VERIFIED imports. The neutral
 `preparation-materialization-v1` request carries no path or bytes. The Node authenticates
 the Core principal, verifies its admitted permit/Run and both E3 import rows and actual
@@ -161,8 +161,11 @@ generated local identity; **no Python Resource or ready environment is claimed i
 E5 will allocate the eventual Resource and bind its runtime/workspace separately.
 The bubblewrap probe establishes only its reported E4 isolation subset, not the full E1
 process/memory/storage baseline. E5 subprocess admission must fail closed until every
-required feature is enforceable and tested. Real Kali E4 smoke remains operator-only and
-pending; E4 is not accepted from portable tests that skip bubblewrap.
+required feature is enforceable and tested. The operator's real Kali E4 CHECK,
+MATERIALIZE and same-runtime Node restart/revalidation passed; the
+[acceptance record](M20E_ACCEPTANCE.md#e4-real-corekali-acceptance-passed) contains the
+exact identities and hashes. Portable tests that skip bubblewrap alone did not establish
+this acceptance.
 
 - **Goal/authority:** Reconcile raw ZIP with structural manifest in a private generated
   workspace; publish read-only source only after all structural/hash checks. The initial

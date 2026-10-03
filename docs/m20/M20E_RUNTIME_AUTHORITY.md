@@ -1,6 +1,6 @@
 # M20-E runtime preparation authority
 
-**Status:** E1–E3 COMPLETE; real Core↔Kali E3 acceptance PASSED. E4–E9 NOT STARTED;
+**Status:** E1–E4 COMPLETE; real Core↔Kali E3/E4 acceptance PASSED. E5–E9 NOT STARTED;
 M20-E remains OPEN, M20-F NOT STARTED. [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md)
 
 E3 accepts `runtime.prepare/prepare` only through the authenticated Core transport

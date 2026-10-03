@@ -1,8 +1,8 @@
 # M20-E/F — Attacker-side runtime preparation and controlled execution
 
 M20-E and M20-F have distinct authority and implementation gates. **M20-E architecture is
-SPECIFIED; E1–E3 are COMPLETE, including real Core↔Kali E3 acceptance;
-E4 is IMPLEMENTED offline with real Kali acceptance PENDING; E5–E9 have NOT STARTED,
+SPECIFIED; E1–E4 are COMPLETE, including real Core↔Kali E3 and E4 acceptance;
+E5–E9 have NOT STARTED,
 and M20-E remains OPEN.
 M20-F has NOT STARTED.** Both depend on exact
 immutable v2 intent and current D decisions, but E uses a preparation-only permit and F later
@@ -45,7 +45,7 @@ Read the [M20-E implementation sequence](M20E_IMPLEMENTATION.md),
 [Python baseline](M20E_PYTHON_RUNTIME.md), [recovery/evidence](M20E_PREPARATION_RECOVERY.md)
 and [acceptance](M20E_ACCEPTANCE.md). E is complete only after E1–E9 acceptance.
 E1's typed boundary, E2's Core-only durable admission, and E3's authenticated dispatch
-and opaque Artifact Import are complete. E4 now implements exact bounded source
+and opaque Artifact Import are complete. E4 has passed real Kali acceptance for exact bounded source
 materialization in a preparation-owned workspace and a narrow bubblewrap host probe; it
 does not create a Python runtime or establish full E1 subprocess confinement. Production
 `execute_plan()` remains denied.

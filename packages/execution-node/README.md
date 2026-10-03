@@ -175,4 +175,5 @@ directory. It verifies a new network namespace against a controlled host listene
 reports only E4 properties actually tested. E5 still needs hard process-count, memory,
 storage and descendant enforcement before any preparation subprocess can be ready.
 E4 creates no venv/Resource, imports or executes no acquired source, and grants no
-execution authorization. Real Kali E4 acceptance is operator-only and pending.
+execution authorization. Real Kali E4 CHECK, bounded materialization and same-runtime
+restart/revalidation acceptance passed; E5 runtime preparation remains unimplemented.

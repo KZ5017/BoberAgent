@@ -1,7 +1,7 @@
 # M20-E preparation recovery, reuse and evidence
 
-**Status:** E3 dispatch/import recovery COMPLETE, including real Core↔Kali restart/replay
-acceptance; E4 source recovery is implemented offline with real Kali acceptance pending;
+**Status:** E3 dispatch/import and E4 source recovery COMPLETE, including real Core↔Kali
+restart/replay and E4 published-tree revalidation acceptance;
 E5–E9 preparation recovery remains future work. This refines
 [authority](M20E_RUNTIME_AUTHORITY.md).
 
@@ -31,6 +31,12 @@ timestamps. A process restart moves any
 INCOMPLETE/VERIFIED tree to quarantine; PUBLISHED is revalidated from every expected file
 before reuse. A corrupted published tree is quarantined and never treated as ready. No
 automatic half-extraction resume or re-run follows a failed E4 attempt.
+The operator's E4 replay after a Kali Node restart used the same persistent Node and Core
+runtimes while the permit remained applicable. The PreparationRef, RunRef, logical
+materialization ID, one-file/336-byte count, tree SHA-256 and `PUBLISHED` state were
+unchanged. This proves reuse with revalidation of the exact published source, not future
+Python Resource recovery or permission to execute; see the
+[E4 acceptance record](M20E_ACCEPTANCE.md#e4-real-corekali-acceptance-passed).
 
 The Node publishes a versioned, immutable `RuntimePreparationManifest` as a normal Artifact,
 with a small typed `RuntimePreparationReceipt` in the Result. The manifest records at least:

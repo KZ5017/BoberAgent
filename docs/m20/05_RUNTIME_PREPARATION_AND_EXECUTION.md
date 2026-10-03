@@ -2,13 +2,18 @@
 
 M20-E and M20-F have distinct authority and implementation gates. **M20-E architecture is
 SPECIFIED; E1–E4 are COMPLETE, including real Core↔Kali E3 and E4 acceptance;
-E5–E9 have NOT STARTED,
+E5 architecture is SPECIFIED / implementation NOT STARTED; E6–E9 have NOT STARTED,
 and M20-E remains OPEN.
 M20-F has NOT STARTED.** Both depend on exact
 immutable v2 intent and current D decisions, but E uses a preparation-only permit and F later
 requires its own execution authorization. Initial E support is attacker-side, source-visible,
 non-interactive, user-space, apparently standard-library-only CPython 3.12 on Kali. Other
 languages and target-side or remote-Session execution are future adapter classes.
+
+The [focused E5 architecture](M20E5_ARCHITECTURE.md) specifies a prepared Resource only.
+Keep the existing slice meanings: E6 = final preparation manifest/Result/Core acceptance;
+E7 = recovery/reuse/cleanup. Execution readiness, authorization and acquired-code launch
+remain M20-F, not E5, E6 or E7. `execute_plan()` remains denied throughout E.
 
 D5 now records a separate deterministic `ALLOW`, `DENY` or `REQUIRES_APPROVAL` assessment
 under an explicit Core-owned Mission/target policy profile. These are append-only planning

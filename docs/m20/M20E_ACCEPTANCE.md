@@ -1,9 +1,13 @@
 # M20-E acceptance and stop conditions
 
 **Status:** E1–E4 COMPLETE; real Core↔Kali E3 and E4 acceptance PASSED.
-E5–E9 have not begun.
-**M20-E4 CLOSED. M20-E remains OPEN. M20-E5 has not begun.**
+E5 architecture is SPECIFIED; implementation NOT STARTED. E6–E9 have not begun.
+**M20-E4 CLOSED. M20-E remains OPEN. M20-E5 implementation has not begun.**
 M20-F has not begun. See [slice plan](M20E_IMPLEMENTATION.md).
+
+[E5 acceptance and preflight](M20E5_ACCEPTANCE.md) specifies future Python Resource and
+full-enforcement proof, not an extension of the historical E4 acceptance below. No venv,
+cgroup delegation or general subprocess-limit success is claimed by this documentation.
 
 E4's synthetic E2→E3→E4 test uses a controlled confinement proof and therefore does not
 substitute for the real Kali bubblewrap check. The Linux integration test skips explicitly

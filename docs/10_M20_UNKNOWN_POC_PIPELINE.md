@@ -10,7 +10,8 @@ C2@2 and C3@2. C5 is optional advisory future work, not a closure prerequisite.
 typed intent, durable admission/construction, validation, policy and Core-owned assistance/
 approval. D7 synthetic vertical acceptance and operator-run D8 real retained-source negative
 acceptance both passed. **M20-E architecture is SPECIFIED; E1–E4 are COMPLETE,
-including real Core↔Kali E3/E4 acceptance; E5–E9 have NOT STARTED;
+including real Core↔Kali E3/E4 acceptance; E5 architecture is SPECIFIED with implementation
+NOT STARTED; E6–E9 have NOT STARTED;
 M20-E remains OPEN; M20-F has NOT STARTED.** See the
 [M20-D closure record](m20/M20D_IMPLEMENTATION.md#m20-d-closed-real-retained-source-negative-acceptance) and the
 [retained-source acceptance record](m20/M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
@@ -100,7 +101,7 @@ be representable in plan intent but have no M20-v1 automatic adapter.
 | M20-B | [Acquisition and provenance](m20/02_ACQUISITION_AND_PROVENANCE.md) | pinned, hashed Artifact; no execution |
 | M20-C | [Inspection and classification](m20/03_INSPECTION_AND_CLASSIFICATION.md) | **CLOSED:** typed facts, explicit reasons, fail-closed uncertainty; calibrated real C4 accepted |
 | M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | **CLOSED:** D1–D8, synthetic D7 and real retained-source negative D8 accepted; STOP before permission/dispatch |
-| M20-E | [Runtime preparation](m20/M20E_IMPLEMENTATION.md) and [E/F boundary](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | **Architecture SPECIFIED; E1–E4 COMPLETE including real E3/E4 acceptance, E5–E9 NOT STARTED, overall OPEN:** exact import and bounded source publication passed Core↔Kali restart/revalidation; no Python runtime or execution |
+| M20-E | [Runtime preparation](m20/M20E_IMPLEMENTATION.md), [E5 architecture](m20/M20E5_ARCHITECTURE.md) and [E/F boundary](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | **E1–E4 COMPLETE including real E3/E4 acceptance; E5 architecture SPECIFIED / implementation NOT STARTED; E6–E9 NOT STARTED; overall OPEN:** exact import and bounded source publication passed Core↔Kali restart/revalidation; no Python runtime or execution |
 | M20-F | [Controlled execution](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md#m20-f-execute-and-capture-evidence) | **NOT STARTED:** separate execution authorization, managed evidence and honest Result |
 | M20-G | [Interpretation, adaptation, HITL](m20/06_INTERPRETATION_ADAPTATION_AND_HITL.md) | separate outcome, bounded attempts, durable wait/stop |
 | M20-H | [Vertical smoke and acceptance](m20/07_VERTICAL_SMOKE_AND_ACCEPTANCE.md) | controlled fixture then authorized real unknown PoC |
@@ -172,8 +173,10 @@ attempts; [D6 details](m20/M20D6_PLANNING_HITL.md). E architecture is specified 
 [0020](adr/0020-m20-e-trusted-python-preparation-boundary.md), with the
 [E1–E9 slice plan](m20/M20E_IMPLEMENTATION.md). E1 typed contracts, E2 Core-only admission,
 E3 authenticated Node admission/opaque Artifact Import, and E4 bounded source
-materialization are complete. Real Core↔Kali E3 and E4 acceptance passed; E5–E9 and F
-have not begun.
+materialization are complete. Real Core↔Kali E3 and E4 acceptance passed.
+[E5's detailed architecture](m20/M20E5_ARCHITECTURE.md) and
+[ADR 0021](adr/0021-m20-e5-prepared-python-resource-and-enforcement.md) now specify the
+Resource/provider/enforcement boundary; E5 implementation, E6–E9 and F have not begun.
 Even VALID + ALLOW + operator approval is not preparation or execution authorization. E must
 issue a separate PreparationPermit bound to exact digest, Mission, action, Run, Node/provider,
 source, profile and limits. F must separately authorize execution and revalidate current
@@ -196,4 +199,5 @@ This negative classification is not safety or authorization. Planning validity, 
 operator approval, preparation permit and execution authorization remain separate. Production
 `execute_plan()` is denied. M20-E architecture is specified; E1's typed boundary, E2's
 Core-only durable admission, and E3's authenticated exact Artifact Import are complete.
-E3 and E4 real acceptance passed; E5–E9 and M20-F have not begun. **M20-D is CLOSED.**
+E3 and E4 real acceptance passed; E5 architecture is specified, but its implementation,
+E6–E9 and M20-F have not begun. **M20-D is CLOSED.**

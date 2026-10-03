@@ -2,7 +2,17 @@
 
 **Status:** E1 profile typed; E4 source materializer and bubblewrap *preflight* COMPLETE
 after real Kali CHECK/materialization/restart acceptance. E5 Python provider/venv
-unimplemented. See [ADR 0020](../adr/0020-m20-e-trusted-python-preparation-boundary.md).
+unimplemented. E5 architecture is now specified in the
+[focused E5 package](M20E5_ARCHITECTURE.md) and
+[ADR 0021](../adr/0021-m20-e5-prepared-python-resource-and-enforcement.md), refining
+[ADR 0020](../adr/0020-m20-e-trusted-python-preparation-boundary.md).
+E6–E9 and M20-F remain NOT STARTED; M20-E remains OPEN.
+
+E5 requires the full E1 feature set before construction/READY. Its initial backend requires
+verified unprivileged cgroup-v2 delegation, bounded scratch and supervised descendants;
+these are not inferred from E4. See [enforcement/fallbacks](M20E5_RUNTIME_LIMITS.md) and
+[manual preflight design](M20E5_ACCEPTANCE.md). E5 produces intermediate runtime evidence;
+E6 owns the final manifest/Core acceptance. Neither grants execution readiness or authority.
 
 ## Initial profile and rejection rule
 

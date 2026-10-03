@@ -2,7 +2,9 @@
 
 **Status:** E3 dispatch/import and E4 source recovery COMPLETE, including real Core↔Kali
 restart/replay and E4 published-tree revalidation acceptance;
-E5–E9 preparation recovery remains future work. This refines
+E5 architecture is SPECIFIED; E5–E9 preparation recovery implementation remains future work.
+The [E5 runtime recovery specification](M20E5_RECOVERY_AND_REVALIDATION.md) defines local
+Resource foundations; E7 retains full cross-component recovery acceptance. This refines
 [authority](M20E_RUNTIME_AUTHORITY.md).
 
 E3 persists Core import cursors and Node transfer cursors. A retry opens the same transfer;

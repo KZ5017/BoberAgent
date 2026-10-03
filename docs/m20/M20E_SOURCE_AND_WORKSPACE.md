@@ -1,8 +1,13 @@
 # M20-E exact source import, materialization and workspace
 
 **Status:** E3 opaque import and E4 bounded materialization COMPLETE, including real
-Core↔Kali CHECK, publication and restart/revalidation acceptance. E5–E9 NOT STARTED. See
+Core↔Kali CHECK, publication and restart/revalidation acceptance.
+E5 architecture SPECIFIED / implementation NOT STARTED; E6–E9 NOT STARTED. See
 [ADR 0019](../adr/0019-m20-e-immutable-source-import-and-prepared-resource.md).
+
+The [E5 Resource specification](M20E5_RUNTIME_RESOURCE.md) references this exact published
+source without reparenting/mutating it. Resource-owned venv construction scratch is separate;
+no future execution working directory is created in E5.
 
 `preparation-import-v1` uses a stable permit+Artifact import ID, explicit byte offsets,
 bounded (at most 1 MiB) chunks, per-chunk SHA-256, start/status/finalize and authenticated

@@ -1,7 +1,8 @@
 # M20-E — Runtime Preparation implementation plan
 
 **Architecture status:** SPECIFIED. **Implementation status:** E1–E4 COMPLETE, including
-real Core↔Kali E4 acceptance; E5–E9 NOT STARTED;
+real Core↔Kali E4 acceptance; E5 architecture SPECIFIED / implementation NOT STARTED;
+E6–E9 NOT STARTED;
 M20-E remains OPEN. M20-D remains CLOSED; M20-F has NOT STARTED. This plan authorizes no
 preparation. The architectural
 decisions are [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md),
@@ -181,19 +182,29 @@ this acceptance.
   Stop before Python environment creation.
 - **Non-goals:** Unrestricted extract, source patching, network retrieval, F lease implementation.
 
-## E5 — Trusted Python environment Resource provider
+## E5 — Trusted Python environment Resource provider (ARCHITECTURE SPECIFIED)
+
+**Implementation NOT STARTED.** The authoritative detailed package is
+[E5 architecture](M20E5_ARCHITECTURE.md), with
+[ADR 0021](../adr/0021-m20-e5-prepared-python-resource-and-enforcement.md).
+Its [E5-A–E5-H slices](M20E5_ACCEPTANCE.md#e5-implementation-sequence) put full enforcement
+before construction. E4's four-feature probe is not full E5 proof. The Resource becomes
+real here, not at E6; E5 evidence is intermediate, not Core preparation completion or
+execution readiness. E6 finalization and E7 recovery keep their existing meanings.
 
 - **Goal/authority:** A provider with closed inspect/create/verify operations creates fresh
   CPython 3.12 venv in a Resource-owned workspace under verified confinement. No arbitrary
   process API becomes preparation authority.
 - **Production components/models:** Narrow SDK preparation boundary, Node Python provider,
   Tool Registry interpreter selection, ConfinementBackend implementation and Resource lifecycle.
-- **Persistence/protocol:** Node Resource runtime state/config and versioned profile; no Core
-  DB change or new transport payload unless manifest schema was insufficient.
+- **Persistence/protocol:** Existing Node Resource identity plus provider detail/budget/evidence
+  persistence; no new Core table by default. Narrow same-Run prepare/status/revalidate messages
+  carry intermediate evidence under existing admission, not the E6 final receipt.
 - **Tests/manual smoke:** exact interpreter/version, fixed environment, no user site/PATH
   injection, no pip or source import, empty external set, network/socket/filesystem/descendant/
-  memory/time/output/storage limits and failure closure. Real Kali backend preflight is planned
-  for E9, not assumed from a binary check.
+  memory/time/output/storage limits and failure closure. E5-H now specifies focused real Kali
+  runtime preflight/acceptance before E5 closure; E9 remains the later complete E real vertical.
+  Neither is assumed from a binary check or E4 acceptance.
 - **Acceptance/stop:** A harmless synthetic source may be staged while only provider-owned
   operations run; Resource not READY until verification. Stop before capability completion.
 - **Non-goals:** Dependency installation, package cache, source compilation/execution, secrets.

@@ -1,6 +1,6 @@
 # M20-E5 Resource, evidence and typed boundary
 
-**Architecture specified; E5-A–B COMPLETE; E5-C–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-A–B COMPLETE; E5-C IMPLEMENTED / REAL ACCEPTANCE PENDING; E5-D–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 
 ## Identity, ownership and storage roles
 

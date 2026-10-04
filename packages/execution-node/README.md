@@ -177,3 +177,19 @@ storage and descendant enforcement before any preparation subprocess can be read
 E4 creates no venv/Resource, imports or executes no acquired source, and grants no
 execution authorization. Real Kali E4 CHECK, bounded materialization and same-runtime
 restart/revalidation acceptance passed; E5 runtime preparation remains unimplemented.
+
+## E5-C full-confinement foundation
+
+`preparation.runtime_confinement` implements the separate closed Linux probe backend
+`m20-e5-linux-bwrap-cgroup@1`. Explicit operator configuration supplies delegated cgroup parent
+and Tool Registry-selected SHA-pinned static helper/bubblewrap. There is no automatic host
+provisioning or active startup probe. Startup safety-reconciles only recorded owned operations.
+Migration `0009_runtime_confinement` adds probe ownership/history/evidence; E5-B Resource
+ownership, budget ledger, immutable pins and READY prohibition remain intact.
+
+Supervisor/guardian, race-free cgroup attachment, namespaces, byte/inode-capped tmpfs, bounded
+pipe drain and finite deadlines are detailed in [E5-C implementation](../../docs/m20/M20E5C_IMPLEMENTATION.md).
+Closed probes do not inspect Python, build an environment or run acquired code. Only synthetic
+source is mounted read-only. Real Kali enforcement acceptance is **PENDING**; portable mocks/
+negative tests cannot close it. See the [operator-only command](../../scripts/manual-smoke/README.md#m20-e5-c-confinement-only-kali-preflight).
+No new Core/SDK/MCP preparation endpoint or execution authority is added. E5-D–H remain untouched.

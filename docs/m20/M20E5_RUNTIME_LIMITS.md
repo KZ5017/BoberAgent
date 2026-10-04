@@ -1,9 +1,13 @@
 # M20-E5 enforcement and runtime confinement backend
 
-**Architecture specified; implementation not started.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-C IMPLEMENTED / REAL KALI ENFORCEMENT ACCEPTANCE PENDING.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 E4 acceptance remains four-feature source-materialization evidence, not full runtime proof.
 
 ## Mandatory gate
+
+The [E5-C implementation record](M20E5C_IMPLEMENTATION.md) specifies the closed probe
+vocabulary, fixed native helper, actual configured enforcement, evidence/accounting and
+deployment prerequisites. This does not attest the host or authorize later construction.
 
 Every E1 `ConfinementFeature` is mandatory **before constructing** an E5 Python environment
 and before READY. A failed preflight leaves no successful Resource. Limits must apply to

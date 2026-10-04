@@ -86,7 +86,12 @@ def test_new_protocol_is_not_wired_to_runtime_or_adapters() -> None:
             for node in ast.walk(tree):
                 if isinstance(node, ast.ImportFrom) and node.module:
                     assert not node.module.endswith("preparation_runtime"), source
-                    if source not in {ownership / "resources.py", ownership / "resource_models.py"}:
+                    if source not in {
+                        ownership / "resources.py",
+                        ownership / "resource_models.py",
+                        ownership / "runtime_confinement.py",
+                        ownership / "runtime_confinement_budget.py",
+                    }:
                         assert not any(
                             alias.name.startswith("PythonRuntime") for alias in node.names
                         ), source

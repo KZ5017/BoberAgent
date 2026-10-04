@@ -660,7 +660,7 @@ def test_upgrade_e4_and_idempotent_head_preserve_metadata(tmp_path: Path) -> Non
             evidence = old.evidence_json
         upgrade_database(database)
         upgrade_database(database)
-        assert current_revision(database) == "0008_python_resource_ownership"
+        assert current_revision(database) == "0009_runtime_confinement"
         assert {
             "python_resource_details",
             "python_resource_operations",

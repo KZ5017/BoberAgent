@@ -1,6 +1,6 @@
 # M20-E5 — Prepared Python runtime architecture
 
-**Status: ARCHITECTURE SPECIFIED / E5-A–B COMPLETE; E5-C–H NOT STARTED.** E1–E3 COMPLETE,
+**Status: E5-A–B COMPLETE; E5-C IMPLEMENTED / REAL KALI ACCEPTANCE PENDING; E5-D–H NOT STARTED.** E1–E3 COMPLETE,
 E4 COMPLETE/CLOSED with real Kali acceptance; E6–E9 NOT STARTED; M20-E OPEN;
 M20-F NOT STARTED. This package specifies future implementation, not a permission,
 host capability attestation, or claim that a usable Python runtime exists today.
@@ -105,6 +105,11 @@ See [typed boundary](M20E5_RUNTIME_RESOURCE.md#e5-a-implemented-boundary) and
 | Transport? | Direct shell; new Run; typed same-Run pump | Closed prepare/status/revalidate operations under E3 authority | No argv/path/process API | Neutral composition, no Core/Node cross-import |
 
 ## Remaining deployment facts, not permissive defaults
+
+E5-C implements the selected backend's closed trusted probes, independent supervisor/guardian
+and Node journal. See [E5-C implementation](M20E5C_IMPLEMENTATION.md). Portable wiring tests
+are not active enforcement proof. All controls/death directions still require operator Kali
+acceptance. No interpreter, environment, E5 transport wiring or READY transition is added.
 
 No E5 architecture choice remains delegated to an implementation shortcut. Supplied Kali
 reconnaissance confirms namespace availability and delegated cgroup control-file writes,

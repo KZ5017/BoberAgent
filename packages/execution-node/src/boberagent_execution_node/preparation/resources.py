@@ -358,6 +358,17 @@ class PythonResourceRepository:
         with self._database.transaction() as session:
             return self._balances(session, self._detail(session, ref))
 
+    def remaining_operation_seconds(self, claim: ResourceOperation) -> int:
+        """Read-only E5-C deadline bound; it never extends ownership/authority."""
+        with self._database.transaction() as session:
+            detail, _row = self._held(session, claim)
+            authority = session.get(PreparationAuthorityRow, detail.permit_id)
+            assert authority is not None
+            permit = PreparationPermit.model_validate(authority.permit_json)
+            return max(
+                0, int((min(claim.expires_at, permit.expires_at) - self._now()).total_seconds())
+            )
+
     def quarantine(
         self, ref: ResourceRef, failure: PythonRuntimeFailure
     ) -> PythonResourceReservation:

@@ -29,6 +29,9 @@ from .persistence.migrations import upgrade_database
 from .preparation import NodePreparationService, PreparationAdmissionError
 from .preparation.confinement import ConfinementBackend
 from .preparation.resources import PythonResourceRepository
+from .preparation.runtime_confinement import LinuxRuntimeConfinementBackend
+from .preparation.runtime_confinement_models import RuntimeConfinementConfiguration
+from .preparation.runtime_confinement_store import ConfinementJournal
 from .results import ResultOutbox
 from .services import ExecutionContextFactory, LocalInvocationEnvironment
 from .tools import DependencyResolver, ToolAvailability, ToolRegistry
@@ -43,6 +46,7 @@ class ExecutionNode:
         *,
         browser_backend: BrowserBackend | None = None,
         preparation_confinement: ConfinementBackend | None = None,
+        runtime_confinement_configuration: RuntimeConfinementConfiguration | None = None,
     ) -> None:
         self.configuration = configuration
         self.lifecycle = NodeLifecycle()
@@ -59,6 +63,8 @@ class ExecutionNode:
         self.interaction_runtime: InteractionRuntime | None = None
         self.preparation: NodePreparationService | None = None
         self.python_resources: PythonResourceRepository | None = None
+        self.runtime_confinement: LinuxRuntimeConfinementBackend | None = None
+        self._runtime_confinement_configuration = runtime_confinement_configuration
         self._browser_backend = browser_backend
         self._preparation_confinement = preparation_confinement
         self._clock = UtcClock()
@@ -81,10 +87,11 @@ class ExecutionNode:
             upgrade_database(self.database)
             self._database_ready = True
             self.store = RuntimeStore(self.database)
+            startup_generation = DomainRef(f"boot-{uuid4()}")
             self.python_resources = PythonResourceRepository(
                 self.database,
                 node_id=str(self.identity.node_id),
-                boot_generation=DomainRef(f"boot-{uuid4()}"),
+                boot_generation=startup_generation,
                 clock=self._clock.now,
             )
             if self.python_resources.reconcile():
@@ -145,9 +152,30 @@ class ExecutionNode:
                 )
 
             CapabilityLoader().discover(self.configuration.capability_paths, self.capabilities)
+            confinement_tools = ToolRegistry()
             for name, configuration in sorted(self.configuration.tools.items()):
-                self.tools.register(name, configuration)
+                if name in {"runtime-confinement-helper", "runtime-confinement-bwrap"}:
+                    # Private preparation binaries are NOT SDK run_tool targets.
+                    confinement_tools.register(name, configuration)
+                else:
+                    self.tools.register(name, configuration)
             await self.tools.refresh()
+            if self._runtime_confinement_configuration is not None:
+                await confinement_tools.refresh()
+                self.runtime_confinement = LinuxRuntimeConfinementBackend(
+                    configuration=self._runtime_confinement_configuration,
+                    node_id=self.identity.node_id,
+                    tools=confinement_tools,
+                    database=self.database,
+                    runtime_directory=self.configuration.runtime_directory,
+                    boot_generation=startup_generation,
+                    clock=self._clock.now,
+                )
+                await self.runtime_confinement.reconcile_owned()
+            elif ConfinementJournal(self.database).pending():
+                self._degraded_reasons.append(
+                    "confinement recovery needs explicit delegated parent"
+                )
             self.browser_runtime = BrowserRuntimeManager(
                 store=self.store,
                 tools=self.tools,
@@ -302,6 +330,8 @@ class ExecutionNode:
             await self.browser_runtime.shutdown()
         if self.listener_runtime is not None:
             await self.listener_runtime.shutdown()
+        if self.runtime_confinement is not None:
+            await self.runtime_confinement.shutdown()
         if self.database is not None:
             self.database.close()
         self._database_ready = False

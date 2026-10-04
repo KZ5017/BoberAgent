@@ -11,7 +11,8 @@ typed intent, durable admission/construction, validation, policy and Core-owned 
 approval. D7 synthetic vertical acceptance and operator-run D8 real retained-source negative
 acceptance both passed. **M20-E architecture is SPECIFIED; E1–E4 are COMPLETE,
 including real Core↔Kali E3/E4 acceptance; E5 architecture is SPECIFIED, E5-A–B are COMPLETE
-(typed boundary and durable metadata ownership only), E5-C–H and E6–E9 have NOT STARTED;
+(typed boundary and durable metadata ownership); E5-C is IMPLEMENTED with real Kali acceptance PENDING;
+E5-D–H and E6–E9 have NOT STARTED;
 M20-E remains OPEN; M20-F has NOT STARTED.** See the
 [M20-D closure record](m20/M20D_IMPLEMENTATION.md#m20-d-closed-real-retained-source-negative-acceptance) and the
 [retained-source acceptance record](m20/M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
@@ -101,7 +102,7 @@ be representable in plan intent but have no M20-v1 automatic adapter.
 | M20-B | [Acquisition and provenance](m20/02_ACQUISITION_AND_PROVENANCE.md) | pinned, hashed Artifact; no execution |
 | M20-C | [Inspection and classification](m20/03_INSPECTION_AND_CLASSIFICATION.md) | **CLOSED:** typed facts, explicit reasons, fail-closed uncertainty; calibrated real C4 accepted |
 | M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | **CLOSED:** D1–D8, synthetic D7 and real retained-source negative D8 accepted; STOP before permission/dispatch |
-| M20-E | [Runtime preparation](m20/M20E_IMPLEMENTATION.md), [E5 architecture](m20/M20E5_ARCHITECTURE.md) and [E/F boundary](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | **E1–E4 COMPLETE including real E3/E4 acceptance; E5 architecture SPECIFIED / E5-A–B COMPLETE; E5-C–H and E6–E9 NOT STARTED; overall OPEN:** exact import and bounded source publication passed Core↔Kali restart/revalidation; typed E5 boundary and durable metadata ownership only, no Python runtime or execution |
+| M20-E | [Runtime preparation](m20/M20E_IMPLEMENTATION.md), [E5 architecture](m20/M20E5_ARCHITECTURE.md) and [E/F boundary](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | **E1–E4 COMPLETE; E5-A–B COMPLETE; E5-C IMPLEMENTED / REAL KALI ACCEPTANCE PENDING; E5-D–H and E6–E9 NOT STARTED; overall OPEN:** exact import/source publication accepted; closed confinement probes implemented, no Python runtime or execution |
 | M20-F | [Controlled execution](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md#m20-f-execute-and-capture-evidence) | **NOT STARTED:** separate execution authorization, managed evidence and honest Result |
 | M20-G | [Interpretation, adaptation, HITL](m20/06_INTERPRETATION_ADAPTATION_AND_HITL.md) | separate outcome, bounded attempts, durable wait/stop |
 | M20-H | [Vertical smoke and acceptance](m20/07_VERTICAL_SMOKE_AND_ACCEPTANCE.md) | controlled fixture then authorized real unknown PoC |

@@ -694,6 +694,69 @@ for exact C2/C3 refs and digests. This negative result is neither safety nor aut
 **M20-D CLOSED. M20-E1–E3 COMPLETE; real E3 acceptance PASSED.** Production
 `execute_plan()` remains denied.
 
+## M20-E5-C confinement-only Kali preflight
+
+**IMPLEMENTED; real Kali enforcement acceptance PENDING.** This operator-only check is
+not E5-H Python preparation and is never invoked by normal pytest or automatically by Codex.
+It executes only fixed native synthetic probes. No Python runtime/interpreter probe, venv,
+acquired source, package install, target/public network, Core/MCP traffic or execution authority.
+Python is only the existing Node/harness control plane. Use a **dedicated confinement-only
+Node runtime**, not the running Node's database. Existing non-harness databases are rejected.
+
+Run as the ordinary Node user **inside the already operator-provisioned transient delegated
+service**. Its explicitly identified cgroup-v2 parent must be owned/domain, direct tasks empty,
+memory/pids enabled and children writable. Do not guess a user slice/root/parent from a PID,
+run sudo, change systemd persistently or enable controllers through this harness. The recorded
+reconnaissance in M20E5_ACCEPTANCE.md is not proof that the active probes pass.
+
+From the repository root on Kali, choose an explicit absolute dedicated runtime and the exact
+existing delegated parent. Build only the repository-owned trusted helper using a pre-existing
+static C toolchain; do not install missing prerequisites. Example operator commands:
+
+```bash
+E5_RUNTIME=/absolute/operator-selected/e5c-preflight-runtime
+E5_CGROUP_PARENT=/sys/fs/cgroup/explicitly-delegated-empty-parent
+E5_HELPER="$E5_RUNTIME/tools/e5-confinement-helper"
+mkdir -p -- "$E5_RUNTIME/tools"
+cc -static -O2 -Wall -Wextra -Werror \
+  -o "$E5_HELPER" \
+  packages/execution-node/src/boberagent_execution_node/preparation/native/e5_confinement.c
+E5_HELPER_SHA256=$(sha256sum -- "$E5_HELPER" | cut -d ' ' -f 1)
+E5_BWRAP_SHA256=$(sha256sum -- /usr/bin/bwrap | cut -d ' ' -f 1)
+
+uv run python scripts/manual-smoke/m20e5c_confinement_smoke_test.py \
+  --check-confinement \
+  --node-runtime-directory "$E5_RUNTIME" \
+  --delegated-cgroup-parent "$E5_CGROUP_PARENT" \
+  --trusted-helper "$E5_HELPER" \
+  --helper-sha256 "$E5_HELPER_SHA256" \
+  --bubblewrap /usr/bin/bwrap \
+  --bubblewrap-sha256 "$E5_BWRAP_SHA256"
+```
+
+Replace both placeholder directories before running. This command performs no systemd/delegation
+provisioning. Missing static toolchain, bubblewrap, delegated controls, writable child kill,
+memory.peak or a failed active property stops acceptance. Keep the JSON PASS/FAIL summary and
+the dedicated Node journal; output includes logical probe identities via persisted evidence,
+profile, event/peak facts and empty-group results, never raw environment/credentials/host stderr.
+Every probe must PASS with attachment-before-exec and group-empty proof. Expected tiny pids/OOM/
+output/deadline hits are intentional mechanism tests, not runtime construction failures.
+
+Optional real Linux pytest (same explicitly provisioned environment, not portable CI):
+
+```bash
+BOBERAGENT_E5_CGROUP_PARENT="$E5_CGROUP_PARENT" \
+BOBERAGENT_E5_HELPER="$E5_HELPER" \
+BOBERAGENT_E5_HELPER_SHA256="$E5_HELPER_SHA256" \
+BOBERAGENT_E5_BWRAP_SHA256="$E5_BWRAP_SHA256" \
+uv run pytest packages/execution-node/tests/test_runtime_confinement_linux.py
+```
+
+Without opt-in delegation that test skips; a skip is not enforcement proof. Supplying an
+invalid/broken opt-in configuration fails, not skips. Do not run either real mode automatically
+during implementation. After even a successful check the runtime remains UNAVAILABLE / NOT READY;
+E5-D–H and M20-F have not begun. No production execute_plan() authorization is created.
+
 ## M20-E3 authenticated opaque Artifact import (operator-only)
 
 E3 has **passed real Core↔Kali acceptance**, including identical import after a Kali Node

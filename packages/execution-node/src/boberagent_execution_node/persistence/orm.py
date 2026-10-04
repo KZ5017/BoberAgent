@@ -13,6 +13,22 @@ class Base(DeclarativeBase):
     pass
 
 
+class RuntimeConfinementRow(Base):
+    """Closed mechanism history, not a prepared runtime or source execution record."""
+
+    __tablename__ = "runtime_confinement_operations"
+    operation_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    probe: Mapped[str] = mapped_column(String(32))
+    limits_json: Mapped[JsonObject] = mapped_column(JSON)
+    boot_generation: Mapped[str] = mapped_column(String(255))
+    host_boot: Mapped[str] = mapped_column(String(64))
+    parent_sha256: Mapped[str] = mapped_column(String(64))
+    state: Mapped[str] = mapped_column(String(32))
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    evidence_json: Mapped[JsonObject | None] = mapped_column(JSON)
+
+
 class PythonResourceRow(Base):
     """Provider detail, not a second Resource identity or sealed runtime binding."""
 

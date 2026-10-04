@@ -1,6 +1,6 @@
 # M20-E5 recovery, expiry and failure classification
 
-**Architecture specified; E5-B metadata recovery COMPLETE; live runtime revalidation NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-B metadata recovery COMPLETE; E5-C IMPLEMENTED / REAL ACCEPTANCE PENDING; live runtime revalidation NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 Historical evidence, current integrity, authority and execution readiness are separate.
 
 ## Implemented E5-B recovery boundary
@@ -21,6 +21,15 @@ cleanup claim. New preparation claims and BUILDING/budget mutations require an u
 admitted permit; historical queries and trusted Node-owned quarantine/cleanup do not renew it.
 
 ## Recovery and change matrix
+
+E5-C adds independent bounded supervisor/guardian teardown and the Node-only journal in
+migration `0009_runtime_confinement`. On the same Linux boot, safety recovery addresses
+only the exact logical operation's group under the pinned delegated parent, proves it empty
+and records interruption. Changed delegation fails closed. After reboot, old work is interrupted
+without killing possibly reused groups/PIDs. Terminal evidence never reopens. Node startup
+performs safety reconciliation only; active probes are explicit. Missing recovery configuration
+is surfaced as degraded, not successful cleanup. Shutdown waits for owned operation finalization.
+See [implemented boundary and pending real acceptance](M20E5C_IMPLEMENTATION.md).
 
 | Event | Required action before any reuse |
 | --- | --- |

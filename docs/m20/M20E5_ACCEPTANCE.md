@@ -1,7 +1,8 @@
 # M20-E5 implementation slices and acceptance
 
-**Architecture specified; E5-A–B COMPLETE; E5-C–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
-No active enforcement probe below has been run by E5-A/B. No new harness or CLI exists yet.
+**E5-A–B COMPLETE; E5-C IMPLEMENTED / REAL KALI ACCEPTANCE PENDING; E5-D–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+No active enforcement probe below has been proven on Kali. An operator-only E5-C harness exists;
+see [implementation and validation status](M20E5C_IMPLEMENTATION.md).
 Commands are an operator preflight design, not a request to configure a host automatically.
 
 ## Established evidence and remaining host prerequisites
@@ -157,7 +158,7 @@ it must not try a fork/memory bomb if it could not first establish the controlle
 
 Read-only reconnaissance can precede implementation. Full active backend proof is required
 before E5 construction acceptance, not deferred to F. No current script claims to implement
-these new probes; E5-C/E5-H below must deliver them. A failed property blocks positive E5
+these probes on Kali; E5-C's operator-only harness must establish that evidence. A failed property blocks positive E5
 closure, never just sets a warning or authorizes a weaker runtime.
 
 ## Future synthetic vertical and architecture guards
@@ -218,14 +219,14 @@ E5-H real runtime acceptance supplements E4; E9 remains the later full E real ac
 
 ## E5 implementation sequence
 
-E5-A and E5-B are **COMPLETE**; E5-C–H are **NOT STARTED**. Their letter order deliberately puts enforcement
+E5-A and E5-B are **COMPLETE**; E5-C is **IMPLEMENTED / REAL ACCEPTANCE PENDING**; E5-D–H are **NOT STARTED**. Their letter order deliberately puts enforcement
 before construction. No slice may claim the next one's acceptance.
 
 | Slice | Goal / production behavior added | Contracts and persistence | Tests / acceptance | Explicit non-goals |
 | --- | --- | --- | --- | --- |
 | E5-A — Typed Resource/evidence boundary (COMPLETE) | Closed operations, bindings, evidence and reasons implemented; runtime still unavailable | Shared Contracts and unwired preparation-runtime-v1 messages; no handles or DB migration | Strict round trips, schemas, immutability/digests/authority/unknown versions and architecture guards | Construction, transport dispatch wiring, F |
 | E5-B — Durable ownership/lifecycle (COMPLETE) | Atomic Resource reservation, provider state, leases, budget ledger, quarantine/cleanup skeleton | Forward Node migration keyed by existing ResourceRef; retain E3/E4; no new Core table | Fresh/upgrade/reopen/concurrency/crash tests; one Resource per binding | Venv creation or readiness claim |
-| E5-C — Full preparation confinement | RuntimeConfinementBackend, owned supervisor/cgroup, capped scratch/output and trusted probes | Mechanism evidence/operation metadata; no authority expansion | Every live enforcement/death probe; unavailable host fails closed before builder | Acquired code, weaker RLIMIT fallback, privileged host setup |
+| E5-C — Full preparation confinement (IMPLEMENTED; REAL ACCEPTANCE PENDING) | RuntimeConfinementBackend, supervisor/guardian/cgroup, capped scratch/output and trusted probes | Node migration 0009 journal; no authority expansion | Portable negative/accounting/recovery tests; live probes pending Kali | Acquired code, weaker RLIMIT fallback, privileged host setup |
 | E5-D — Interpreter provenance | Tool Registry pinned CPython 3.12 closure and confined fixed inspection | Interpreter fingerprint/sealed binding; no competing registry | Wrong version/layout/venv/startup/PATH/update negatives; exact trusted identity | Source imports, installs, venv construction |
 | E5-E — Empty environment construction | Closed accounted fresh venv, bounded publication and read-only same-path verification | Existing ownership/ledger, immutable inventory; no new domain ID | Empty packages/no pip, all writes charged, no source sentinel, partial never READY | Runtime execution, dynamic import checks |
 | E5-F — Evidence/revalidation + narrow pump | Seal evidence, READY/current validity, typed same-Run prepare/status/revalidate through existing Core admission/neutral adapters | E5 evidence Artifact; append verification; existing Run/preparation refs; no final manifest/result acceptance | Replay/conflict/expiry/disconnect/Node restart/drift/cleanup tests; current proof required | E6 terminal Result/Core COMPLETED, F authorization |

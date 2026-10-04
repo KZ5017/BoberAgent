@@ -1,7 +1,7 @@
 # ADR 0021 — E5 prepared Python Resource and mandatory enforcement
 
 **Status:** Accepted architecture; E5-A typed boundary and E5-B durable metadata ownership COMPLETE.
-Runtime construction/enforcement (E5-C–H) NOT STARTED; E5 remains OPEN.
+E5-C enforcement IMPLEMENTED / REAL KALI ACCEPTANCE PENDING; E5-D–H NOT STARTED; E5 remains OPEN.
 Refines ADRs 0018–0020 without changing E1 authority, E4 publication, or the E/F boundary.
 
 ## Context

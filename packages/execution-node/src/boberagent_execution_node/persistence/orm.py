@@ -13,6 +13,58 @@ class Base(DeclarativeBase):
     pass
 
 
+class PythonResourceRow(Base):
+    """Provider detail, not a second Resource identity or sealed runtime binding."""
+
+    __tablename__ = "python_resource_details"
+    resource_id: Mapped[str] = mapped_column(
+        ForeignKey("runtime_resources.resource_id", ondelete="RESTRICT"), primary_key=True
+    )
+    preparation_id: Mapped[str] = mapped_column(
+        ForeignKey("preparation_materializations.preparation_id", ondelete="RESTRICT"), unique=True
+    )
+    permit_id: Mapped[str] = mapped_column(
+        ForeignKey("preparation_authorities.permit_id", ondelete="RESTRICT"), unique=True
+    )
+    request_sha256: Mapped[str] = mapped_column(String(64), unique=True)
+    request_json: Mapped[JsonObject] = mapped_column(JSON)
+    baseline_json: Mapped[JsonObject] = mapped_column(JSON)
+    workspace_correlation: Mapped[str] = mapped_column(String(255), unique=True)
+    phase: Mapped[str] = mapped_column(String(32))
+    validity: Mapped[str] = mapped_column(String(32))
+    active_operation_id: Mapped[str | None] = mapped_column(String(255))
+    generation: Mapped[int] = mapped_column(Integer)
+    failure_json: Mapped[JsonObject | None] = mapped_column(JSON)
+    cleanup_state: Mapped[str] = mapped_column(String(32))
+
+
+class PythonResourceOperationRow(Base):
+    __tablename__ = "python_resource_operations"
+    operation_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    resource_id: Mapped[str] = mapped_column(
+        ForeignKey("python_resource_details.resource_id", ondelete="RESTRICT")
+    )
+    operation: Mapped[str] = mapped_column(String(64))
+    owner_token: Mapped[str] = mapped_column(String(255))
+    boot_generation: Mapped[str] = mapped_column(String(255))
+    generation: Mapped[int] = mapped_column(Integer)
+    state: Mapped[str] = mapped_column(String(32))
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    expires_at: Mapped[datetime] = mapped_column(UTCDateTime())
+    finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    failure_json: Mapped[JsonObject | None] = mapped_column(JSON)
+
+
+class PythonResourceBudgetRow(Base):
+    __tablename__ = "python_resource_budget_entries"
+    operation_id: Mapped[str] = mapped_column(
+        ForeignKey("python_resource_operations.operation_id", ondelete="RESTRICT"), primary_key=True
+    )
+    category: Mapped[str] = mapped_column(String(64), primary_key=True)
+    reserved: Mapped[int] = mapped_column(Integer)
+    spent: Mapped[int | None] = mapped_column(Integer)
+
+
 class RunRow(Base):
     __tablename__ = "runtime_runs"
 

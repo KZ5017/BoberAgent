@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import os
+from uuid import uuid4
 
-from boberagent_contracts import CapabilityInvocation, CapabilityResult, JsonObject
+from boberagent_contracts import CapabilityInvocation, CapabilityResult, DomainRef, JsonObject
 from boberagent_sdk import UtcClock
 
 from .browser import BrowserBackend, BrowserRuntimeManager, PlaywrightBrowserBackend
@@ -27,6 +28,7 @@ from .persistence import RuntimeDatabase, RuntimeStore
 from .persistence.migrations import upgrade_database
 from .preparation import NodePreparationService, PreparationAdmissionError
 from .preparation.confinement import ConfinementBackend
+from .preparation.resources import PythonResourceRepository
 from .results import ResultOutbox
 from .services import ExecutionContextFactory, LocalInvocationEnvironment
 from .tools import DependencyResolver, ToolAvailability, ToolRegistry
@@ -56,6 +58,7 @@ class ExecutionNode:
         self.listener_runtime: ListenerRuntimeManager | None = None
         self.interaction_runtime: InteractionRuntime | None = None
         self.preparation: NodePreparationService | None = None
+        self.python_resources: PythonResourceRepository | None = None
         self._browser_backend = browser_backend
         self._preparation_confinement = preparation_confinement
         self._clock = UtcClock()
@@ -78,6 +81,14 @@ class ExecutionNode:
             upgrade_database(self.database)
             self._database_ready = True
             self.store = RuntimeStore(self.database)
+            self.python_resources = PythonResourceRepository(
+                self.database,
+                node_id=str(self.identity.node_id),
+                boot_generation=DomainRef(f"boot-{uuid4()}"),
+                clock=self._clock.now,
+            )
+            if self.python_resources.reconcile():
+                self._degraded_reasons.append("abandoned Python Resource ownership quarantined")
             self.preparation = NodePreparationService(
                 self.database,
                 self.configuration.imported_artifact_root,

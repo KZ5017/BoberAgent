@@ -1,9 +1,9 @@
 # M20-E5 — Prepared Python runtime architecture
 
-**Status: ARCHITECTURE SPECIFIED / E5-A COMPLETE; E5-B–H NOT STARTED.** E1–E3 COMPLETE,
+**Status: ARCHITECTURE SPECIFIED / E5-A–B COMPLETE; E5-C–H NOT STARTED.** E1–E3 COMPLETE,
 E4 COMPLETE/CLOSED with real Kali acceptance; E6–E9 NOT STARTED; M20-E OPEN;
 M20-F NOT STARTED. This package specifies future implementation, not a permission,
-host capability attestation, or claim that a Python Resource exists today.
+host capability attestation, or claim that a usable Python runtime exists today.
 
 Read this with [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md),
 [ADR 0019](../adr/0019-m20-e-immutable-source-import-and-prepared-resource.md),
@@ -79,9 +79,12 @@ backend profile `m20-e5-linux-bwrap-cgroup@1`. These are not additions to the cu
 registry. Retain the E1 preparation profile `m20-e-python-stdlib-kali@1`; new backend
 mechanism detail is not a widening of that profile's permitted actions.
 
-E5-A implements only immutable Contracts and unwired neutral messages. The runtime remains
-UNAVAILABLE: no provider, persistent Resource, interpreter probe, venv, dispatch or execution
-authorization exists. See [typed boundary](M20E5_RUNTIME_RESOURCE.md#e5-a-implemented-boundary).
+E5-A implements immutable Contracts and unwired neutral messages. E5-B adds Node-only
+durable Resource reservations, exclusive ownership, budget accounting and metadata recovery.
+The runtime remains UNAVAILABLE: a reserved Resource is not a constructed runtime. There is
+no Python provider operation, interpreter probe, venv, E5 dispatch or execution authorization.
+See [typed boundary](M20E5_RUNTIME_RESOURCE.md#e5-a-implemented-boundary) and
+[durable ownership](M20E5_RUNTIME_RESOURCE.md#e5-b-implemented-durable-ownership).
 
 ## Decisions and alternatives
 

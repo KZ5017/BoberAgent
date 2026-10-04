@@ -1,7 +1,24 @@
 # M20-E5 recovery, expiry and failure classification
 
-**Architecture specified; implementation not started.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**Architecture specified; E5-B metadata recovery COMPLETE; live runtime revalidation NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 Historical evidence, current integrity, authority and execution readiness are separate.
+
+## Implemented E5-B recovery boundary
+
+Node initialization allocates a fresh logical startup generation and invokes the SQLite
+Resource repository's metadata-only `reconcile`. Untouched RESERVED metadata remains
+RESERVED. An active owner from another generation or past lease expiry, or abandoned BUILDING
+metadata without an owner, is quarantined conservatively. Historical ResourceRef/request
+pins remain; no replacement Resource, constructor replay or positive verification occurs.
+Remaining reservations become fully spent accounting entries; the ledger is never reset.
+An interrupted cleanup stays inspectable CLOSING/QUARANTINED/FAILED, and a new explicit
+Node-owned exclusive cleanup claim may finish the metadata-only teardown. CLOSED/REMOVED
+and lost-acknowledgement completion replay retain the same identity/history.
+
+There are no E5-B files, processes, cgroups or mounts to reconcile. The runtime matrix below
+remains a requirement for later construction/revalidation slices, not an implemented live
+cleanup claim. New preparation claims and BUILDING/budget mutations require an unexpired
+admitted permit; historical queries and trusted Node-owned quarantine/cleanup do not renew it.
 
 ## Recovery and change matrix
 

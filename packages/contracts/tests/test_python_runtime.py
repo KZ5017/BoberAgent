@@ -4,6 +4,7 @@ import json
 
 import pytest
 from boberagent_contracts import (
+    AccessMode,
     PythonProviderPhase,
     PythonResourceState,
     PythonRuntimeAuthorityProjection,
@@ -25,6 +26,27 @@ from python_runtime_test_fixtures import (
     runtime_binding_fixture,
     runtime_evidence_fixture,
 )
+
+
+def test_versioned_provider_descriptor_round_trip() -> None:
+    from boberagent_contracts import DomainRef, ResourceDescriptor
+    from plan_test_fixtures import NOW
+
+    authority = runtime_authority_fixture()
+    descriptor = ResourceDescriptor(
+        resource_id=runtime_binding_fixture().resource_ref,
+        resource_type="python_runtime",
+        provider="python-stdlib@1",
+        state="CREATING",
+        owner_ref=DomainRef(str(authority.permit.spec.mission_ref)),
+        created_by_run=authority.permit.run_ref,
+        created_at=NOW,
+        access_modes=(AccessMode.EXCLUSIVE,),
+    )
+    assert ResourceDescriptor.model_validate_json(descriptor.model_dump_json()) == descriptor
+    for invalid in ("/host/provider", "python@", "python@1@2", "python provider"):
+        with pytest.raises(ValidationError):
+            ResourceDescriptor.model_validate({**descriptor.model_dump(), "provider": invalid})
 
 
 def test_round_trip_schemas_and_nested_immutable_claims() -> None:

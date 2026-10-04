@@ -337,6 +337,8 @@ class RuntimeStore:
 
     def add_resource(self, record: ResourceRuntimeRecord) -> None:
         descriptor = record.descriptor
+        if descriptor.resource_type == "python_runtime":
+            raise ValueError("Python Resources require typed durable reservation")
         with self._database.transaction() as session:
             session.add(
                 RuntimeResourceRow(
@@ -379,6 +381,8 @@ class RuntimeStore:
             row = session.get(RuntimeResourceRow, str(resource_ref))
             if row is None:
                 raise KeyError(f"unknown Resource: {resource_ref}")
+            if row.resource_type == "python_runtime":
+                raise ValueError("Python Resource transitions require typed ownership")
             row.state = state.value
             row.updated_at = occurred_at
             row.last_activity_at = occurred_at

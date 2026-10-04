@@ -1,7 +1,7 @@
 # M20-E5 implementation slices and acceptance
 
-**Architecture specified; E5-A COMPLETE; E5-B–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
-No active enforcement probe below has been run by E5-A. No new harness or CLI exists yet.
+**Architecture specified; E5-A–B COMPLETE; E5-C–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+No active enforcement probe below has been run by E5-A/B. No new harness or CLI exists yet.
 Commands are an operator preflight design, not a request to configure a host automatically.
 
 ## Established evidence and remaining host prerequisites
@@ -218,13 +218,13 @@ E5-H real runtime acceptance supplements E4; E9 remains the later full E real ac
 
 ## E5 implementation sequence
 
-All slices below are **NOT STARTED**. Their letter order deliberately puts enforcement
+E5-A and E5-B are **COMPLETE**; E5-C–H are **NOT STARTED**. Their letter order deliberately puts enforcement
 before construction. No slice may claim the next one's acceptance.
 
 | Slice | Goal / production behavior added | Contracts and persistence | Tests / acceptance | Explicit non-goals |
 | --- | --- | --- | --- | --- |
 | E5-A — Typed Resource/evidence boundary (COMPLETE) | Closed operations, bindings, evidence and reasons implemented; runtime still unavailable | Shared Contracts and unwired preparation-runtime-v1 messages; no handles or DB migration | Strict round trips, schemas, immutability/digests/authority/unknown versions and architecture guards | Construction, transport dispatch wiring, F |
-| E5-B — Durable ownership/lifecycle | Atomic Resource reservation, provider state, leases, budget ledger, quarantine/cleanup skeleton | Forward Node migration keyed by existing ResourceRef; retain E3/E4; no new Core table by default | Fresh/upgrade/reopen/concurrency/crash tests; one Resource per binding | Venv creation or readiness claim |
+| E5-B — Durable ownership/lifecycle (COMPLETE) | Atomic Resource reservation, provider state, leases, budget ledger, quarantine/cleanup skeleton | Forward Node migration keyed by existing ResourceRef; retain E3/E4; no new Core table | Fresh/upgrade/reopen/concurrency/crash tests; one Resource per binding | Venv creation or readiness claim |
 | E5-C — Full preparation confinement | RuntimeConfinementBackend, owned supervisor/cgroup, capped scratch/output and trusted probes | Mechanism evidence/operation metadata; no authority expansion | Every live enforcement/death probe; unavailable host fails closed before builder | Acquired code, weaker RLIMIT fallback, privileged host setup |
 | E5-D — Interpreter provenance | Tool Registry pinned CPython 3.12 closure and confined fixed inspection | Interpreter fingerprint/sealed binding; no competing registry | Wrong version/layout/venv/startup/PATH/update negatives; exact trusted identity | Source imports, installs, venv construction |
 | E5-E — Empty environment construction | Closed accounted fresh venv, bounded publication and read-only same-path verification | Existing ownership/ledger, immutable inventory; no new domain ID | Empty packages/no pip, all writes charged, no source sentinel, partial never READY | Runtime execution, dynamic import checks |
@@ -236,3 +236,20 @@ Before each implementation, read this package and existing E1–E4 code. If a pl
 invalidates a chosen mechanism, stop positive implementation and review the smallest
 alternative. Do not quietly change the support profile, weaken a feature, auto-install a
 runtime or call generic process execution to make a smoke succeed.
+
+### E5-B automated acceptance
+
+`packages/execution-node/tests/test_python_resource_ownership.py` verifies fresh/upgrade
+SQLite schema, retained E3/E4 metadata, stable ResourceRef/reopen, real threaded identical
+and conflicting reservations/claims, immutable binding, exclusive generation/expiry,
+all eleven E1 budget categories, settlement replay/conflict and conservative interruption
+accounting. Injected transaction failures cover reservation/claim commits, BUILDING,
+quarantine and cleanup transitions; completion-before-ack replay is durable. Node startup
+recovery is exercised without a runtime provider or Resource workspace.
+
+`packages/core/tests/test_python_resource_e5b_integration.py` passes through the existing
+synthetic C/D→E2→E3→E4 chain, then reserves E5-B metadata locally. It creates no second Run,
+no WorkspaceRow and no new files or transport operation at the E5-B boundary.
+Architecture guards prohibit runtime/OS/filesystem/network/dispatch/evidence-sealing
+operations. E5-B does not satisfy any live enforcement, runtime-construction or Kali
+preflight/acceptance oracle above. The runtime remains UNAVAILABLE and not READY.

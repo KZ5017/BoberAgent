@@ -1,6 +1,6 @@
 # M20-E5 Resource, evidence and typed boundary
 
-**Architecture specified; E5-A COMPLETE; E5-B–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**Architecture specified; E5-A–B COMPLETE; E5-C–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 
 ## Identity, ownership and storage roles
 
@@ -187,3 +187,70 @@ explicitly denies; production Node generic dispatch already rejects this type. N
 pretends to construct runtime infrastructure. Schema export remains additive/reproducible.
 E1–E4 and D models, migrations, persistence and production `execute_plan()` remain unchanged.
 E5-B owns durable ownership/lifecycle. No runtime exists after E5-A.
+
+## E5-B implemented durable ownership
+
+Node `preparation.resources.PythonResourceRepository` is a metadata-only repository,
+not a provider, transport endpoint or capability service. Migration
+`0008_python_resource_ownership` follows `0007_preparation_materialization`; no Core schema
+changes. It reuses `runtime_resources`, adding:
+
+- `python_resource_details`: generated ResourceRef, unique canonical E5-A request digest,
+  preparation/permit pins, immutable request JSON, immutable retained usage baseline,
+  future Resource-owned workspace correlation, phase, UNCHECKED validity, active ownership
+  generation, failure and cleanup cursor;
+- `python_resource_operations`: logical operation ID, closed E5-A operation, owner token,
+  Node startup generation, bounded expiry, start/terminal timestamps and failure history;
+- `python_resource_budget_entries`: operation/category reservation and immutable settlement.
+
+Reservation validates the existing authenticated E3 admission and principal, pending Run,
+Node, current permit/actions and exact PUBLISHED E4 metadata/import pins. It never reads
+source bytes, invokes E4 verification/extraction or invents interpreter/backend identity.
+The generated ResourceRef is stable for the same canonical binding, including concurrent
+requests. Conflicting preparation/permit binding reuse rejects without rewriting history.
+Historical exact lookup after expiry is not new authority. The future Core E5 pump must still
+check current D applicability; E5-B adds no dispatch wiring.
+
+The existing Resource descriptor now accepts a narrowly versioned provider label such as
+`python-stdlib@1`; generic SymbolicName remains unchanged. This reconciles the accepted
+provider identifier with descriptor serialization, not a new provider identity design.
+
+Read APIs are `load`, `find_by_binding`, `operations` and `budget`. Narrow mutations are
+`reserve`, `claim`, `mark_building`, `release_claim`, `reserve_budget`, `settle_budget`,
+`quarantine`, `begin_cleanup`, `complete_cleanup`, `fail_cleanup` and `reconcile`.
+SQLite `BEGIN IMMEDIATE` serializes decisions across independent sessions. Same operation,
+owner and content replay is idempotent; another owner/action/generation rejects. No PID,
+host path, argv or live handle is persisted by this layer. Expired ownership must be
+reconciled, never stolen. RELEASE claims are trusted Node-owned safety bookkeeping, not an
+expired incoming caller's permission; this API is not exposed by SDK or transport.
+
+Resource lifecycle starts CREATING, provider phase RESERVED, validity UNCHECKED. An exclusive
+construction-owned operation may record BUILDING metadata, without executing anything.
+Interrupted/unknown ownership becomes LOST/QUARANTINED; interrupted cleanup remains
+CLOSING with a failed cleanup cursor. Metadata-only cleanup ends CLOSED/REMOVED, retaining
+binding, operation, budget and failure history. No E5-B API, generic Resource setter or
+database write can produce Python READY; migration constraints also prevent VERIFYING,
+PUBLISHED and VALID provider claims. Later slices must explicitly migrate these guards.
+
+The logical workspace correlation reserves only an ownership relationship: no WorkspaceRow,
+directory or runtime filesystem is allocated. A restrictive materialization foreign key
+retains the E4 metadata dependency. No E4 bytes, receipt, tree or ownership are changed.
+
+### Accounting, not enforcement proof
+
+Limits come from the immutable E1 spec. The ledger retains E3 imported byte count and E4
+materialized bytes/file count, observed temporary/write usage and rounded-up duration;
+import writes are charged too. E4's unrecorded exact path depth is conservatively charged
+at its admitted ceiling. Retained E3 import elapsed intervals are conservatively charged to
+total time as well; a replay does not reset them. Unrecorded durations and unmeasured
+process/memory/output facts are not invented as evidence: absent accounting entries do not attest measured zero usage or live
+confinement. Future E5 evidence must meet its separate measurement/proof requirements.
+
+Imported/materialized/write bytes, file count, total seconds and output are cumulative.
+Path depth, temporary bytes, process count, per-process seconds and memory are peak ceilings:
+historical high-water marks remain, while each exclusive operation reserves its next ceiling.
+Reservations are immutable by logical operation/category; settlement must cover the same
+categories, cannot exceed reservation and cannot rewrite prior settlement. Unknown interrupted
+reservations are charged fully, never automatically refunded. Cleanup/restart does not reset
+the ledger. Synthetic test settlements exercise accounting only, not proof of runtime work.
+No budget check here is a cgroup, storage quota or verified host enforcement claim.

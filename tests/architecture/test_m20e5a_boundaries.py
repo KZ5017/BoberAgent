@@ -1,4 +1,4 @@
-"""E5-A is an unwired data boundary. Provider/persistence/runtime work remains later."""
+"""E5-A stays unwired; E5-B may consume its models in Node-owned bookkeeping only."""
 
 import ast
 from pathlib import Path
@@ -79,15 +79,17 @@ def test_new_shared_state_matches_existing_node_vocabulary() -> None:
 
 
 def test_new_protocol_is_not_wired_to_runtime_or_adapters() -> None:
+    ownership = ROOT / "packages/execution-node/src/boberagent_execution_node/preparation"
     for package in ("core", "execution-node", "transport-mcp"):
         for source in (ROOT / "packages" / package / "src").rglob("*.py"):
             tree = ast.parse(source.read_text(encoding="utf-8"))
             for node in ast.walk(tree):
                 if isinstance(node, ast.ImportFrom) and node.module:
                     assert not node.module.endswith("preparation_runtime"), source
-                    assert not any(
-                        alias.name.startswith("PythonRuntime") for alias in node.names
-                    ), source
+                    if source not in {ownership / "resources.py", ownership / "resource_models.py"}:
+                        assert not any(
+                            alias.name.startswith("PythonRuntime") for alias in node.names
+                        ), source
 
 
 def test_production_generic_resource_has_no_python_provider() -> None:

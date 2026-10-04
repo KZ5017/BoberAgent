@@ -5016,7 +5016,7 @@
           "type": "string"
         },
         "provider": {
-          "$ref": "#/$defs/SymbolicName"
+          "$ref": "#/$defs/ResourceProviderName"
         },
         "resource_id": {
           "maxLength": 255,
@@ -5044,6 +5044,12 @@
       ],
       "title": "ResourceDescriptor",
       "type": "object"
+    },
+    "ResourceProviderName": {
+      "maxLength": 255,
+      "minLength": 1,
+      "pattern": "^[A-Za-z][A-Za-z0-9._:-]*(?:@[A-Za-z0-9][A-Za-z0-9._:-]*)?$",
+      "type": "string"
     },
     "ResourceRequirement": {
       "additionalProperties": false,

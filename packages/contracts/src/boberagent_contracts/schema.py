@@ -24,6 +24,14 @@ from .interaction import InteractionRequest, InteractionResponse
 from .invocation import CapabilityInvocation
 from .observation import Observation
 from .poc_acquisition import PoCSourceAcquisitionInput, PoCSourceAcquisitionReceipt
+from .python_runtime import (
+    PythonRuntimeAuthorityProjection,
+    PythonRuntimeBinding,
+    PythonRuntimeCurrentState,
+    PythonRuntimeEvidence,
+    PythonRuntimeFailure,
+    PythonRuntimeRequestBinding,
+)
 from .resource import ResourceDescriptor
 from .result import CapabilityOutcome, CapabilityResult
 from .run import CapabilityRun
@@ -64,6 +72,12 @@ EXCHANGED_MODEL_TYPES: tuple[type[BaseModel], ...] = (
     RuntimePreparationInput,
     RuntimePreparationManifest,
     RuntimePreparationReceipt,
+    PythonRuntimeRequestBinding,
+    PythonRuntimeAuthorityProjection,
+    PythonRuntimeBinding,
+    PythonRuntimeCurrentState,
+    PythonRuntimeEvidence,
+    PythonRuntimeFailure,
 )
 
 

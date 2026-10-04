@@ -1,7 +1,7 @@
 # M20-E — Runtime Preparation implementation plan
 
 **Architecture status:** SPECIFIED. **Implementation status:** E1–E4 COMPLETE, including
-real Core↔Kali E4 acceptance; E5 architecture SPECIFIED / implementation NOT STARTED;
+real Core↔Kali E4 acceptance; E5 architecture SPECIFIED / E5-A COMPLETE; E5-B–H NOT STARTED;
 E6–E9 NOT STARTED;
 M20-E remains OPEN. M20-D remains CLOSED; M20-F has NOT STARTED. This plan authorizes no
 preparation. The architectural
@@ -184,7 +184,9 @@ this acceptance.
 
 ## E5 — Trusted Python environment Resource provider (ARCHITECTURE SPECIFIED)
 
-**Implementation NOT STARTED.** The authoritative detailed package is
+**E5-A COMPLETE; E5-B–H NOT STARTED.** Only typed Resource/evidence models and unwired neutral
+messages exist; runtime remains UNAVAILABLE. No migration, runtime/venv, Python subprocess,
+dispatch, Node side effect or execution authority was added. The authoritative package is
 [E5 architecture](M20E5_ARCHITECTURE.md), with
 [ADR 0021](../adr/0021-m20-e5-prepared-python-resource-and-enforcement.md).
 Its [E5-A–E5-H slices](M20E5_ACCEPTANCE.md#e5-implementation-sequence) put full enforcement

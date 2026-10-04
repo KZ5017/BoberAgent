@@ -1,6 +1,6 @@
 # M20-E5 Resource, evidence and typed boundary
 
-**Architecture specified; implementation not started.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**Architecture specified; E5-A COMPLETE; E5-B–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 
 ## Identity, ownership and storage roles
 
@@ -142,3 +142,48 @@ may clean; an expired caller permit must not become a fresh release authorizatio
 Transport owns envelopes only. No host path, shell, Python text, environment injection or
 package URL input. In-memory and MCP adapters carry the same neutral messages. The future
 capability continues to consume SDK `RuntimePreparationService`; it cannot import this provider.
+
+## E5-A implemented boundary
+
+`boberagent_contracts.python_runtime` provides frozen, strict E5 models without a runtime
+implementation or authority issuer:
+
+- `PythonRuntimeRequestBinding` composes the existing E1 spec (exact source, provider,
+  profile, budgets/actions) with permit/digest/Run and E4 materialization/tree/entrypoint.
+  No interpreter facts are fabricated at reservation. `PythonRuntimeAuthorityProjection`
+  cross-checks against the existing permit. Consistent serialization is **not** authentication,
+  current applicability or a trusted Node admission handle.
+- `PythonRuntimeBinding` seals ResourceRef, request, interpreter and backend identity.
+  It contains no readiness, validity or authorization. Schema layout labels are
+  `m20-e5-python-layout@1`, `m20-e5-system-python@1`, `m20-e5-system-stdlib@1`;
+  construction version is `python-stdlib@1`. None is a host path or host-support claim.
+- `PythonResourceState` mirrors the existing Node Resource vocabulary. Provider phase and
+  checked validity are separate. Decoding READY creates no Resource and grants no use/launch.
+- `PythonRuntimeEvidence-v1` is intermediate historical evidence: typed inventory,
+  interpreter/closure hashes, non-actions, all twelve mechanism/probe claims, effective
+  caps/counters, measured usage, outputs, UTC timestamps and evidence ArtifactRefs.
+  VERIFIED requires complete evidence within budgets; rejected evidence needs typed reasons.
+  Validation proves no live host facts and does not complete the E6 final receipt.
+- `PythonRuntimeReason` adds narrow failure detail mapped to existing E1 reason codes;
+  authority/resource/cancellation reasons are reused, not replaced by generic FAILED.
+
+Canonical request/binding/evidence SHA-256 helpers reuse the existing canonical serializer.
+All meaningful pins participate; declared sets canonicalize independently of order. Unknown
+profiles/versions/fields and host-path-shaped identities reject. The profile remains CPython
+3.12, dependency-empty and network/Secret-denied. Private handles never cross this boundary.
+
+`boberagent_transport.preparation_runtime` defines independent `preparation-runtime-v1`
+requests and tagged accepted/rejected responses. The five operations are CHECK_RUNTIME,
+PREPARE_RUNTIME, RUNTIME_STATUS, REVALIDATE_RUNTIME and RELEASE_RUNTIME. Resource operations
+pin ResourceRef and sealed binding digest. Stable message identity includes request digest,
+operation and Resource pins, excluding delivery timestamp. Responses cross-check evidence
+and state correlation. No endpoint, dispatcher, Node handler or MCP wiring exists; E3/E4
+versions remain unchanged. Future admission must independently authenticate/recheck current
+authority, exact E4 state and Resource ownership. These models perform no lookup or expiry gate.
+
+SDK `RuntimePreparationService` remains unchanged: its final receipt belongs to E6. No
+`ctx.resources.prepare_runtime` is added. Generic fake `resources.create(python_runtime)`
+explicitly denies; production Node generic dispatch already rejects this type. No fake
+pretends to construct runtime infrastructure. Schema export remains additive/reproducible.
+E1–E4 and D models, migrations, persistence and production `execute_plan()` remain unchanged.
+E5-B owns durable ownership/lifecycle. No runtime exists after E5-A.

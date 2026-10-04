@@ -804,6 +804,10 @@
       "title": "ConfinementRequirement",
       "type": "object"
     },
+    "Count": {
+      "minimum": 0,
+      "type": "integer"
+    },
     "CredentialRequirement": {
       "additionalProperties": false,
       "properties": {
@@ -1758,6 +1762,10 @@
       "title": "ExpectedResult",
       "type": "object"
     },
+    "FalseFact": {
+      "const": false,
+      "type": "boolean"
+    },
     "FilesystemConstraints": {
       "additionalProperties": false,
       "properties": {
@@ -2505,6 +2513,10 @@
           "type": "object"
         }
       ]
+    },
+    "Limit": {
+      "exclusiveMinimum": 0,
+      "type": "integer"
     },
     "LiteralValue": {
       "additionalProperties": false,
@@ -4058,6 +4070,55 @@
       "title": "PreparationUsage",
       "type": "object"
     },
+    "PythonBackendIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "backend_id": {
+          "const": "linux-bwrap-cgroup",
+          "title": "Backend Id",
+          "type": "string"
+        },
+        "backend_version": {
+          "const": "1",
+          "title": "Backend Version",
+          "type": "string"
+        },
+        "binary_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "binary_version": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "helper_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "profile_id": {
+          "const": "m20-e5-linux-bwrap-cgroup",
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "profile_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "profile_version": {
+          "const": "1",
+          "title": "Profile Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "backend_id",
+        "backend_version",
+        "profile_id",
+        "profile_version",
+        "profile_sha256",
+        "binary_sha256",
+        "binary_version",
+        "helper_sha256"
+      ],
+      "title": "PythonBackendIdentity",
+      "type": "object"
+    },
     "PythonEnvironmentEvidence": {
       "additionalProperties": false,
       "properties": {
@@ -4101,6 +4162,796 @@
         "entrypoint_executed"
       ],
       "title": "PythonEnvironmentEvidence",
+      "type": "object"
+    },
+    "PythonEnvironmentInventory": {
+      "additionalProperties": false,
+      "properties": {
+        "copied_executable_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "external_installed_dependencies": {
+          "default": [],
+          "maxItems": 0,
+          "minItems": 0,
+          "title": "External Installed Dependencies",
+          "type": "array"
+        },
+        "file_count": {
+          "$ref": "#/$defs/Count"
+        },
+        "inventory_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "namespace_prefix": {
+          "const": "/work/venv",
+          "title": "Namespace Prefix",
+          "type": "string"
+        },
+        "permitted_links": {
+          "items": {
+            "const": "lib64->lib",
+            "type": "string"
+          },
+          "maxItems": 1,
+          "title": "Permitted Links",
+          "type": "array"
+        },
+        "pip_bootstrapped": {
+          "$ref": "#/$defs/FalseFact"
+        },
+        "pip_used": {
+          "$ref": "#/$defs/FalseFact"
+        },
+        "pyvenv_config_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "system_site_packages": {
+          "$ref": "#/$defs/FalseFact"
+        },
+        "total_bytes": {
+          "$ref": "#/$defs/Count"
+        }
+      },
+      "required": [
+        "namespace_prefix",
+        "pyvenv_config_sha256",
+        "inventory_sha256",
+        "file_count",
+        "total_bytes",
+        "copied_executable_sha256",
+        "permitted_links",
+        "system_site_packages",
+        "pip_bootstrapped",
+        "pip_used"
+      ],
+      "title": "PythonEnvironmentInventory",
+      "type": "object"
+    },
+    "PythonInterpreterIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "architecture": {
+          "const": "x86_64",
+          "title": "Architecture",
+          "type": "string"
+        },
+        "base_layout": {
+          "const": "m20-e5-system-python@1",
+          "title": "Base Layout",
+          "type": "string"
+        },
+        "build_identity": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "cache_tag": {
+          "const": "cpython-312",
+          "title": "Cache Tag",
+          "type": "string"
+        },
+        "closure_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "implementation": {
+          "const": "CPython",
+          "title": "Implementation",
+          "type": "string"
+        },
+        "soabi": {
+          "$ref": "#/$defs/SymbolicName"
+        },
+        "stdlib_layout": {
+          "const": "m20-e5-system-stdlib@1",
+          "title": "Stdlib Layout",
+          "type": "string"
+        },
+        "summary": {
+          "$ref": "#/$defs/InterpreterEvidence"
+        }
+      },
+      "required": [
+        "summary",
+        "implementation",
+        "build_identity",
+        "architecture",
+        "soabi",
+        "cache_tag",
+        "base_layout",
+        "stdlib_layout",
+        "closure_sha256"
+      ],
+      "title": "PythonInterpreterIdentity",
+      "type": "object"
+    },
+    "PythonProviderOperation": {
+      "enum": [
+        "inspect_interpreter",
+        "create_empty_environment",
+        "verify_environment",
+        "revalidate",
+        "release"
+      ],
+      "title": "PythonProviderOperation",
+      "type": "string"
+    },
+    "PythonProviderPhase": {
+      "enum": [
+        "RESERVED",
+        "BUILDING",
+        "VERIFYING",
+        "PUBLISHED",
+        "QUARANTINED",
+        "REMOVED"
+      ],
+      "title": "PythonProviderPhase",
+      "type": "string"
+    },
+    "PythonResourceState": {
+      "description": "Same vocabulary as Node ResourceRuntimeState, not a transition engine.",
+      "enum": [
+        "CREATING",
+        "READY",
+        "FAILED",
+        "CLOSING",
+        "CLOSED",
+        "LOST"
+      ],
+      "title": "PythonResourceState",
+      "type": "string"
+    },
+    "PythonRuntimeAuthorityProjection": {
+      "additionalProperties": false,
+      "description": "Consistent serialized E2 claims, NOT a trusted Node admission handle.",
+      "properties": {
+        "binding": {
+          "$ref": "#/$defs/PythonRuntimeRequestBinding"
+        },
+        "permit": {
+          "$ref": "#/$defs/PreparationPermit"
+        }
+      },
+      "required": [
+        "permit",
+        "binding"
+      ],
+      "title": "PythonRuntimeAuthorityProjection",
+      "type": "object"
+    },
+    "PythonRuntimeBinding": {
+      "additionalProperties": false,
+      "description": "Sealed historical Resource identity; deliberately contains no readiness field.",
+      "properties": {
+        "backend": {
+          "$ref": "#/$defs/PythonBackendIdentity"
+        },
+        "interpreter": {
+          "$ref": "#/$defs/PythonInterpreterIdentity"
+        },
+        "request": {
+          "$ref": "#/$defs/PythonRuntimeRequestBinding"
+        },
+        "resource_ref": {
+          "$ref": "#/$defs/RuntimeResourceRef"
+        },
+        "schema_version": {
+          "const": "python-runtime-binding-v1",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "resource_ref",
+        "request",
+        "interpreter",
+        "backend"
+      ],
+      "title": "PythonRuntimeBinding",
+      "type": "object"
+    },
+    "PythonRuntimeCurrentState": {
+      "additionalProperties": false,
+      "properties": {
+        "binding_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "boot_generation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuntimeCorrelation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "checked_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checked At"
+        },
+        "failure": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PythonRuntimeFailure"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "phase": {
+          "$ref": "#/$defs/PythonProviderPhase"
+        },
+        "resource_ref": {
+          "$ref": "#/$defs/RuntimeResourceRef"
+        },
+        "state": {
+          "$ref": "#/$defs/PythonResourceState"
+        },
+        "validity": {
+          "$ref": "#/$defs/PythonRuntimeValidity"
+        }
+      },
+      "required": [
+        "resource_ref",
+        "binding_sha256",
+        "state",
+        "phase",
+        "validity"
+      ],
+      "title": "PythonRuntimeCurrentState",
+      "type": "object"
+    },
+    "PythonRuntimeEnforcement": {
+      "additionalProperties": false,
+      "description": "Measured proof claims; merely decoding them proves no live host control.",
+      "properties": {
+        "boot_generation": {
+          "$ref": "#/$defs/RuntimeCorrelation"
+        },
+        "descendant_mechanism": {
+          "const": "CGROUP_KILL_SUPERVISED_PID_NAMESPACE",
+          "title": "Descendant Mechanism",
+          "type": "string"
+        },
+        "descendants_empty": {
+          "$ref": "#/$defs/TrueFact"
+        },
+        "effective_memory_bytes": {
+          "$ref": "#/$defs/Limit"
+        },
+        "effective_output_bytes": {
+          "$ref": "#/$defs/Limit"
+        },
+        "effective_process_limit": {
+          "$ref": "#/$defs/Limit"
+        },
+        "effective_process_seconds": {
+          "$ref": "#/$defs/Limit"
+        },
+        "effective_swap_bytes": {
+          "const": 0,
+          "title": "Effective Swap Bytes",
+          "type": "integer"
+        },
+        "effective_total_seconds": {
+          "$ref": "#/$defs/Limit"
+        },
+        "effective_write_bytes": {
+          "$ref": "#/$defs/Limit"
+        },
+        "filesystem_policy": {
+          "const": "MINIMAL_READONLY_VIEW_NO_WRITABLE_HOST_BIND",
+          "title": "Filesystem Policy",
+          "type": "string"
+        },
+        "kernel_version": {
+          "$ref": "#/$defs/NonEmptyStr"
+        },
+        "memory_mechanism": {
+          "const": "CGROUP_V2_MEMORY_MAX_ZERO_SWAP_GROUP_OOM",
+          "title": "Memory Mechanism",
+          "type": "string"
+        },
+        "memory_peak_bytes": {
+          "$ref": "#/$defs/Count"
+        },
+        "network_mechanism": {
+          "const": "EMPTY_NETWORK_NAMESPACE_NO_SOCKET_FDS",
+          "title": "Network Mechanism",
+          "type": "string"
+        },
+        "oom_events": {
+          "$ref": "#/$defs/Count"
+        },
+        "output_mechanism": {
+          "const": "COMBINED_CAPPED_PIPE_DRAIN",
+          "title": "Output Mechanism",
+          "type": "string"
+        },
+        "passed_probes": {
+          "collection_semantics": "set",
+          "items": {
+            "$ref": "#/$defs/ConfinementFeature"
+          },
+          "title": "Passed Probes",
+          "type": "array"
+        },
+        "pids_limit_events": {
+          "$ref": "#/$defs/Count"
+        },
+        "process_mechanism": {
+          "const": "CGROUP_V2_PIDS_MAX",
+          "title": "Process Mechanism",
+          "type": "string"
+        },
+        "processes_peak": {
+          "$ref": "#/$defs/Count"
+        },
+        "runtime_mechanism": {
+          "const": "SUPERVISED_MONOTONIC_DEADLINES",
+          "title": "Runtime Mechanism",
+          "type": "string"
+        },
+        "source_visibility": {
+          "const": "ABSENT_DURING_PYTHON_OPERATIONS",
+          "title": "Source Visibility",
+          "type": "string"
+        },
+        "storage_mechanism": {
+          "const": "CAPPED_TMPFS_BOUNDED_TRUSTED_PUBLISHER",
+          "title": "Storage Mechanism",
+          "type": "string"
+        },
+        "verified_features": {
+          "collection_semantics": "set",
+          "items": {
+            "$ref": "#/$defs/ConfinementFeature"
+          },
+          "title": "Verified Features",
+          "type": "array"
+        },
+        "writable_mounts": {
+          "items": {
+            "$ref": "#/$defs/PythonWritableMount"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Writable Mounts",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kernel_version",
+        "boot_generation",
+        "verified_features",
+        "process_mechanism",
+        "memory_mechanism",
+        "descendant_mechanism",
+        "storage_mechanism",
+        "runtime_mechanism",
+        "output_mechanism",
+        "network_mechanism",
+        "filesystem_policy",
+        "source_visibility",
+        "effective_process_limit",
+        "effective_memory_bytes",
+        "effective_swap_bytes",
+        "effective_process_seconds",
+        "effective_total_seconds",
+        "effective_output_bytes",
+        "effective_write_bytes",
+        "writable_mounts",
+        "passed_probes",
+        "pids_limit_events",
+        "oom_events",
+        "memory_peak_bytes",
+        "processes_peak",
+        "descendants_empty"
+      ],
+      "title": "PythonRuntimeEnforcement",
+      "type": "object"
+    },
+    "PythonRuntimeEvidence": {
+      "additionalProperties": false,
+      "description": "Intermediate immutable E5 evidence, never the final E6 receipt or authority.",
+      "properties": {
+        "aggregate_usage": {
+          "$ref": "#/$defs/PreparationUsage"
+        },
+        "binding": {
+          "$ref": "#/$defs/PythonRuntimeBinding"
+        },
+        "budget_ledger_correlation": {
+          "$ref": "#/$defs/RuntimeCorrelation"
+        },
+        "completed_at": {
+          "format": "date-time",
+          "title": "Completed At",
+          "type": "string"
+        },
+        "e5_usage": {
+          "$ref": "#/$defs/PreparationUsage"
+        },
+        "enforcement": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PythonRuntimeEnforcement"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "environment": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PythonEnvironmentInventory"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_artifact_refs": {
+          "collection_semantics": "set",
+          "items": {
+            "maxLength": 255,
+            "minLength": 1,
+            "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+            "type": "string"
+          },
+          "maxItems": 64,
+          "title": "Evidence Artifact Refs",
+          "type": "array"
+        },
+        "failure": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PythonRuntimeFailure"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "monotonic_duration_milliseconds": {
+          "$ref": "#/$defs/Count"
+        },
+        "non_actions": {
+          "$ref": "#/$defs/PythonRuntimeNonActions"
+        },
+        "operation": {
+          "$ref": "#/$defs/PythonProviderOperation"
+        },
+        "outputs": {
+          "$ref": "#/$defs/PythonRuntimeOutputEvidence"
+        },
+        "schema_version": {
+          "const": "PythonRuntimeEvidence-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "started_at": {
+          "format": "date-time",
+          "title": "Started At",
+          "type": "string"
+        },
+        "verification": {
+          "enum": [
+            "VERIFIED",
+            "REJECTED"
+          ],
+          "title": "Verification",
+          "type": "string"
+        },
+        "workspace_correlation": {
+          "$ref": "#/$defs/RuntimeCorrelation"
+        }
+      },
+      "required": [
+        "schema_version",
+        "binding",
+        "workspace_correlation",
+        "operation",
+        "environment",
+        "non_actions",
+        "enforcement",
+        "aggregate_usage",
+        "e5_usage",
+        "budget_ledger_correlation",
+        "outputs",
+        "started_at",
+        "completed_at",
+        "monotonic_duration_milliseconds",
+        "verification",
+        "failure",
+        "evidence_artifact_refs"
+      ],
+      "title": "PythonRuntimeEvidence",
+      "type": "object"
+    },
+    "PythonRuntimeFailure": {
+      "additionalProperties": false,
+      "description": "Optional narrow detail alongside the existing E1 authority/resource reasons.",
+      "properties": {
+        "reason_code": {
+          "$ref": "#/$defs/PreparationReasonCode"
+        },
+        "runtime_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PythonRuntimeReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "reason_code"
+      ],
+      "title": "PythonRuntimeFailure",
+      "type": "object"
+    },
+    "PythonRuntimeNonActions": {
+      "additionalProperties": false,
+      "properties": {
+        "activation_script_sourced": {
+          "$ref": "#/$defs/FalseFact"
+        },
+        "entrypoint_executed": {
+          "$ref": "#/$defs/FalseFact"
+        },
+        "package_installed": {
+          "$ref": "#/$defs/FalseFact"
+        },
+        "preparation_network": {
+          "const": "NONE",
+          "title": "Preparation Network",
+          "type": "string"
+        },
+        "source_compiled": {
+          "$ref": "#/$defs/FalseFact"
+        },
+        "source_imported": {
+          "$ref": "#/$defs/FalseFact"
+        },
+        "target_secret_grants": {
+          "default": [],
+          "maxItems": 0,
+          "minItems": 0,
+          "title": "Target Secret Grants",
+          "type": "array"
+        }
+      },
+      "required": [
+        "source_imported",
+        "source_compiled",
+        "entrypoint_executed",
+        "package_installed",
+        "activation_script_sourced",
+        "preparation_network"
+      ],
+      "title": "PythonRuntimeNonActions",
+      "type": "object"
+    },
+    "PythonRuntimeOutputEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "stderr_bytes": {
+          "$ref": "#/$defs/Count"
+        },
+        "stderr_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "stdout_bytes": {
+          "$ref": "#/$defs/Count"
+        },
+        "stdout_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        }
+      },
+      "required": [
+        "stdout_bytes",
+        "stdout_sha256",
+        "stderr_bytes",
+        "stderr_sha256"
+      ],
+      "title": "PythonRuntimeOutputEvidence",
+      "type": "object"
+    },
+    "PythonRuntimeProfileIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "construction_version": {
+          "const": "python-stdlib@1",
+          "title": "Construction Version",
+          "type": "string"
+        },
+        "layout_version": {
+          "const": "m20-e5-python-layout@1",
+          "title": "Layout Version",
+          "type": "string"
+        },
+        "profile_id": {
+          "const": "m20-e-python-stdlib-kali",
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "profile_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "profile_version": {
+          "const": "1",
+          "title": "Profile Version",
+          "type": "string"
+        },
+        "runtime_provider": {
+          "const": "python-stdlib@1",
+          "title": "Runtime Provider",
+          "type": "string"
+        }
+      },
+      "required": [
+        "profile_id",
+        "profile_version",
+        "profile_sha256",
+        "runtime_provider",
+        "construction_version",
+        "layout_version"
+      ],
+      "title": "PythonRuntimeProfileIdentity",
+      "type": "object"
+    },
+    "PythonRuntimeReason": {
+      "enum": [
+        "PYTHON_RUNTIME_UNAVAILABLE",
+        "PYTHON_RUNTIME_MISMATCH",
+        "PROCESS_LIMIT_UNAVAILABLE",
+        "MEMORY_LIMIT_UNAVAILABLE",
+        "STORAGE_LIMIT_UNAVAILABLE",
+        "DESCENDANT_CONTAINMENT_UNAVAILABLE",
+        "RUNTIME_LIMIT_UNAVAILABLE",
+        "DEPENDENCY_INSTALL_FORBIDDEN",
+        "VENV_CREATION_FAILED",
+        "RUNTIME_INTEGRITY_FAILURE",
+        "RUNTIME_IDENTITY_CONFLICT",
+        "RUNTIME_REVALIDATION_FAILED",
+        "RUNTIME_QUARANTINED"
+      ],
+      "title": "PythonRuntimeReason",
+      "type": "string"
+    },
+    "PythonRuntimeRequestBinding": {
+      "additionalProperties": false,
+      "description": "Immutable request pins, before interpreter/backend facts are known.",
+      "properties": {
+        "entrypoint_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "materialization_id": {
+          "$ref": "#/$defs/RuntimeCorrelation"
+        },
+        "permit_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Permit Ref",
+          "type": "string"
+        },
+        "permit_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "profile": {
+          "$ref": "#/$defs/PythonRuntimeProfileIdentity"
+        },
+        "run_ref": {
+          "maxLength": 255,
+          "minLength": 1,
+          "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+          "title": "Run Ref",
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "python-runtime-request-binding-v1",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_tree_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "spec": {
+          "$ref": "#/$defs/RuntimePreparationSpec"
+        }
+      },
+      "required": [
+        "schema_version",
+        "spec",
+        "permit_ref",
+        "permit_sha256",
+        "run_ref",
+        "materialization_id",
+        "source_tree_sha256",
+        "entrypoint_sha256",
+        "profile"
+      ],
+      "title": "PythonRuntimeRequestBinding",
+      "type": "object"
+    },
+    "PythonRuntimeValidity": {
+      "enum": [
+        "UNCHECKED",
+        "VALID",
+        "INVALID"
+      ],
+      "title": "PythonRuntimeValidity",
+      "type": "string"
+    },
+    "PythonWritableMount": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "$ref": "#/$defs/Limit"
+        },
+        "max_inodes": {
+          "$ref": "#/$defs/Limit"
+        },
+        "mechanism": {
+          "const": "SIZED_INODE_BOUNDED_TMPFS",
+          "title": "Mechanism",
+          "type": "string"
+        },
+        "namespace_path": {
+          "enum": [
+            "/work/venv",
+            "/work/tmp",
+            "/work/home"
+          ],
+          "title": "Namespace Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "namespace_path",
+        "mechanism",
+        "max_bytes",
+        "max_inodes"
+      ],
+      "title": "PythonWritableMount",
       "type": "object"
     },
     "RelativeSourcePath": {
@@ -4257,6 +5108,12 @@
         "UNKNOWN"
       ],
       "title": "RetrySemantics",
+      "type": "string"
+    },
+    "RuntimeCorrelation": {
+      "maxLength": 255,
+      "minLength": 1,
+      "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
       "type": "string"
     },
     "RuntimePreparationInput": {
@@ -4682,6 +5539,12 @@
       ],
       "title": "RuntimeRequirement",
       "type": "object"
+    },
+    "RuntimeResourceRef": {
+      "maxLength": 255,
+      "minLength": 1,
+      "pattern": "^[A-Za-z][A-Za-z0-9._:/-]{0,254}$",
+      "type": "string"
     },
     "SchemaDeclaration": {
       "additionalProperties": false,
@@ -5117,6 +5980,10 @@
       ],
       "title": "TargetRole",
       "type": "string"
+    },
+    "TrueFact": {
+      "const": true,
+      "type": "boolean"
     },
     "UnknownTarget": {
       "additionalProperties": false,

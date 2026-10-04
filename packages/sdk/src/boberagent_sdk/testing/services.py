@@ -547,6 +547,8 @@ class FakeResourceService:
         configuration: JsonObject,
         owner_ref: DomainRef | None = None,
     ) -> ResourceDescriptor:
+        if resource_type == "python_runtime":
+            raise ResourceUnavailable("Python runtime requires the typed preparation boundary")
         self._counter += 1
         descriptor = ResourceDescriptor(
             resource_id=ResourceRef(f"resource-{self._counter:04d}"),

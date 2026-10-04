@@ -1,8 +1,8 @@
 # M20-E acceptance and stop conditions
 
 **Status:** E1–E4 COMPLETE; real Core↔Kali E3 and E4 acceptance PASSED.
-E5 architecture is SPECIFIED; implementation NOT STARTED. E6–E9 have not begun.
-**M20-E4 CLOSED. M20-E remains OPEN. M20-E5 implementation has not begun.**
+E5 architecture is SPECIFIED; E5-A COMPLETE (typed boundary only); E5-B–H and E6–E9 have not begun.
+**M20-E4 CLOSED. M20-E remains OPEN. No E5 runtime exists.**
 M20-F has not begun. See [slice plan](M20E_IMPLEMENTATION.md).
 
 [E5 acceptance and preflight](M20E5_ACCEPTANCE.md) specifies future Python Resource and

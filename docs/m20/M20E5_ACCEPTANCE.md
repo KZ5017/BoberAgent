@@ -1,7 +1,7 @@
 # M20-E5 implementation slices and acceptance
 
-**Architecture specified; implementation not started.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
-Nothing below has been run against Kali by this audit. No new harness or CLI exists yet.
+**Architecture specified; E5-A COMPLETE; E5-B–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+No active enforcement probe below has been run by E5-A. No new harness or CLI exists yet.
 Commands are an operator preflight design, not a request to configure a host automatically.
 
 ## Established evidence and remaining host prerequisites
@@ -20,6 +20,22 @@ PUBLISHED; 1 file; 336 bytes
 This proves E4 publication/restart and its four isolation features, including real bwrap
 0.11.0 on Kali, not an unexpired permit today. Do not reuse that expired authority for E5
 or rerun retained source. Future E5 acceptance needs a fresh eligible synthetic preparation.
+
+### Operator-supplied reconnaissance (E5-A)
+
+Recorded without reprobes/host changes: Linux 6.12.25-amd64 / x86_64, bubblewrap 0.11.0,
+unprivileged user/PID/mount namespaces, cgroup v2 with cpu/memory/pids, and systemd 257.
+The dedicated transient service has Delegate=yes, memory/pids delegation and
+DelegateSubgroup=supervisor. Its parent is kali-owned, domain-type, direct tasks empty,
+with memory/pids enabled for children. Disposable writes to pids.max=8,
+memory.max=67108864, memory.swap.max=0, memory.oom.group and cgroup.kill succeeded,
+with clean initial events. These support backend viability, not effective enforcement.
+
+Active process/memory/tmpfs/inode/output/runtime/descendant and Node/supervisor-death
+enforcement are **NOT YET PROVEN**; E5-C must prove them. `/usr/bin/python3.12` is absent.
+CPython 3.13.7 is present but **NOT an approved fallback**. An explicit interpreter-profile
+decision is required before E5-D. E5-A changes no profile and selects/installs no interpreter.
+The runtime remains UNAVAILABLE.
 
 ### Read-only host reconnaissance
 
@@ -207,7 +223,7 @@ before construction. No slice may claim the next one's acceptance.
 
 | Slice | Goal / production behavior added | Contracts and persistence | Tests / acceptance | Explicit non-goals |
 | --- | --- | --- | --- | --- |
-| E5-A — Typed Resource/evidence boundary | Define closed provider operations, bindings, evidence and reasons; runtime still unavailable | Shared evidence only where exchanged; neutral versioned requests; Node-private handles; no DB migration | Schema/immutability/authority/unknown-version tests; no call can launch anything | Construction, transport dispatch wiring, F |
+| E5-A — Typed Resource/evidence boundary (COMPLETE) | Closed operations, bindings, evidence and reasons implemented; runtime still unavailable | Shared Contracts and unwired preparation-runtime-v1 messages; no handles or DB migration | Strict round trips, schemas, immutability/digests/authority/unknown versions and architecture guards | Construction, transport dispatch wiring, F |
 | E5-B — Durable ownership/lifecycle | Atomic Resource reservation, provider state, leases, budget ledger, quarantine/cleanup skeleton | Forward Node migration keyed by existing ResourceRef; retain E3/E4; no new Core table by default | Fresh/upgrade/reopen/concurrency/crash tests; one Resource per binding | Venv creation or readiness claim |
 | E5-C — Full preparation confinement | RuntimeConfinementBackend, owned supervisor/cgroup, capped scratch/output and trusted probes | Mechanism evidence/operation metadata; no authority expansion | Every live enforcement/death probe; unavailable host fails closed before builder | Acquired code, weaker RLIMIT fallback, privileged host setup |
 | E5-D — Interpreter provenance | Tool Registry pinned CPython 3.12 closure and confined fixed inspection | Interpreter fingerprint/sealed binding; no competing registry | Wrong version/layout/venv/startup/PATH/update negatives; exact trusted identity | Source imports, installs, venv construction |

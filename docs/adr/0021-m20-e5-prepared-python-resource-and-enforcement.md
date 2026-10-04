@@ -1,6 +1,7 @@
 # ADR 0021 — E5 prepared Python Resource and mandatory enforcement
 
-**Status:** Accepted architecture for future E5 implementation; implementation NOT STARTED.
+**Status:** Accepted architecture; E5-A typed boundary COMPLETE. Runtime implementation
+(E5-B–H) NOT STARTED; E5 remains OPEN.
 Refines ADRs 0018–0020 without changing E1 authority, E4 publication, or the E/F boundary.
 
 ## Context

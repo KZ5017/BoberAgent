@@ -1,6 +1,6 @@
 # M20-E5 — Prepared Python runtime architecture
 
-**Status: ARCHITECTURE SPECIFIED / IMPLEMENTATION NOT STARTED.** E1–E3 COMPLETE,
+**Status: ARCHITECTURE SPECIFIED / E5-A COMPLETE; E5-B–H NOT STARTED.** E1–E3 COMPLETE,
 E4 COMPLETE/CLOSED with real Kali acceptance; E6–E9 NOT STARTED; M20-E OPEN;
 M20-F NOT STARTED. This package specifies future implementation, not a permission,
 host capability attestation, or claim that a Python Resource exists today.
@@ -79,6 +79,10 @@ backend profile `m20-e5-linux-bwrap-cgroup@1`. These are not additions to the cu
 registry. Retain the E1 preparation profile `m20-e-python-stdlib-kali@1`; new backend
 mechanism detail is not a widening of that profile's permitted actions.
 
+E5-A implements only immutable Contracts and unwired neutral messages. The runtime remains
+UNAVAILABLE: no provider, persistent Resource, interpreter probe, venv, dispatch or execution
+authorization exists. See [typed boundary](M20E5_RUNTIME_RESOURCE.md#e5-a-implemented-boundary).
+
 ## Decisions and alternatives
 
 | Question | Options considered | Decision / why | Security consequence | Implementation consequence |
@@ -99,9 +103,11 @@ mechanism detail is not a widening of that profile's permitted actions.
 
 ## Remaining deployment facts, not permissive defaults
 
-No E5 architecture choice remains delegated to an implementation shortcut. Actual Kali
-CPython 3.12 availability, trusted layout, cgroup delegation/controllers/kill, sized writable
-mount support and death/limit probes are **unverified prerequisites**. E4's CPython probe
+No E5 architecture choice remains delegated to an implementation shortcut. Supplied Kali
+reconnaissance confirms namespace availability and delegated cgroup control-file writes,
+not active enforcement. CPython 3.12 is absent; 3.13.7 is not an approved fallback. Trusted
+layout, sized writable mounts and active death/limit probes remain **unverified prerequisites**;
+see [acceptance](M20E5_ACCEPTANCE.md#operator-supplied-reconnaissance-e5-a). E4's CPython probe
 may use another host version; it is not E5 interpreter provenance. Do not install Python,
 change systemd configuration, grant root or weaken a limit to make acceptance pass.
 If the approved backend cannot meet this package, report the failed prerequisite and stop

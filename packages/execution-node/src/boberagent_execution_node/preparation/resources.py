@@ -43,6 +43,7 @@ from ..persistence.orm import (
     PreparationAuthorityRow,
     PreparationImportRow,
     PreparationMaterializationRow,
+    PythonEnvironmentRow,
     PythonResourceBudgetRow,
     PythonResourceOperationRow,
     PythonResourceRow,
@@ -447,7 +448,13 @@ class PythonResourceRepository:
                 abandoned = row is not None and (
                     row.boot_generation != str(self._boot) or row.expires_at <= self._now()
                 )
-                orphaned = row is None and detail.phase == PythonProviderPhase.BUILDING.value
+                orphaned = row is None and (
+                    detail.phase == PythonProviderPhase.BUILDING.value
+                    or (
+                        detail.phase == "VERIFYING"
+                        and session.get(PythonEnvironmentRow, detail.resource_id) is None
+                    )
+                )
                 if abandoned or orphaned:
                     self._quarantine(session, detail, _interrupted())
                     if detail.cleanup_state == CleanupState.PENDING.value:

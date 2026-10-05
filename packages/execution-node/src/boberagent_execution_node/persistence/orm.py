@@ -96,6 +96,18 @@ class PythonRuntimeEvidenceRow(Base):
     manifest_json: Mapped[JsonObject] = mapped_column(JSON)
 
 
+class PythonEnvironmentRow(Base):
+    __tablename__ = "python_environment_constructions"
+    resource_id: Mapped[str] = mapped_column(
+        ForeignKey("python_resource_details.resource_id", ondelete="RESTRICT"), primary_key=True
+    )
+    operation_id: Mapped[str] = mapped_column(
+        ForeignKey("python_resource_operations.operation_id", ondelete="RESTRICT"), unique=True
+    )
+    evidence_sha256: Mapped[str] = mapped_column(String(64))
+    evidence_json: Mapped[JsonObject] = mapped_column(JSON)
+
+
 class RunRow(Base):
     __tablename__ = "runtime_runs"
 

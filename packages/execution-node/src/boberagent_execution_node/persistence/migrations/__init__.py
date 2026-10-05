@@ -18,9 +18,25 @@ def _config(database_url: str) -> Config:
 
 def upgrade_database(database: RuntimeDatabase, revision: str = "head") -> None:
     config = _config(database.url)
-    with database.migration_engine.begin() as connection:
-        config.attributes["connection"] = connection
-        command.upgrade(config, revision)
+    # SQLite batch-rebuilds referenced tables (E5-E widens a CHECK, not data).
+    # Disable FK enforcement only on this dedicated migration connection BEFORE
+    # the transaction. Validate both ends; ordinary sessions always retain FKs.
+    with database.migration_engine.connect() as connection:
+        if connection.exec_driver_sql("PRAGMA foreign_key_check").first() is not None:
+            raise RuntimeError("invalid Node foreign-key history")
+        connection.commit()
+        connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+        connection.commit()
+        try:
+            with connection.begin():
+                config.attributes["connection"] = connection
+                command.upgrade(config, revision)
+                if connection.exec_driver_sql("PRAGMA foreign_key_check").first() is not None:
+                    raise RuntimeError("Node migration violated foreign keys")
+        finally:
+            connection.rollback()
+            connection.exec_driver_sql("PRAGMA foreign_keys=ON")
+            connection.commit()
 
 
 def current_revision(database: RuntimeDatabase) -> str | None:

@@ -22,6 +22,7 @@
 #include <sys/mount.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
+#include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
@@ -33,6 +34,7 @@
 
 #define MiB (1024UL * 1024UL)
 #define MAX_OUTPUT 4096
+#define ENVIRONMENT_EXPORT_MAX (32UL*MiB+65536UL)
 static int requester_ready = -1;
 static const char *names[] = {"isolation", "pids", "memory", "bytes", "inodes",
     "output", "deadline", "descendants", "setsid", "double_fork", "cancel",
@@ -41,7 +43,10 @@ static const char *names[] = {"isolation", "pids", "memory", "bytes", "inodes",
 static int probe_index(const char *s) {
     for (unsigned i = 0; i < sizeof(names)/sizeof(names[0]); i++)
         if (!strcmp(s, names[i])) return (int)i;
-    return !strcmp(s,"python_identity") ? 13 : -1;
+    if (!strcmp(s,"python_identity")) return 13;
+    if (!strcmp(s,"python_environment_create")) return 14;
+    if (!strcmp(s,"python_environment_verify")) return 15;
+    return -1;
 }
 static unsigned long number(const char *s, unsigned long lo, unsigned long hi) {
     char *end; errno = 0;
@@ -156,27 +161,31 @@ static void setup_fixture(int op, unsigned port) {
     const char *options[] = {"size=1048576,nr_inodes=32,mode=0700",
         "size=4096,nr_inodes=8,mode=0700", "size=4096,nr_inodes=8,mode=0700"};
     for (int i = 0; i < 3; i++) {
-        if (mount("tmpfs", mounts[i], "tmpfs", MS_NOSUID|MS_NODEV|MS_NOEXEC, options[i])) _exit(91);
+        if (op==15 && i==0) continue; /* Already a read-only owned publication. */
+        const char *selected=op==14 && i==0 ? "size=33554432,nr_inodes=256,mode=0700" : options[i];
+        if (mount("tmpfs", mounts[i], "tmpfs", MS_NOSUID|MS_NODEV|MS_NOEXEC, selected)) _exit(91);
         struct statvfs v;
-        if (statvfs(mounts[i], &v) || v.f_blocks*v.f_frsize != (i ? 4096UL : MiB)
-            || v.f_files != (i ? 8UL : 32UL)) _exit(91);
+        if (statvfs(mounts[i], &v) || v.f_blocks*v.f_frsize != (i ? 4096UL : (op==14 ? 32UL*MiB : MiB))
+            || v.f_files != (i ? 8UL : (op==14 ? 256UL : 32UL))) _exit(91);
     }
     /* Parent root, /proc and all non-scratch bindings are read-only. */
     if (mount(NULL, "/", NULL, MS_REMOUNT|MS_RDONLY|MS_NOSUID|MS_NODEV, NULL)) _exit(91);
-    restrict_syscalls(op==13);
+    restrict_syscalls(op>=13);
     /* Inspect actual descriptors after close_range. No socket/control FD is usable. */
     for (int fd = 0; fd < 1024; fd++) {
         struct stat s;
-        if (!fstat(fd, &s) && (S_ISSOCK(s.st_mode) || fd > 2)) _exit(92);
+        if (!fstat(fd, &s) && (S_ISSOCK(s.st_mode) || (fd > 2 && !(op==14 && fd==3 && S_ISREG(s.st_mode))))) _exit(92);
     }
-    if (op==13) {
+    if (op>=13) {
         /* Fixed BoberAgent identity, no source/venv/packages, site or env input.
          * Bind this initial syscall's path pointer. After exec replaces the
          * address space, ordinary subsequent execve calls fail closed. This is
          * not a hostile-code executor or protection against a compromised,
          * operator-trusted interpreter recreating the same address. */
         static char loader[]="/runtime/bin/python3.12";
-        uintptr_t address=(uintptr_t)loader;
+        static char environment_loader[]="/work/venv/bin/python3.12";
+        char *selected_loader=op==15 ? environment_loader : loader;
+        uintptr_t address=(uintptr_t)selected_loader;
         struct sock_filter once[]={
             BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,nr)),
             BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,SYS_execve,0,5),
@@ -200,6 +209,24 @@ static void setup_fixture(int op, unsigned port) {
         char *args[]={loader,"-I","-S","-B","-c",program,NULL};
         char *env[]={"LANG=C","HOME=/work/home","TMPDIR=/work/tmp",
             "LD_LIBRARY_PATH=/runtime/lib:/support",NULL};
+        if (op>=14) {
+            /* Fixed provider program only. Export is an anonymous bounded
+             * regular memfd, never a writable host bind or socket. */
+            struct rlimit file_limit={ENVIRONMENT_EXPORT_MAX,ENVIRONMENT_EXPORT_MAX};
+            if (setrlimit(RLIMIT_FSIZE,&file_limit)) _exit(90);
+            struct sock_filter nochildren[]={
+                BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,nr)),
+#define NOCHILD(n) BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,n,0,1), BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ERRNO|EPERM)
+                NOCHILD(SYS_fork),NOCHILD(SYS_vfork),NOCHILD(SYS_clone),
+#undef NOCHILD
+                BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ALLOW)};
+            struct sock_fprog nochildp={(unsigned short)(sizeof(nochildren)/sizeof(nochildren[0])),nochildren};
+            if (prctl(PR_SET_SECCOMP,SECCOMP_MODE_FILTER,&nochildp)) _exit(90);
+            char *create_args[]={loader,"-I","-S","-B","/trusted/environment.py","create",NULL};
+            char *verify_args[]={environment_loader,"-I","-B","/trusted/environment.py","verify",NULL};
+            umask(022);
+            execve(selected_loader,op==14 ? create_args : verify_args,env); _exit(90);
+        }
         execve(loader,args,env); _exit(90);
     }
     if (op == 0) {
@@ -387,13 +414,19 @@ static void identity_launch(int argc,char **argv,const char *bwrap,
         "--ro-bind",helper,"/trusted/helper"};
     for (unsigned j=0;j<sizeof(base)/sizeof(base[0]);j++) ARG(base[j]);
     projection_records(argv[10],source);
+    int op=probe_index(argv[5]), first=op>=14 ? 14 : 11;
+    if (op>=14) {
+        ARG("--ro-bind");ARG(argv[11]);ARG("/trusted/environment.py");
+        if (op==14) { ARG("--preserve-fds");ARG("1"); }
+        if (op==15) { ARG("--ro-bind");ARG(argv[12]);ARG("/work/venv"); }
+    }
     char destinations[32][256];
-    for (int j=11;j<argc;j++) {
+    for (int j=first;j<argc;j++) {
         const char *name=strrchr(argv[j],'/');
         if (!name || !*++name || strlen(name)>128 || strspn(name,
             "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.+-")!=strlen(name)) _exit(90);
-        snprintf(destinations[j-11],256,"/support/%s",name);
-        ARG("--ro-bind");ARG(argv[j]);ARG(destinations[j-11]);
+        snprintf(destinations[j-first],256,"/support/%s",name);
+        ARG("--ro-bind");ARG(argv[j]);ARG(destinations[j-first]);
         if (!strcmp(name,"ld-linux-x86-64.so.2")) {
             ARG("--ro-bind");ARG(argv[j]);ARG("/lib64/ld-linux-x86-64.so.2");
         }
@@ -407,23 +440,54 @@ static void identity_launch(int argc,char **argv,const char *bwrap,
      * become the outer argv: this fixed command must stay outside the memfd. */
     char *identity_args[]={(char*)bwrap,"--args",fd_number,"--",
         "/trusted/helper","identity-fixture",NULL};
-    execve(bwrap,identity_args,env); _exit(90);
+    char *create_args[]={(char*)bwrap,"--args",fd_number,"--",
+        "/trusted/helper","environment-create-fixture",NULL};
+    char *verify_args[]={(char*)bwrap,"--args",fd_number,"--",
+        "/trusted/helper","environment-verify-fixture",NULL};
+    execve(bwrap,op==14 ? create_args : op==15 ? verify_args : identity_args,env); _exit(90);
+}
+static int export_environment(int source,int destination,uint64_t deadline) {
+    struct stat input,output;
+    if (fstat(source,&input) || fstat(destination,&output) || !S_ISREG(input.st_mode)
+        || !S_ISFIFO(output.st_mode) || input.st_size<4
+        || (uint64_t)input.st_size>ENVIRONMENT_EXPORT_MAX
+        || fcntl(source,F_ADD_SEALS,F_SEAL_WRITE|F_SEAL_GROW|F_SEAL_SHRINK|F_SEAL_SEAL)
+        || lseek(source,0,SEEK_SET)<0 || fcntl(destination,F_SETFL,O_NONBLOCK)) return 0;
+    unsigned char data[65536];
+    ssize_t n;
+    while ((n=read(source,data,sizeof(data)))>0) {
+        ssize_t offset=0;
+        while (offset<n) {
+            struct pollfd p[]={{destination,POLLOUT|POLLHUP,0},{0,POLLIN|POLLHUP,0}};
+            if (monotonic_ms()>=deadline || poll(p,2,10)<0 || p[1].revents) return 0;
+            ssize_t k=write(destination,data+offset,(size_t)(n-offset));
+            if (k<0 && (errno==EAGAIN || errno==EINTR)) continue;
+            if (k<=0) return 0;
+            offset+=k;
+        }
+    }
+    return n==0;
 }
 static void supervisor(int argc, char **argv) {
     if (argc<9 || probe_index(argv[5]) < 0) _exit(90);
     const char *bwrap=argv[2], *helper=argv[3], *source=argv[4];
     int op=probe_index(argv[5]);
-    if ((op!=13 && argc!=9) || (op==13 && (argc<12 || argc>43
-        || strcmp(argv[9],"m20-e5-python-distribution@2")))) _exit(90);
+    if ((op<13 && argc!=9) || (op==13 && (argc<12 || argc>43
+        || strcmp(argv[9],"m20-e5-python-distribution@2")))
+        || (op>=14 && (argc<15 || argc>46 || strcmp(argv[9],"m20-e5-python-distribution@2")))) _exit(90);
     unsigned cap=(unsigned)number(argv[6], 6, 8);
     unsigned output=(unsigned)number(argv[7], 1024, MAX_OUTPUT);
-    unsigned seconds=(unsigned)number(argv[8], 1, 3);
+    unsigned seconds=(unsigned)number(argv[8], 1, op>=14 ? 30 : 3);
+    if (op>=14 && (seconds!=30 || cap!=8 || output!=4096)) _exit(90);
     int group=open(".", O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
     if (group<0 || counter(group, "pids.max", NULL)!=(long)cap
-        || counter(group, "memory.max", NULL)!=64*(long)MiB
+        || counter(group, "memory.max", NULL)!=(op>=14 ? 128 : 64)*(long)MiB
         || counter(group, "memory.swap.max", NULL)!=0
         || counter(group, "memory.oom.group", NULL)!=1) _exit(90);
     int life[2], gate[2], out[2], err[2], ready[2];
+    int exported=op==14 ? memfd_create("e5-environment-export",MFD_ALLOW_SEALING) : -1;
+    int destination=op==14 ? (int)number(argv[13],3,1024) : -1;
+    if (op==14 && exported<0) _exit(90);
     if (pipe2(life, O_CLOEXEC) || pipe2(gate, O_CLOEXEC)
         || pipe2(out, O_CLOEXEC) || pipe2(err, O_CLOEXEC) || pipe2(ready,O_CLOEXEC)) _exit(90);
     uint64_t start=monotonic_ms(), deadline=start+seconds*1000;
@@ -468,7 +532,9 @@ static void supervisor(int argc, char **argv) {
         if (read(gate[0], &token, 1)!=1 || token!='G') _exit(90);
         if (dup2(out[1], 1)<0 || dup2(err[1], 2)<0) _exit(90);
         int null=open("/dev/null", O_RDONLY); if (null<0 || dup2(null,0)<0) _exit(90);
-        close_extra();
+        if (op==14) {
+            if (dup2(exported,3)<0 || syscall(SYS_close_range,4U,~0U,0U)) _exit(90);
+        } else close_extra();
         /* Static fixture only: no whole-/usr/root bind, no host user/control tree.
          * Retain just SYS_ADMIN for fixed mount setup, then drop before fixture.
          */
@@ -482,7 +548,7 @@ static void supervisor(int argc, char **argv) {
             "--setenv", "HOME", "/work/home", "--setenv", "TMPDIR", "/work/tmp",
             "--chdir", "/work", "/trusted/helper", "fixture", op==13 ? "python_identity" : (char*)names[op], port, NULL};
         char *env[]={"PATH=/usr/bin:/bin", "LANG=C", NULL};
-        if (op==13) {
+        if (op>=13) {
             /* Paths are produced only by the Node's fully verified operator
              * distribution closure. No generic executable/code selection. */
             identity_launch(argc,argv,bwrap,helper,source,env);
@@ -546,6 +612,11 @@ static void supervisor(int argc, char **argv) {
     long pids=counter(group,"pids.events","max"), oom=counter(group,"memory.events","oom_kill");
     long peak=counter(group,"memory.peak",NULL);
     if (pids<0 || oom<0 || peak<0) reason="START_FAILED";
+    if (op==14) {
+        if (!strcmp(reason,"EXITED") && empty && WIFEXITED(status) && !WEXITSTATUS(status)
+            && !pids && !oom && !export_environment(exported,destination,deadline)) reason="OUTPUT";
+        close(exported);close(destination);
+    }
     printf("{\"attached\":%s,\"empty\":%s,\"reason\":\"%s\",\"exit\":%d,"
         "\"pids\":%ld,\"oom\":%ld,\"memory_peak\":%ld,\"milliseconds\":%llu,\"stdout\":\"",
         attached?"true":"false",empty?"true":"false",reason,
@@ -580,6 +651,8 @@ int main(int argc,char **argv) {
         close(ready[0]); close(owner[1]); waitpid(child,NULL,0); return 90;
     }
     if (argc==2 && !strcmp(argv[1],"identity-fixture")) { setup_fixture(13,1); return 0; }
+    if (argc==2 && !strcmp(argv[1],"environment-create-fixture")) { setup_fixture(14,1); return 0; }
+    if (argc==2 && !strcmp(argv[1],"environment-verify-fixture")) { setup_fixture(15,1); return 0; }
     if (argc==4 && !strcmp(argv[1],"fixture") && probe_index(argv[2])>=0 && probe_index(argv[2])<13) {
         setup_fixture(probe_index(argv[2]),(unsigned)number(argv[3],1,65535)); return 0;
     }

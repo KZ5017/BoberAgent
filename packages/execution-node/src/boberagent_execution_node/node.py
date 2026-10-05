@@ -28,6 +28,8 @@ from .persistence import RuntimeDatabase, RuntimeStore
 from .persistence.migrations import upgrade_database
 from .preparation import NodePreparationService, PreparationAdmissionError
 from .preparation.confinement import ConfinementBackend
+from .preparation.environment_storage import EnvironmentStorage
+from .preparation.python_environment import PythonEnvironmentRepository
 from .preparation.resources import PythonResourceRepository
 from .preparation.runtime_confinement import LinuxRuntimeConfinementBackend
 from .preparation.runtime_confinement_models import RuntimeConfinementConfiguration
@@ -63,6 +65,7 @@ class ExecutionNode:
         self.interaction_runtime: InteractionRuntime | None = None
         self.preparation: NodePreparationService | None = None
         self.python_resources: PythonResourceRepository | None = None
+        self.python_environments: PythonEnvironmentRepository | None = None
         self.runtime_confinement: LinuxRuntimeConfinementBackend | None = None
         self._runtime_confinement_configuration = runtime_confinement_configuration
         self._browser_backend = browser_backend
@@ -176,6 +179,14 @@ class ExecutionNode:
                 self._degraded_reasons.append(
                     "confinement recovery needs explicit delegated parent"
                 )
+            environment_storage = EnvironmentStorage(
+                self.configuration.workspace_root / "python-environments"
+            )
+            self.python_environments = PythonEnvironmentRepository(
+                self.python_resources, environment_storage
+            )
+            if self.python_environments.reconcile_retained():
+                self._degraded_reasons.append("retained Python environment integrity failed")
             self.browser_runtime = BrowserRuntimeManager(
                 store=self.store,
                 tools=self.tools,

@@ -54,9 +54,12 @@ def test_no_installer_source_execution_or_readiness_api() -> None:
                 ) not in calls
             if isinstance(node, ast.Attribute):
                 assert node.attr not in {"READY", "VALID", "PUBLISHED", "VERIFYING"}
-    assert len(ClosedProbe) == 13 and list(TrustedPythonOperation) == [
-        TrustedPythonOperation.IDENTITY
-    ]
+    assert len(ClosedProbe) == 13
+    assert set(TrustedPythonOperation) == {
+        TrustedPythonOperation.IDENTITY,
+        TrustedPythonOperation.CREATE_ENVIRONMENT,
+        TrustedPythonOperation.VERIFY_ENVIRONMENT,
+    }
 
 
 def test_fixed_native_program_environment_and_no_generic_execution_parameters() -> None:

@@ -484,7 +484,7 @@ def test_owned_inspection_restart_history_and_no_ready(
 ) -> None:
     database = RuntimeDatabase(tmp_path / "runtime.sqlite3")
     upgrade_database(database)
-    assert current_revision(database) == "0010_python_provenance"
+    assert current_revision(database) == "0011_empty_python_environment"
     resources, repository = owned(database)
     with database.transaction() as session:
         ref = session.scalar(text("SELECT resource_id FROM python_resource_details"))
@@ -624,7 +624,7 @@ def test_migration_from_c_preserves_old_journal_and_ready_guards(tmp_path: Path)
             text("SELECT operation_id,state,input_sha256 FROM runtime_confinement_operations")
         ).one() == ("old-probe", "INTERRUPTED", None)
         assert session.scalar(text("SELECT count(*) FROM python_runtime_evidence")) == 0
-    assert current_revision(database) == "0010_python_provenance"
+    assert current_revision(database) == "0011_empty_python_environment"
     database.close()
 
 

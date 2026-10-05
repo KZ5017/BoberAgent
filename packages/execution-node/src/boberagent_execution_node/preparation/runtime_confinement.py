@@ -43,6 +43,7 @@ from .runtime_confinement_models import (
     ClosedProbe,
     ConfinementCheck,
     ConfinementFailureStage,
+    EnvironmentLimits,
     ProbeEvidence,
     ProbeLimits,
     RuntimeConfinementConfiguration,
@@ -103,7 +104,9 @@ class _Report(BaseModel):
 
 
 def _decode_report(
-    data: bytes, probe: ClosedProbe | TrustedPythonOperation, limits: ProbeLimits
+    data: bytes,
+    probe: ClosedProbe | TrustedPythonOperation,
+    limits: ProbeLimits | EnvironmentLimits,
 ) -> _Report:
     """Closed bounded wire evidence; never expose Pydantic's raw input diagnostics."""
     try:
@@ -128,11 +131,11 @@ def _completed_proof(
     *,
     returncode: int | None,
     empty: bool,
-    limits: ProbeLimits,
+    limits: ProbeLimits | EnvironmentLimits,
 ) -> bool:
     return (
         empty
-        and _passed(probe, report)
+        and _passed(probe, report, limits)
         and report.milliseconds <= (limits.seconds + 4) * 1000
         # Death alone is never proof: _passed also requires readiness, independent
         # OWNER_LOST cleanup, empty group and the expected kernel counters.
@@ -158,7 +161,7 @@ def _no_symlink_components(path: Path) -> None:
             raise RuntimeConfinementUnavailable()
 
 
-def validate_delegation(parent: Path, limits: ProbeLimits) -> None:
+def validate_delegation(parent: Path, limits: ProbeLimits | EnvironmentLimits) -> None:
     """Read-only validation; never enable controllers or change parent ownership."""
     if platform.system() != "Linux" or platform.machine() != "x86_64":
         raise RuntimeConfinementUnavailable()
@@ -240,11 +243,16 @@ def _trusted_tool(tools: ToolRegistry, name: str, digest: str, *, static_elf: bo
     return path
 
 
-def _passed(probe: ClosedProbe | TrustedPythonOperation, report: _Report) -> bool:
-    if not report.attached or not report.empty or report.memory_peak > 64 * 1024 * 1024:
+def _passed(
+    probe: ClosedProbe | TrustedPythonOperation,
+    report: _Report,
+    limits: ProbeLimits | EnvironmentLimits | None = None,
+) -> bool:
+    limits = limits or ProbeLimits()
+    if not report.attached or not report.empty or report.memory_peak > limits.memory_bytes:
         return False
     marker = bytes.fromhex(report.stdout)
-    if probe is TrustedPythonOperation.IDENTITY:
+    if isinstance(probe, TrustedPythonOperation):
         return (
             report.reason is StopReason.EXITED
             and report.exit == 0
@@ -397,10 +405,12 @@ class LinuxRuntimeConfinementBackend:
         self,
         operation: ClosedProbe | TrustedPythonOperation,
         operation_id: RuntimeCorrelation,
-        limits: ProbeLimits,
+        limits: ProbeLimits | EnvironmentLimits,
         *,
         distribution: PythonDistributionConfiguration | None = None,
         cancellation: CancellationService | None = None,
+        environment_path: Path | None = None,
+        export_fd: int | None = None,
     ) -> ProbeEvidence:
         from .runtime_confinement_store import ConfinementJournal
 
@@ -436,6 +446,12 @@ class LinuxRuntimeConfinementBackend:
             input_sha256=inventory(distribution).digest if distribution is not None else None,
         )
         if previous is not None:
+            if operation in {
+                TrustedPythonOperation.CREATE_ENVIRONMENT,
+                TrustedPythonOperation.VERIFY_ENVIRONMENT,
+            }:
+                # A journal replay neither exports bytes nor proves current files.
+                raise RuntimeConfinementUnavailable()
             return previous  # historical evidence only; check() always uses fresh identities
         group = self._group(operation_id)
         process: asyncio.subprocess.Process | None = None
@@ -481,7 +497,7 @@ class LinuxRuntimeConfinementBackend:
                     # before bubblewrap. No socket/control descriptor enters the fixture.
                     listener.set_inheritable(True)
                 extra: tuple[str, ...] = ()
-                if operation is TrustedPythonOperation.IDENTITY:
+                if isinstance(operation, TrustedPythonOperation):
                     assert distribution is not None
                     manifest = inventory(distribution)
                     descriptor = Path(temporary) / "projection.mounts"
@@ -492,6 +508,15 @@ class LinuxRuntimeConfinementBackend:
                     extra = (
                         manifest.schema_version,
                         str(descriptor),
+                        *(
+                            (
+                                str(Path(__file__).with_name("_environment_helper.py")),
+                                str(environment_path) if environment_path is not None else "-",
+                                str(export_fd) if export_fd is not None else "-",
+                            )
+                            if operation is not TrustedPythonOperation.IDENTITY
+                            else ()
+                        ),
                         *(str(distribution.system_library_root / name) for name in names),
                     )
                 process = await asyncio.create_subprocess_exec(
@@ -508,7 +533,9 @@ class LinuxRuntimeConfinementBackend:
                     stdin=read_fd,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.DEVNULL,
-                    pass_fds=(listener.fileno(),) if listener is not None else (),
+                    pass_fds=(listener.fileno(),)
+                    if listener is not None
+                    else ((export_fd,) if export_fd is not None else ()),
                     start_new_session=True,
                     cwd=group,
                     env={
@@ -638,6 +665,112 @@ class LinuxRuntimeConfinementBackend:
             if len(data) > 20000:
                 raise RuntimeConfinementUnavailable()
         return bytes(data)
+
+    def _environment_helper(self, expected: str) -> None:
+        from .python_distribution import _parents, _trust
+
+        path = Path(__file__).with_name("_environment_helper.py")
+        _parents(path.parent)
+        _trust(path.lstat())
+        if (
+            not path.is_file()
+            or path.is_symlink()
+            or hashlib.sha256(path.read_bytes()).hexdigest() != expected
+        ):
+            raise RuntimeConfinementUnavailable()
+
+    async def run_environment_create(
+        self,
+        distribution: PythonDistributionConfiguration,
+        operation_id: RuntimeCorrelation,
+        export_path: Path,
+        helper_sha256: str,
+        *,
+        cancellation: CancellationService | None = None,
+    ) -> ProbeEvidence:
+        """Private Node publisher channel; no child writable host path/mount."""
+        from .environment_models import EXPORT_LIMIT
+
+        before = inventory(distribution)
+        self._environment_helper(helper_sha256)
+        read_fd, write_fd = os.pipe()
+        reader = asyncio.StreamReader()
+        transport: asyncio.ReadTransport | None = None
+        task: asyncio.Task[int] | None = None
+        try:
+            transport, _ = await asyncio.get_running_loop().connect_read_pipe(
+                lambda: asyncio.StreamReaderProtocol(reader), os.fdopen(read_fd, "rb")
+            )
+            read_fd = -1
+
+            async def receive() -> int:
+                fd = os.open(
+                    export_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600
+                )
+                with os.fdopen(fd, "wb") as stream:
+                    size = 0
+                    while chunk := await reader.read(65536):
+                        if size + len(chunk) > EXPORT_LIMIT:
+                            raise RuntimeConfinementUnavailable()
+                        stream.write(chunk)
+                        size += len(chunk)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                return size
+
+            task = asyncio.create_task(receive())
+            result = await self._run_operation(
+                TrustedPythonOperation.CREATE_ENVIRONMENT,
+                operation_id,
+                EnvironmentLimits(),
+                distribution=distribution,
+                cancellation=cancellation,
+                export_fd=write_fd,
+            )
+            os.close(write_fd)
+            write_fd = -1
+            await asyncio.wait_for(task, 3)
+            self._environment_helper(helper_sha256)
+            if inventory(distribution) != before:
+                raise RuntimeConfinementUnavailable()
+            return result
+        finally:
+            if write_fd >= 0:
+                os.close(write_fd)
+            if read_fd >= 0:
+                os.close(read_fd)
+            if task is not None and not task.done():
+                task.cancel()
+            if task is not None:
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
+            if transport is not None:
+                transport.close()
+
+    async def run_environment_verify(
+        self,
+        distribution: PythonDistributionConfiguration,
+        operation_id: RuntimeCorrelation,
+        environment_path: Path,
+        helper_sha256: str,
+        *,
+        cancellation: CancellationService | None = None,
+    ) -> ProbeEvidence:
+        """Caller-independent -I -B verification of exact owned read-only bytes."""
+        before = inventory(distribution)
+        self._environment_helper(helper_sha256)
+        result = await self._run_operation(
+            TrustedPythonOperation.VERIFY_ENVIRONMENT,
+            operation_id,
+            EnvironmentLimits(),
+            distribution=distribution,
+            cancellation=cancellation,
+            environment_path=environment_path,
+        )
+        self._environment_helper(helper_sha256)
+        if inventory(distribution) != before:
+            raise RuntimeConfinementUnavailable()
+        return result
 
     async def shutdown(self) -> None:
         finished = tuple(self._finished.values())

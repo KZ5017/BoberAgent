@@ -10,6 +10,7 @@ from ..persistence.database import RuntimeDatabase
 from ..persistence.orm import RuntimeConfinementRow
 from .runtime_confinement_models import (
     ClosedProbe,
+    EnvironmentLimits,
     ProbeEvidence,
     ProbeLimits,
     TrustedPythonOperation,
@@ -24,7 +25,7 @@ class ConfinementJournal:
         self,
         operation_id: RuntimeCorrelation,
         probe: ClosedProbe | TrustedPythonOperation,
-        limits: ProbeLimits,
+        limits: ProbeLimits | EnvironmentLimits,
         boot: RuntimeCorrelation,
         host_boot: str,
         parent_sha256: str,

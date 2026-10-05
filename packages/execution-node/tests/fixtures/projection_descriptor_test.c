@@ -25,6 +25,15 @@ int captured_execve(const char *file,char *const argv[],char *const env[]) {
     close(fd);_exit(n<0 ? 91 : 0);
 }
 int main(int argc,char **argv) {
+    if (argc==6 && (!strcmp(argv[1],"--environment-create") || !strcmp(argv[1],"--environment-verify"))) {
+        char *operation[15]={NULL};
+        operation[5]=!strcmp(argv[1],"--environment-create") ? "python_environment_create" : "python_environment_verify";
+        operation[10]=argv[2];operation[11]="/trusted/provider/environment.py";
+        operation[12]=argv[5];operation[13]="3";operation[14]=argv[4];
+        char *env[]={"PATH=/usr/bin:/bin","LANG=C",NULL};
+        identity_launch(15,operation,"/trusted/bwrap-test","/trusted/helper-test",argv[3],env);
+        return 91;
+    }
     if (argc==2) {
         argument_fd=memfd_create("test-argument-bound",MFD_ALLOW_SEALING);
         if (argument_fd<0) return 90;
@@ -41,6 +50,7 @@ int main(int argc,char **argv) {
     }
     if (argc==4) {
         char *operation[12]={NULL};
+        operation[5]="python_identity";
         operation[10]=argv[1];operation[11]=argv[3];
         char *env[]={"PATH=/usr/bin:/bin","LANG=C",NULL};
         identity_launch(12,operation,"/trusted/bwrap-test","/trusted/helper-test",argv[2],env);

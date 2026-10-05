@@ -194,7 +194,7 @@ def test_journal_upgrade_from_e5b_reopen_history_conflicts_and_recovery(tmp_path
     database = RuntimeDatabase(path)
     upgrade_database(database, "0008_python_resource_ownership")
     upgrade_database(database)
-    assert current_revision(database) == "0010_python_provenance"
+    assert current_revision(database) == "0011_empty_python_environment"
     journal = ConfinementJournal(database)
     item = evidence()
     assert (

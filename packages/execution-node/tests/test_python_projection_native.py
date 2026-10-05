@@ -147,6 +147,7 @@ def command_remainder(arguments: list[str], fd_options: list[str]) -> list[str]:
         "--ro-bind": 2,
         "--symlink": 2,
         "--chdir": 1,
+        "--preserve-fds": 1,
     }
     offset = 0
     while offset < len(arguments):
@@ -215,6 +216,59 @@ def test_parser_semantics_reproduce_original_missing_outer_command() -> None:
     assert command_remainder(
         ["--args", "3", "--", "/trusted/helper", "identity-fixture"], options
     ) == ["/trusted/helper", "identity-fixture"]
+
+
+@pytest.mark.parametrize("operation", ["create", "verify"])
+def test_environment_launch_preserves_projection_and_fixed_outer_command(
+    configured: PythonDistributionConfiguration,
+    descriptor_parser: Path,
+    tmp_path: Path,
+    operation: str,
+) -> None:
+    install_feature(configured)
+    manifest = inventory(repin(configured))
+    descriptor = tmp_path / "mounts-e"
+    write_mount_descriptor(descriptor, manifest)
+    result = subprocess.run(
+        [
+            str(descriptor_parser),
+            "--environment-" + operation,
+            str(descriptor),
+            str(configured.distribution_root),
+            str(configured.system_library_root / "ld-linux-x86-64.so.2"),
+            "/private/resource/venv",
+        ],
+        check=True,
+        capture_output=True,
+        timeout=5,
+    )
+    outer_bytes, fd_bytes = result.stdout.split(b"\0\0", 1)
+    outer = outer_bytes.decode().split("\0")
+    options = fd_bytes.decode().removesuffix("\0").split("\0")
+    assert command_remainder(outer[1:], options) == [
+        "/trusted/helper",
+        "environment-" + operation + "-fixture",
+    ]
+    assert not command_remainder(options, [])
+    assert options[
+        options.index("/trusted/provider/environment.py") - 1 : options.index(
+            "/trusted/provider/environment.py"
+        )
+        + 2
+    ] == ["--ro-bind", "/trusted/provider/environment.py", "/trusted/environment.py"]
+    assert "site-packages" not in fd_bytes.decode() and "tkinter" not in fd_bytes.decode()
+    assert "--bind" not in options and "/source" not in options
+    if operation == "verify":
+        index = options.index("/private/resource/venv")
+        assert options[index - 1 : index + 2] == [
+            "--ro-bind",
+            "/private/resource/venv",
+            "/work/venv",
+        ]
+        assert "--preserve-fds" not in options
+    else:
+        assert options[options.index("--preserve-fds") + 1] == "1"
+        assert "/private/resource/venv" not in options
 
 
 @pytest.mark.parametrize("bound", ["count", "length", "byte"])

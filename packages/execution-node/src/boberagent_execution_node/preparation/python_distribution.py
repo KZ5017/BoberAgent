@@ -14,8 +14,9 @@ import stat
 import struct
 import time
 from enum import StrEnum
+from itertools import pairwise
 from pathlib import Path
-from typing import Literal, Self, TypedDict
+from typing import Literal, NamedTuple, Self, TypedDict
 
 from boberagent_contracts import PythonRuntimeFailure, PythonRuntimeReason, Sha256Digest
 from boberagent_contracts.plan_canonical import canonical_digest, canonical_json, canonical_value
@@ -183,6 +184,57 @@ def _bytes(path: Path, maximum: int) -> bytes:
         return data
 
 
+class _LoadSegment(NamedTuple):
+    file_offset: int
+    address: int
+    file_size: int
+
+
+def _read_file_backed_vaddr_range(
+    data: bytes, loads: tuple[_LoadSegment, ...], address: int, size: int
+) -> bytes:
+    """Resolve bounded ELF64 bytes, never zero-fill, across independent mappings.
+
+    Split at every mapping start/end, including overlapping starts. Every active
+    mapping must supply identical bytes; segment order cannot hide ambiguity.
+    Adjacent virtual addresses need not correspond to adjacent file offsets.
+    """
+    maximum = 2**64 - 1
+    if not 0 <= address <= maximum or not 1 <= size <= 4 * 1024**2 or address + size > maximum:
+        raise ValueError("ELF virtual range bounds")
+    if not 1 <= len(loads) <= 128:
+        raise ValueError("ELF load count")
+    end = address + size
+    boundaries = {address, end}
+    for segment in loads:
+        if (
+            not 0 <= segment.address <= maximum
+            or not 0 <= segment.file_offset <= maximum
+            or not 0 <= segment.file_size <= maximum
+            or segment.address + segment.file_size > maximum
+            or segment.file_offset + segment.file_size > min(maximum, len(data))
+        ):
+            raise ValueError("ELF load bounds")
+        for boundary in (segment.address, segment.address + segment.file_size):
+            if address < boundary < end:
+                boundaries.add(boundary)
+    ordered = sorted(boundaries)
+    result = bytearray()
+    for start, stop in pairwise(ordered):
+        resolved = None
+        for segment in loads:
+            if segment.address <= start and stop <= segment.address + segment.file_size:
+                offset = segment.file_offset + start - segment.address
+                chunk = data[offset : offset + stop - start]
+                if resolved is not None and chunk != resolved:
+                    raise ValueError("ELF ambiguous load mappings")
+                resolved = chunk
+        if resolved is None:
+            raise ValueError("ELF mapped strings gap")
+        result.extend(resolved)
+    return bytes(result)
+
+
 def _elf(
     data: bytes, *, origin: Path | None = None, boundary: Path | None = None
 ) -> tuple[tuple[str, ...], str | None]:
@@ -207,6 +259,14 @@ def _elf(
     for _, _, file_offset, _, _, size, _, _ in segments:
         if file_offset + size > len(data):
             raise ValueError("ELF segment bounds")
+    loads = tuple(
+        _LoadSegment(file_offset, address, size)
+        for kind, _, file_offset, address, _, size, _, _ in segments
+        if kind == 1
+    )
+    for kind, _, _, address, _, size, memory_size, _ in segments:
+        if kind == 1 and (size > memory_size or address + memory_size > 2**64 - 1):
+            raise ValueError("ELF load structure bounds")
     interpreter = None
     dynamic: list[tuple[int, int]] = []
     for kind, _, file_offset, _, _, size, _, _ in segments:
@@ -225,23 +285,15 @@ def _elf(
             ]
     if not dynamic:
         return (), interpreter
-    strings_address = next((value for key, value in dynamic if key == 5), None)
-    strings_size = next((value for key, value in dynamic if key == 10), None)
-    if strings_address is None or strings_size is None or strings_size > 4 * 1024**2:
+    string_addresses = [value for key, value in dynamic if key == 5]
+    string_sizes = [value for key, value in dynamic if key == 10]
+    if (
+        len(string_addresses) != 1
+        or len(string_sizes) != 1
+        or not 1 <= string_sizes[0] <= 4 * 1024**2
+    ):
         raise ValueError("ELF string table")
-    strings_offset = next(
-        (
-            file_offset + strings_address - address
-            for kind, _, file_offset, address, _, size, _, _ in segments
-            if kind == 1
-            and address <= strings_address
-            and strings_address + strings_size <= address + size
-        ),
-        None,
-    )
-    if strings_offset is None:
-        raise ValueError("ELF mapped strings")
-    table = data[strings_offset : strings_offset + strings_size]
+    table = _read_file_backed_vaddr_range(data, loads, string_addresses[0], string_sizes[0])
     needed = []
     for key, value in dynamic:
         if key not in {1, 15, 29}:

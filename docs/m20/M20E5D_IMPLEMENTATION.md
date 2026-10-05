@@ -50,6 +50,20 @@ not the whole library directory or `/usr`, are mounted into `/support`. No arbit
 external RPATH/RUNPATH is admitted; only origin-relative entries inside the runtime view.
 The initial layout supports `/lib64/ld-linux-x86-64.so.2`, not every Linux ABI.
 
+The operator's real-Kali inventory exposed a static parser compatibility defect:
+CPython 3.12.14's `DT_STRTAB=0x3ff5d8`, `DT_STRSZ=0xa51a` crosses adjacent
+file-backed `PT_LOAD` ranges. The former single-segment assumption was invalid.
+The bounded static reader now resolves each virtual portion through its own file
+offset (not necessarily contiguous on disk), using only `p_filesz`, never BSS/
+`p_memsz` zero-fill. Gaps, conflicting overlapping bytes, malformed mappings,
+64-bit range overflow and out-of-file reads fail closed; the 4 MiB string-table
+limit remains. Overlapping mappings are accepted only when requested bytes agree.
+ELF64/little-endian/x86_64, loader, dependency closure, normalized in-root `$ORIGIN`,
+filesystem trust and link policies remain unchanged. Synthetic offline regressions
+cover the reported layout; no candidate or external ELF tool was executed to debug
+it. This fix is **not real Kali provenance acceptance**: operator inventory and the
+existing confined provenance preflight still must pass. Runtime remains unavailable.
+
 Links must be relative, exactly one hop to an inventoried regular file within their own
 approved root. No directory symlinks, external links, chains, devices, sockets or FIFOs.
 File modes, owners, targets, sizes and bytes participate; mtimes do not supply identity.

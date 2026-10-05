@@ -71,6 +71,8 @@ async def run(args: argparse.Namespace) -> int:
                         "profile": "m20-e5-linux-bwrap-cgroup@1",
                         "result": "FAIL",
                         "reason": str(error),
+                        "probe": error.probe.value if error.probe else None,
+                        "stage": error.stage.value if error.stage else None,
                         "runtime": "UNAVAILABLE",
                         "ready": False,
                     }
@@ -90,6 +92,7 @@ async def run(args: argparse.Namespace) -> int:
                         "oom_events": probe.oom_events,
                         "memory_peak": probe.memory_peak,
                         "stop": probe.stop_reason.value,
+                        "requester_exit_code": probe.requester_exit_code,
                     }
                 )
             )

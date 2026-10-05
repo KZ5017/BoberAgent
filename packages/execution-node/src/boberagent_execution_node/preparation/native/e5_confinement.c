@@ -355,9 +355,12 @@ static void supervisor(int argc, char **argv) {
             if (op==11 && requester_ready>=0) {
                 write_all(requester_ready,"R",1); close(requester_ready); requester_ready=-1;
             }
+            if (op==12) {
+                puts("SUPERVISOR_DEATH_READY");
+                if (fflush(stdout)) _exit(90);
+                kill(getpid(),SIGKILL);
+            }
         }
-        if (op==12 && lengths[0]>=19 && !memcmp(stdout_data,"DESCENDANTS_STARTED",19))
-            kill(getpid(),SIGKILL);
         if (!exited && waitpid(child,&status,WNOHANG)==child) exited=1;
         if (exited && !open_streams[0] && !open_streams[1]) break;
     }
@@ -376,6 +379,11 @@ static void supervisor(int argc, char **argv) {
         (unsigned long long)(monotonic_ms()-start));
     hex_print(stdout_data,lengths[0]); printf("\",\"stderr\":\"");
     hex_print(stderr_data,lengths[1]); puts("\"}"); close(group);
+    /* This supervisor owns the report independently of the requester it outlives.
+     * The requester-mode fork returns through _exit(), NOT libc exit(): flush
+     * the bounded final evidence explicitly or only ATTACHED reaches the Node.
+     */
+    if (fflush(stdout)) _exit(90);
 }
 int main(int argc,char **argv) {
     signal(SIGPIPE,SIG_IGN);

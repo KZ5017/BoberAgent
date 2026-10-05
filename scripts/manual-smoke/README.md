@@ -696,7 +696,8 @@ for exact C2/C3 refs and digests. This negative result is neither safety nor aut
 
 ## M20-E5-C confinement-only Kali preflight
 
-**IMPLEMENTED; real Kali enforcement acceptance PENDING.** This operator-only check is
+**IMPLEMENTED; first real Kali acceptance FAILED; offline requester-report fix complete;
+real thirteen-probe rerun REQUIRED.** This operator-only check is
 not E5-H Python preparation and is never invoked by normal pytest or automatically by Codex.
 It executes only fixed native synthetic probes. No Python runtime/interpreter probe, venv,
 acquired source, package install, target/public network, Core/MCP traffic or execution authority.
@@ -712,6 +713,13 @@ reconnaissance in M20E5_ACCEPTANCE.md is not proof that the active probes pass.
 From the repository root on Kali, choose an explicit absolute dedicated runtime and the exact
 existing delegated parent. Build only the repository-owned trusted helper using a pre-existing
 static C toolchain; do not install missing prerequisites. Example operator commands:
+
+For the requester-death fix, reuse the operator's already verified runtime/delegated parent
+inside the existing transient service; rebuild the helper and recompute its pin with the
+commands below. Do not reuse its old SHA-256 or change host-wide delegation. The first run
+passed eleven probes, then lost requester-death JSON because the independent supervisor
+returned through `_exit` without flushing. SIGKILL alone is not proof. This fix does not close
+real acceptance: the rerun must pass **all thirteen**, including supervisor_death.
 
 ```bash
 E5_RUNTIME=/absolute/operator-selected/e5c-preflight-runtime
@@ -739,6 +747,8 @@ provisioning. Missing static toolchain, bubblewrap, delegated controls, writable
 memory.peak or a failed active property stops acceptance. Keep the JSON PASS/FAIL summary and
 the dedicated Node journal; output includes logical probe identities via persisted evidence,
 profile, event/peak facts and empty-group results, never raw environment/credentials/host stderr.
+Failures identify closed `probe`, reason and `stage` (e.g. `requester_death`,
+`DESCENDANT_CONTAINMENT_UNAVAILABLE`, `report_or_cleanup`) instead of raw validation input.
 Every probe must PASS with attachment-before-exec and group-empty proof. Expected tiny pids/OOM/
 output/deadline hits are intentional mechanism tests, not runtime construction failures.
 

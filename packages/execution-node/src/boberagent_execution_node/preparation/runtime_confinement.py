@@ -31,7 +31,7 @@ from boberagent_contracts import (
 )
 from boberagent_contracts.python_runtime import RuntimeCorrelation
 from boberagent_sdk.services.cancellation import CancellationService
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from ..identity import NodeId
 from ..persistence.database import RuntimeDatabase
@@ -39,6 +39,7 @@ from ..tools import ToolAvailability, ToolRegistry
 from .runtime_confinement_models import (
     ClosedProbe,
     ConfinementCheck,
+    ConfinementFailureStage,
     ProbeEvidence,
     ProbeLimits,
     RuntimeConfinementConfiguration,
@@ -49,7 +50,15 @@ PROFILE = "m20-e5-linux-bwrap-cgroup@1"
 
 
 class RuntimeConfinementUnavailable(RuntimeError):
-    def __init__(self, detail: PythonRuntimeReason | None = None) -> None:
+    def __init__(
+        self,
+        detail: PythonRuntimeReason | None = None,
+        *,
+        probe: ClosedProbe | None = None,
+        stage: ConfinementFailureStage | None = None,
+    ) -> None:
+        self.probe = probe
+        self.stage = stage
         self.failure = PythonRuntimeFailure(
             reason_code=PreparationReasonCode.CONFINEMENT_UNAVAILABLE,
             runtime_reason=detail,
@@ -77,16 +86,47 @@ class RuntimeConfinementBackend(Protocol):
 
 class _Report(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    attached: bool
-    empty: bool
+    attached: bool = Field(strict=True)
+    empty: bool = Field(strict=True)
     reason: StopReason
-    exit: int
-    pids: int = Field(ge=0)
-    oom: int = Field(ge=0)
-    memory_peak: int = Field(ge=0)
-    milliseconds: int = Field(ge=0)
-    stdout: str = Field(max_length=8192)
-    stderr: str = Field(max_length=8192)
+    exit: int = Field(strict=True)
+    pids: int = Field(ge=0, strict=True)
+    oom: int = Field(ge=0, strict=True)
+    memory_peak: int = Field(ge=0, strict=True)
+    milliseconds: int = Field(ge=0, strict=True)
+    stdout: str = Field(max_length=8192, pattern=r"^(?:[0-9a-f]{2})*$", strict=True)
+    stderr: str = Field(max_length=8192, pattern=r"^(?:[0-9a-f]{2})*$", strict=True)
+
+
+def _decode_report(data: bytes, probe: ClosedProbe, limits: ProbeLimits) -> _Report:
+    """Closed bounded wire evidence; never expose Pydantic's raw input diagnostics."""
+    try:
+        if len(data) > 20000:
+            raise ValueError("report bound")
+        report = _Report.model_validate_json(data.removeprefix(b"ATTACHED\n"))
+        if (
+            report.attached != data.startswith(b"ATTACHED\n")
+            or (len(report.stdout) + len(report.stderr)) // 2 > limits.output_bytes
+        ):
+            raise ValueError("inconsistent report")
+        return report
+    except (ValidationError, ValueError):
+        raise RuntimeConfinementUnavailable(
+            _detail(probe), probe=probe, stage=ConfinementFailureStage.REPORT_OR_CLEANUP
+        ) from None
+
+
+def _completed_proof(
+    probe: ClosedProbe, report: _Report, *, returncode: int | None, empty: bool, limits: ProbeLimits
+) -> bool:
+    return (
+        empty
+        and _passed(probe, report)
+        and report.milliseconds <= (limits.seconds + 4) * 1000
+        # Death alone is never proof: _passed also requires readiness, independent
+        # OWNER_LOST cleanup, empty group and the expected kernel counters.
+        and (probe is not ClosedProbe.REQUESTER_DEATH or returncode == -9)
+    )
 
 
 def _read(path: Path) -> str:
@@ -280,12 +320,21 @@ class LinuxRuntimeConfinementBackend:
             raise RuntimeConfinementUnavailable()
         evidence = []
         for probe in ClosedProbe:
-            result = await self.run_closed(
-                probe, DomainRef(f"confinement-{uuid4()}"), ProbeLimits()
-            )
+            try:
+                result = await self.run_closed(
+                    probe, DomainRef(f"confinement-{uuid4()}"), ProbeLimits()
+                )
+            except RuntimeConfinementUnavailable as error:
+                raise RuntimeConfinementUnavailable(
+                    error.failure.runtime_reason or _detail(probe),
+                    probe=probe,
+                    stage=error.stage or ConfinementFailureStage.REPORT_OR_CLEANUP,
+                ) from None
             evidence.append(result)
             if not result.passed:
-                raise RuntimeConfinementUnavailable(_detail(probe))
+                raise RuntimeConfinementUnavailable(
+                    _detail(probe), probe=probe, stage=ConfinementFailureStage.PROBE
+                )
         return ConfinementCheck(features=tuple(ConfinementFeature), probes=tuple(evidence))
 
     async def run_closed(
@@ -407,30 +456,54 @@ class LinuxRuntimeConfinementBackend:
                 prefix = b""
                 if operation is ClosedProbe.CANCEL:
                     prefix = await self._cancel_ready(operation_id, process.stdout)
-                data = await asyncio.wait_for(
-                    self._bounded_report(process.stdout), limits.seconds + 8
-                )
+                try:
+                    data = await asyncio.wait_for(
+                        self._bounded_report(process.stdout), limits.seconds + 8
+                    )
+                except (TimeoutError, RuntimeConfinementUnavailable):
+                    raise RuntimeConfinementUnavailable(
+                        _detail(operation),
+                        probe=operation,
+                        stage=ConfinementFailureStage.REPORT_OR_CLEANUP,
+                    ) from None
                 data = prefix + data
                 await asyncio.wait_for(process.wait(), 3)
                 empty = await self._await_empty(group)
                 attached = data.startswith(b"ATTACHED\n")
                 if operation is ClosedProbe.SUPERVISOR_DEATH and process.returncode == -9:
-                    report = _Report(
-                        attached=attached,
-                        empty=empty,
-                        reason=StopReason.SUPERVISOR_LOST,
-                        exit=137,
-                        pids=_events(group / "pids.events")["max"],
-                        oom=_events(group / "memory.events")["oom_kill"],
-                        memory_peak=int(_read(group / "memory.peak")),
-                        milliseconds=limits.seconds * 1000,
-                        stdout="",
-                        stderr="",
+                    try:
+                        if data != b"ATTACHED\nSUPERVISOR_DEATH_READY\n":
+                            raise ValueError("missing death readiness proof")
+                        report = _Report(
+                            attached=attached,
+                            empty=empty,
+                            reason=StopReason.SUPERVISOR_LOST,
+                            exit=137,
+                            pids=_events(group / "pids.events")["max"],
+                            oom=_events(group / "memory.events")["oom_kill"],
+                            memory_peak=int(_read(group / "memory.peak")),
+                            milliseconds=limits.seconds * 1000,
+                            stdout="",
+                            stderr="",
+                        )
+                    except (ValueError, KeyError, OSError):
+                        raise RuntimeConfinementUnavailable(
+                            _detail(operation),
+                            probe=operation,
+                            stage=ConfinementFailureStage.REPORT_OR_CLEANUP,
+                        ) from None
+                    passed = (
+                        attached
+                        and empty
+                        and not report.pids
+                        and not report.oom
+                        and report.memory_peak <= limits.memory_bytes
                     )
-                    passed = attached and empty and not report.pids and not report.oom
                 else:
-                    report = _Report.model_validate_json(data.removeprefix(b"ATTACHED\n"))
-                    passed = empty and _passed(operation, report)
+                    report = _decode_report(data, operation, limits)
+                    passed = _completed_proof(
+                        operation, report, returncode=process.returncode, empty=empty, limits=limits
+                    )
                 result = ProbeEvidence(
                     operation_id=operation_id,
                     boot_generation=self._boot,
@@ -441,6 +514,9 @@ class LinuxRuntimeConfinementBackend:
                     limits=limits,
                     attached_before_exec=report.attached,
                     exit_code=report.exit,
+                    requester_exit_code=(
+                        process.returncode if operation is ClosedProbe.REQUESTER_DEATH else None
+                    ),
                     stop_reason=report.reason,
                     pids_events=report.pids,
                     oom_events=report.oom,

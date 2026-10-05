@@ -1,6 +1,7 @@
 # M20-E5-C — Full preparation confinement
 
-**IMPLEMENTED; REAL KALI ENFORCEMENT ACCEPTANCE PENDING.** E5-A/B are COMPLETE.
+**IMPLEMENTED; FIRST REAL KALI ACCEPTANCE FAILED; OFFLINE REPORT FIX COMPLETE;
+REAL KALI RERUN REQUIRED.** E5-A/B are COMPLETE.
 E5-D–H, E6–E9 and M20-F remain NOT STARTED. Runtime remains UNAVAILABLE / NOT READY.
 
 ## Boundary and trusted deployment
@@ -45,6 +46,38 @@ cooperative CancellationService. Every positive probe requires populated=0 after
 No persisted PID is used to kill on restart. A colliding pre-existing group is refused,
 never killed merely because creation failed. Cancellation/requester-death probes use an
 explicit fixture/supervisor readiness handshake, not an assumed wrapper process count.
+
+### Requester-death reporting correction
+
+The first operator run passed the eleven probes from isolation through cancellation, then
+failed requester_death: only `ATTACHED` reached the backend. Delegation and trusted helper
+prerequisites were verified; this was a report-path defect, not an inferred host failure.
+The independent forked supervisor already outlived the deliberately SIGKILLed requester,
+but wrote final JSON through buffered stdio before `_exit(0)`, which does not flush it.
+The offline native regression reproduced that exact empty-report ValidationError.
+
+The same supervisor now explicitly checks `fflush(stdout)` after its bounded final report;
+no broker, new authority, or new execution interface is introduced. Requester PASS requires
+the direct requester's actual `-SIGKILL` wait status **and** independently reported OWNER_LOST,
+the fixture's child/grandchild readiness marker, expected counters, bounded duration/output,
+and both reported and freshly read exact-group `populated=0`. SIGKILL alone is never PASS.
+Node-private evidence retains optional `requester_exit_code`, distinct from payload exit;
+old immutable JSON records remain readable. Supervisor-death additionally requires the
+flushed closed `SUPERVISOR_DEATH_READY` marker before intentional death, empty-group proof,
+and expected counters/peak. An unexpected supervisor death during requester testing fails.
+
+Empty, ATTACHED-only, truncated, malformed/schema-invalid or over-limit reports map to
+existing typed CONFINEMENT_UNAVAILABLE / DESCENDANT_CONTAINMENT_UNAVAILABLE for lifecycle
+probes, suppressing raw Pydantic input/traceback content. Diagnostics use only closed
+`probe`, reason and `stage=report_or_cleanup` (or `probe` for a negative valid proof).
+The harness prints these fields without raw stderr/environment. Failed incomplete work
+remains INTERRUPTED; immutable prior evidence is not rewritten. No migration is needed.
+
+Offline tests exercise real native reporting and finite child/grandchild cleanup with
+explicitly simulated kernel files, plus death before readiness, unexpected supervisor death,
+intentional supervisor death, malformed reports and all-thirteen check orchestration.
+They are wiring regressions, **not real kernel enforcement acceptance**. Rebuild and repin
+the helper, then rerun the entire existing Kali harness; all thirteen must pass.
 
 The static fixture binds only the trusted helper and a managed ten-byte synthetic read-only
 source. E4 usrmerge topology checks are retained but no host `/usr` content, root, home, run,

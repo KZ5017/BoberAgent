@@ -69,6 +69,11 @@ class StopReason(StrEnum):
     CLEANUP_FAILED = "CLEANUP_FAILED"
 
 
+class ConfinementFailureStage(StrEnum):
+    REPORT_OR_CLEANUP = "report_or_cleanup"
+    PROBE = "probe"
+
+
 class ProbeEvidence(Record):
     """Expected probe limit hits are evidence, not positive constructor verification.
 
@@ -87,6 +92,9 @@ class ProbeEvidence(Record):
     limits: ProbeLimits
     attached_before_exec: bool
     exit_code: int | None
+    # Direct synthetic requester's wait status, distinct from the payload exit.
+    # Optional so immutable pre-fix historical evidence still deserializes.
+    requester_exit_code: int | None = None
     stop_reason: StopReason
     pids_events: StrictInt = Field(ge=0)
     oom_events: StrictInt = Field(ge=0)

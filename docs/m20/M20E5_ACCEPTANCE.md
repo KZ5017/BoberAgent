@@ -1,7 +1,9 @@
 # M20-E5 implementation slices and acceptance
 
-**E5-A–B COMPLETE; E5-C IMPLEMENTED / REAL KALI ACCEPTANCE PENDING; E5-D–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
-No active enforcement probe below has been proven on Kali. An operator-only E5-C harness exists;
+**E5-A–B COMPLETE; E5-C FIRST REAL ACCEPTANCE FAILED / OFFLINE FIX COMPLETE /
+REAL KALI RERUN REQUIRED; E5-D–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+The first real Kali run passed eleven probes but not the complete thirteen-probe acceptance.
+An operator-only E5-C harness exists;
 see [implementation and validation status](M20E5C_IMPLEMENTATION.md).
 Commands are an operator preflight design, not a request to configure a host automatically.
 
@@ -32,11 +34,32 @@ with memory/pids enabled for children. Disposable writes to pids.max=8,
 memory.max=67108864, memory.swap.max=0, memory.oom.group and cgroup.kill succeeded,
 with clean initial events. These support backend viability, not effective enforcement.
 
-Active process/memory/tmpfs/inode/output/runtime/descendant and Node/supervisor-death
-enforcement are **NOT YET PROVEN**; E5-C must prove them. `/usr/bin/python3.12` is absent.
+The original reconnaissance did not prove active enforcement. Subsequent first-run evidence
+and its remaining gate are recorded below; complete E5-C acceptance is **NOT YET PROVEN**.
+`/usr/bin/python3.12` is absent.
 CPython 3.13.7 is present but **NOT an approved fallback**. An explicit interpreter-profile
 decision is required before E5-D. E5-A changes no profile and selects/installs no interpreter.
 The runtime remains UNAVAILABLE.
+
+### First real E5-C acceptance and offline correction
+
+The operator confirmed the already provisioned user transient service (Delegate=yes,
+DelegateSubgroup=supervisor), kali-owned domain parent with empty direct tasks and enabled
+memory/pids, and the static helper's ownership, permissions and SHA-256 pin. No new host
+configuration is required by this defect fix.
+
+Real results: isolation EXITED; pids TIMEOUT; memory EXITED; bytes EXITED; inodes EXITED;
+output OUTPUT; deadline TIMEOUT; descendants EXITED; setsid EXITED; double_fork EXITED;
+cancel CANCELLED — all eleven PASS. requester_death failed with an ATTACHED-only report and
+raw JSON validation error. The requester's eventual `-9` was its expected deliberate death,
+not containment proof. supervisor_death was not reached in that acceptance run.
+
+The independent supervisor's final buffered JSON was discarded by `_exit(0)` in requester
+mode. Offline reproduction and the narrow checked flush/report-validation correction are
+recorded in [E5-C implementation](M20E5C_IMPLEMENTATION.md#requester-death-reporting-correction).
+Offline simulated controls do not prove enforcement. The operator must rebuild/repin and
+rerun the [complete thirteen-probe Kali harness](../../scripts/manual-smoke/README.md#m20-e5-c-confinement-only-kali-preflight).
+Real acceptance remains OPEN; runtime remains UNAVAILABLE / NOT READY; E5-D–H have not begun.
 
 ### Read-only host reconnaissance
 

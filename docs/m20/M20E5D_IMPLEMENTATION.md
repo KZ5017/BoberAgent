@@ -55,13 +55,35 @@ extensions/venv/shared closure and excluding the explicit `TKINTER_TCL_TK` featu
 and, after the next real-Kali finding, `PACKAGE_MANAGER`.
 
 Selection uses the native exported `PyInit__tkinter` identity plus module/ABI location,
-DT_NEEDED graph, SONAME metadata and absence of retained consumers. It is not a broad
+DT_NEEDED graph and explicit supported/unsupported root reachability. It is not a broad
 filename denylist. `_tkinter`, the `tkinter` package/caches, feature-private libraries
-and SONAME-version/sentinel-matched Tcl/Tk data are excluded. Unrecognized data and
+and dependency-identity/version/sentinel-matched Tcl/Tk data are excluded. Unrecognized data and
 unrelated stdlib remain selected; `turtle`/`idlelib` are not speculatively removed,
 but their GUI imports cannot work in this non-GUI profile. Alternative GUI module
 overlays and packed `python312.zip` layouts remain rejected. Required venv/stdlib
 material cannot be removed.
+
+The subsequent membership correction replaces the tentative-exclusion/retained-consumer
+heuristic with `SUPPORTED_ONLY`, `UNSUPPORTED_ONLY`, `SHARED` and fail-closed `UNKNOWN`
+ownership. Exact inventoried `/runtime/lib` bare bindings and owner-bound path edges
+are traversed transitively; absent SONAME does not discard an edge, and a conflicting
+declared SONAME rejects. No nested-basename guessing. Reached unsupported libraries
+without SONAME cannot become supported roots merely because that tag is missing.
+Genuinely shared libraries remain selected and undergo unchanged RPATH eligibility.
+Unreachable declared libraries/cycles and ambiguous entry points fail closed.
+The exact base partition is checked; excluded native aliases remain excluded and
+selected hardlinks/byte-identical native copies into excluded bytes reject.
+
+Offline fixtures reproduce the reported `_tkinter` dependency vector, including
+`libtcl9tk9.0.so` and `libtcl9.0.so`, with both present and absent SONAME metadata.
+Both are excluded when unsupported-only, while their original absolute RPATH bytes
+remain hashed evidence. The supplied real trace did not report their SONAME tags;
+these fixtures are not a claim of real-host provenance acceptance. Tk feature data,
+package-manager exclusion, required venv, split-PT_LOAD and `$ORIGIN` checks remain.
+Diagnostics remain bounded `RUNTIME_INTEGRITY_FAILURE`, stage `distribution_inventory`.
+See ADR 0022 for exact supported-root criteria and membership authority boundaries.
+No distribution bytes are patched/deleted, schemas/history are not rewritten, and
+E5-E/F remain unimplemented; runtime stays UNAVAILABLE, not READY.
 
 The next real-Kali finding was trusted uv provisioned pip 26.2.1 in nonempty
 site-packages. Base presence is no longer rejected: the complete

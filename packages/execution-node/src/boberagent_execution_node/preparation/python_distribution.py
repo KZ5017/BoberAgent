@@ -359,10 +359,11 @@ class _ELFMetadata(NamedTuple):
     soname: str | None = None
     search_paths: tuple[str, ...] = ()
     python_exports: tuple[str, ...] = ()
+    file_type: Literal["NOT_ELF", "RELOCATABLE", "EXECUTABLE", "SHARED_LIBRARY"] = "NOT_ELF"
 
 
 def _python_exports(data: bytes) -> tuple[str, ...]:
-    """Bounded ELF64 dynamic-symbol identities, not filename inference or execution."""
+    """Bounded CPython module/core API identities, never filename inference."""
     offset = struct.unpack_from("<Q", data, 40)[0]
     width, count = struct.unpack_from("<HH", data, 58)
     if not offset and not count:
@@ -394,12 +395,22 @@ def _python_exports(data: bytes) -> tuple[str, ...]:
             end = table.find(b"\0", name, name + 4097)
             if name >= len(table) or end < 0:
                 raise ValueError("ELF symbol name")
-            if index and info >> 4 in {1, 2} and table.startswith(b"PyInit_", name):
+            raw = table[name:end]
+            if (
+                index
+                and info >> 4 in {1, 2}
+                and (
+                    raw.startswith(b"PyInit_")
+                    or (info & 15 == 2 and raw in {b"Py_Initialize", b"Py_GetVersion"})
+                )
+            ):
                 if end - name > 135:
                     raise ValueError("ELF Python module identity bound")
-                raw = table[name:end]
                 value = raw.decode("ascii")
-                if re.fullmatch(r"PyInit_[A-Za-z0-9_]{1,128}", value) is None:
+                if (
+                    value not in {"Py_Initialize", "Py_GetVersion"}
+                    and re.fullmatch(r"PyInit_[A-Za-z0-9_]{1,128}", value) is None
+                ):
                     raise ValueError("ELF Python module identity")
                 exports.add(value)
     return tuple(sorted(exports))
@@ -417,11 +428,17 @@ def _inspect_elf(data: bytes, *, owner: Path, boundary: Path) -> _ELFMetadata:
         raise ValueError("unsupported ELF")
     offset = struct.unpack_from("<Q", data, 32)[0]
     width, count = struct.unpack_from("<HH", data, 54)
-    if struct.unpack_from("<H", data, 16)[0] == 1 and count == 0:
+    elf_type = struct.unpack_from("<H", data, 16)[0]
+    if elf_type == 1 and count == 0:
         # Inert config/*.o files may be retained in the install-only tree;
         # inventory them, but never mistake them for executable/library closure.
         _python_exports(data)
-        return _ELFMetadata()
+        return _ELFMetadata(file_type="RELOCATABLE")
+    if elf_type not in {2, 3}:
+        raise ValueError("unsupported ELF object type")
+    file_type: Literal["EXECUTABLE", "SHARED_LIBRARY"] = (
+        "EXECUTABLE" if elf_type == 2 else "SHARED_LIBRARY"
+    )
     if width != 56 or not 1 <= count <= 128 or offset + count * width > len(data):
         raise ValueError("ELF bounds")
     segments = [struct.unpack_from("<IIQQQQQQ", data, offset + i * width) for i in range(count)]
@@ -453,7 +470,9 @@ def _inspect_elf(data: bytes, *, owner: Path, boundary: Path) -> _ELFMetadata:
                 for i in range(file_offset, file_offset + size, 16)
             ]
     if not dynamic:
-        return _ELFMetadata(interpreter=interpreter, python_exports=_python_exports(data))
+        return _ELFMetadata(
+            interpreter=interpreter, python_exports=_python_exports(data), file_type=file_type
+        )
     string_addresses = [value for key, value in dynamic if key == 5]
     string_sizes = [value for key, value in dynamic if key == 10]
     if (
@@ -499,6 +518,7 @@ def _inspect_elf(data: bytes, *, owner: Path, boundary: Path) -> _ELFMetadata:
         sonames[0] if sonames else None,
         tuple(search_paths),
         _python_exports(data),
+        file_type,
     )
 
 
@@ -716,6 +736,145 @@ def _launcher_features(
     return result
 
 
+class _DependencyOwnership(StrEnum):
+    SUPPORTED_ONLY = "SUPPORTED_ONLY"
+    UNSUPPORTED_ONLY = "UNSUPPORTED_ONLY"
+    SHARED = "SHARED"
+    UNKNOWN = "UNKNOWN"
+
+
+class _NativeProjectionGraph(NamedTuple):
+    edges: dict[Path, frozenset[Path]]
+    identities: dict[Path, frozenset[str]]
+    ownership: dict[Path, _DependencyOwnership]
+    tkinter: frozenset[Path]
+    package_manager: frozenset[Path]
+
+
+def _internal_target(
+    root: Path,
+    dependency: _ELFDependency,
+    entries: dict[Path, ManifestEntry],
+    metadata: dict[Path, _ELFMetadata],
+    links: dict[Path, Path],
+) -> Path | None:
+    """Exact provider /runtime/lib lookup or an owner-bound explicit pathname.
+
+    Never search recursively by basename. An absent SONAME does not erase an
+    exact inventoried ELF edge; a conflicting declared SONAME is ambiguous.
+    """
+    candidate = dependency.resolved or root / "lib" / dependency.raw
+    if dependency.kind is _DependencyKind.PATH_DEPENDENCY:
+        current = dependency.owner.parent
+        prefix = "$ORIGIN/" if dependency.raw.startswith("$ORIGIN/") else "${ORIGIN}/"
+        for component in dependency.raw.removeprefix(prefix).split("/")[:-1]:
+            current = Path(os.path.normpath(current / component))
+            if current != root and (current not in entries or entries[current].kind != "directory"):
+                raise ValueError("internal dependency parent not inventoried directory")
+    if candidate not in entries:
+        if dependency.kind is _DependencyKind.PATH_DEPENDENCY:
+            raise ValueError("internal dependency target missing")
+        return None  # External bare dependency; no external authority is inferred here.
+    target = links.get(candidate, candidate)
+    facts = metadata.get(target)
+    if (
+        target not in entries
+        or entries[target].kind != "file"
+        or facts is None
+        or facts.file_type not in {"EXECUTABLE", "SHARED_LIBRARY"}
+    ):
+        raise ValueError("internal dependency target not inventoried loadable ELF")
+    if (
+        dependency.kind is _DependencyKind.BARE_SONAME
+        and facts.soname is not None
+        and facts.soname != dependency.raw
+    ):
+        raise ValueError("internal dependency SONAME conflict")
+    return target
+
+
+def _dependency_ownership(
+    root: Path,
+    base: tuple[ManifestEntry, ...],
+    metadata: dict[Path, _ELFMetadata],
+    links: dict[Path, Path],
+    tkinter_roots: set[Path],
+) -> _NativeProjectionGraph:
+    entries = {root / e.path: e for e in base}
+    nodes = {
+        path
+        for path, facts in metadata.items()
+        if facts.file_type in {"EXECUTABLE", "SHARED_LIBRARY"}
+    }
+    edges: dict[Path, frozenset[Path]] = {}
+    names: dict[Path, set[str]] = {p: set() for p in nodes}
+    for path in sorted(nodes):
+        targets = set()
+        for dependency in metadata[path].needed:
+            target = _internal_target(root, dependency, entries, metadata, links)
+            if target is not None:
+                targets.add(target)
+                names[target].add(
+                    dependency.raw if dependency.resolved is None else dependency.resolved.name
+                )
+        edges[path] = frozenset(targets)
+
+    def reachable(roots: set[Path]) -> frozenset[Path]:
+        found = set(roots)
+        pending = list(sorted(roots))
+        while pending:
+            for target in sorted(edges[pending.pop()]):
+                if target not in found:
+                    found.add(target)
+                    pending.append(target)
+        return frozenset(found)
+
+    package_roots = {p for p in nodes if _package_manager_path(p.relative_to(root).as_posix())}
+    tkinter = reachable(tkinter_roots)
+    package_manager = reachable(package_roots)
+    unsupported = tkinter | package_manager
+    incoming = {target for targets in edges.values() for target in targets}
+    core = {
+        p for p in nodes if {"Py_Initialize", "Py_GetVersion"} <= set(metadata[p].python_exports)
+    }
+    supported_roots = set()
+    for path in sorted(nodes - tkinter_roots - package_roots):
+        facts = metadata[path]
+        if "PyInit__tkinter" in facts.python_exports:
+            raise ValueError("ambiguous unsupported Python entry point")
+        if (
+            path == root / "bin/python3.12"
+            or facts.file_type == "EXECUTABLE"
+            or facts.interpreter is not None
+            or path.parent == root / "bin"
+            or path in core
+            or (facts.python_exports and path.parent == root / "lib/python3.12/lib-dynload")
+            # Unclaimed non-SONAME native entry objects/ABI forwarders are roots
+            # only outside the unsupported closure, never merely because a
+            # reached shared object lacks SONAME. Closed cycles remain UNKNOWN.
+            or (
+                path not in unsupported
+                and path not in incoming
+                and (facts.soname is None or bool(edges[path] & core))
+            )
+        ):
+            supported_roots.add(path)
+    supported = reachable(supported_roots)
+    ownership = {
+        path: _DependencyOwnership.SHARED
+        if path in supported and path in unsupported
+        else _DependencyOwnership.SUPPORTED_ONLY
+        if path in supported
+        else _DependencyOwnership.UNSUPPORTED_ONLY
+        if path in unsupported
+        else _DependencyOwnership.UNKNOWN
+        for path in sorted(nodes)
+    }
+    return _NativeProjectionGraph(
+        edges, {p: frozenset(v) for p, v in names.items()}, ownership, tkinter, package_manager
+    )
+
+
 def _project(
     root: Path,
     base: tuple[ManifestEntry, ...],
@@ -740,47 +899,22 @@ def _project(
         in {"_tkinter.cpython-312-x86_64-linux-gnu.so", "_tkinter.abi3.so", "_tkinter.so"}
     }
 
-    def local(dependency: _ELFDependency) -> Path | None:
-        target = (
-            dependency.resolved
-            if dependency.resolved is not None
-            else root / "lib" / dependency.raw
-        )
-        target = links.get(target, target)
-        facts = metadata.get(target)
-        if facts is None:
-            return None
-        if dependency.kind is _DependencyKind.BARE_SONAME and facts.soname != dependency.raw:
-            return None
-        return target
-
-    graph = {
-        path: {target for d in facts.needed if (target := local(d)) is not None}
-        for path, facts in metadata.items()
+    graph = _dependency_ownership(root, base, metadata, links, native)
+    if _DependencyOwnership.UNKNOWN in graph.ownership.values():
+        raise ValueError("unknown native dependency ownership")
+    if any(graph.ownership[p] is not _DependencyOwnership.UNSUPPORTED_ONLY for p in native):
+        raise ValueError("unsupported native feature required by supported runtime")
+    if any(
+        graph.ownership[p] is _DependencyOwnership.SHARED
+        for p in graph.package_manager
+        if p.relative_to(root).as_posix() in package_manager
+    ):
+        raise ValueError("supported native entry point depends on excluded namespace")
+    exclusive = {
+        p
+        for p, ownership in graph.ownership.items()
+        if ownership is _DependencyOwnership.UNSUPPORTED_ONLY
     }
-    closure = set(native)
-    pending = list(native)
-    while pending:
-        for target in graph[pending.pop()]:
-            if target not in closure:
-                closure.add(target)
-                pending.append(target)
-    # Importable non-Tk modules and the interpreter are never feature-private.
-    exclusive = closure - {
-        path
-        for path in closure - native
-        if metadata[path].python_exports or metadata[path].interpreter or not metadata[path].soname
-    }
-    while shared := {
-        target
-        for path, targets in graph.items()
-        if path not in exclusive and path.relative_to(root).as_posix() not in package_manager
-        for target in targets
-        if target in exclusive
-    }:
-        exclusive -= shared
-    if not native <= exclusive:
-        raise ValueError("unsupported native feature has retained consumer")
     roles: dict[
         str,
         Literal[
@@ -812,9 +946,12 @@ def _project(
                 roles[entry.path] = "PYTHON_PACKAGE"
     # Data selectors are tied to the proven private native SONAME/version AND
     # a feature sentinel, not a filename blacklist. Unknown data remains visible.
-    for path in exclusive - native:
-        soname = metadata[path].soname
-        assert soname is not None
+    for path in graph.tkinter & exclusive - native:
+        declared = metadata[path].soname
+        identities = frozenset((declared,)) if declared is not None else graph.identities[path]
+        if len(identities) != 1:
+            raise ValueError("ambiguous unsupported library identity")
+        soname = next(iter(identities))
         match = re.fullmatch(
             r"lib(tcl|tk)([0-9]+\.[0-9]+)(?:tk[0-9]+\.[0-9]+)?\.so(?:\.[0-9.]+)?", soname
         )
@@ -832,7 +969,11 @@ def _project(
                 if entry.path == directory or entry.path.startswith(directory + "/"):
                     roles[entry.path] = "FEATURE_DATA"
     features: dict[str, Literal["TKINTER_TCL_TK", "PACKAGE_MANAGER"]] = {
-        path: "TKINTER_TCL_TK" for path in roles
+        path: "PACKAGE_MANAGER"
+        if links.get(root / path, root / path) in graph.package_manager
+        and links.get(root / path, root / path) not in graph.tkinter
+        else "TKINTER_TCL_TK"
+        for path in roles
     }
     for relative in package_manager:
         roles[relative] = (
@@ -857,6 +998,21 @@ def _project(
         for e in base
         if e.path in roles
     )
+    selected_names = {e.path for e in selected}
+    excluded_names = {e.entry.path for e in excluded}
+    if (
+        selected_names & excluded_names
+        or selected_names | excluded_names != {e.path for e in base}
+        or len(selected_names) + len(excluded_names) != len(base)
+    ):
+        raise ValueError("runtime projection is not an exact base partition")
+    # A hardlink or byte-identical native copy is not an alternate supported
+    # entry point into excluded code. Reject rather than guessing its ownership.
+    excluded_native_hashes = {
+        e.entry.sha256 for e in excluded if root / e.entry.path in native_files
+    }
+    if any(root / e.path in native_files and e.sha256 in excluded_native_hashes for e in selected):
+        raise ValueError("selected native alias exposes excluded bytes")
     # Retained links must not reach excluded bytes through a different import path.
     for entry in selected:
         if (
@@ -1041,6 +1197,7 @@ def _inventory(
         raise ValueError("dependency record bound")
     entries.clear()
     loaded: set[str] = set()
+    base_lookup = {root / e.path: e for e in base_entries}
 
     def path_target(dependency: _ELFDependency) -> Path:
         assert dependency.resolved is not None
@@ -1058,7 +1215,15 @@ def _inventory(
         names = {"ld-linux-x86-64.so.2"}
         for dependency in dependencies:
             if dependency.kind is _DependencyKind.BARE_SONAME:
-                names.add(dependency.raw)
+                internal = (
+                    _internal_target(root, dependency, base_lookup, elf_metadata, links)
+                    if dependency.owner.is_relative_to(root)
+                    else None
+                )
+                if internal is None:
+                    names.add(dependency.raw)
+                elif internal not in regular_files or internal not in elf_files:
+                    raise ValueError("bare dependency target excluded from projection")
             else:
                 assert dependency.resolved is not None
                 target = path_target(dependency)

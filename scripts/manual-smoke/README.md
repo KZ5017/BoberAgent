@@ -812,6 +812,12 @@ trusted distribution before approving its observed pins. Inventory is not vendor
 or a success/readiness result. It checks/hashes all base bin/lib bytes and bounded
 metadata, then selects the typed non-GUI projection and complete retained support closure.
 Optional Tkinter/Tcl/Tk is excluded structurally, not by accepting its external RPATH.
+Native ownership is determined by independent supported/unsupported-root reachability.
+The offline membership correction excludes both reported internal Tcl/Tk libraries
+when unsupported-only; a genuinely shared library remains selected and its absolute
+RPATH still rejects. Exact internal bindings, unknown ownership, aliases and complete
+base partition checks stay fail-closed. This is not real Kali acceptance: rerun the
+inventory command below, review fresh pins, and report any further genuine rejection.
 The complete site-packages and ensurepip namespaces (including bundled wheels,
 metadata and caches) are excluded as PACKAGE_MANAGER. Structurally identified pip
 console launchers/aliases and Tk-dependent idle launchers are also absent; normal

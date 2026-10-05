@@ -22,14 +22,61 @@ not a caller denylist.
 
 The static selector identifies the importable `_tkinter` extension using both its
 CPython module location/ABI and exported `PyInit__tkinter` dynamic-symbol identity.
-It follows owner-bound DT_NEEDED edges to local SONAME-identified libraries and
-excludes only the feature-private closure. A retained consumer makes a library
-retained: its absolute RPATH then fails normally. The `tkinter` Python package,
+It follows owner-bound DT_NEEDED edges to exact inventoried libraries and excludes
+only the feature-private closure. Explicit supported-root reachability, rather
+than merely being outside the exclusion set, establishes a retained consumer:
+its absolute RPATH then fails normally. The `tkinter` Python package,
 including caches, is absent. Version-matched Tcl/Tk data trees are excluded only
-with an exclusive library's SONAME and the `init.tcl`/`tk.tcl` feature sentinel.
+with an exclusive library's SONAME (or unambiguous incoming dependency identity
+when SONAME is absent) and the `init.tcl`/`tk.tcl` feature sentinel.
 Unrecognized data remains inventoried/selected; no speculative stdlib pruning.
 Alternative GUI Python modules and an opaque import-visible `python312.zip` overlay
 remain unsupported layouts, rejected rather than silently filtered.
+
+### Native dependency ownership correction (offline)
+
+The next Kali trace showed `lib/libtcl9.0.so` still selected after projection. Its
+`/tools/deps/lib` RPATH rejection was correct. The old selector dropped exact bare
+dependency edges lacking a matching SONAME, then promoted SONAME-less reached
+objects and any objects outside its tentative exclusion set to retained consumers.
+Those are membership defects, not reasons to relax executable eligibility. The
+reported trace does not include library SONAME tags; offline fixtures cover both
+present and absent tags without asserting which metadata the host contains.
+
+The selector now computes transitive reachability independently from supported
+roots and unsupported Tk/package-manager roots, with explicit four-way ownership:
+
+- `SUPPORTED_ONLY`: retain, subject to unchanged executable eligibility.
+- `UNSUPPORTED_ONLY`: exclude with the owning feature, including native aliases.
+- `SHARED`: retain only through supported-root reachability; normal eligibility
+  still applies. A supported dependency on an excluded entry point/namespace rejects.
+- `UNKNOWN`: an unclaimed declared shared library or closed unreachable component
+  rejects; ambiguity never silently selects or excludes bytes.
+
+Supported roots are the interpreter, executable/loader-bearing or canonical `bin`
+entry objects, native stdlib module identities, CPython core function identities,
+and otherwise unclaimed SONAME-less native entry objects/forwarders into the core
+API. That last conservative retained-root category applies only outside unsupported
+reachability and with no incoming internal edge: absence of SONAME on a reached
+feature library is **not** a supported-root claim. Unreachable library cycles remain
+unknown. Feature overlap uses deterministic Tk ownership for shared unsupported
+closure outside package-manager namespaces; it never grants executable authority.
+
+Bare internal dependencies bind only in the fixed inventoried `/runtime/lib`
+namespace; explicit paths remain normalized and owner-bound. Declared SONAME
+conflicts reject, absent SONAME cannot erase an exact ELF edge, and a similarly
+named nested file is not a match. Selected dependency closure uses the same resolver;
+external requirements still use the explicit trusted support root. No recursive
+basename matching, host search-path probing, `ldd` or candidate execution is added.
+
+Selected/excluded sets explicitly partition the complete base projection universe.
+One-hop aliases into excluded libraries are excluded; selected native hardlinks or
+byte-identical copies of excluded objects reject. All excluded bytes still pass
+mode/ownership, stable bounded hashing, ELF structural and symlink safety checks.
+The offline reported `_tkinter -> libtcl9tk9.0.so + libtcl9.0.so` graph excludes both
+libraries, package/caches and matched Tcl/Tk data. Fresh pins are required if
+membership changes; historical evidence and manifest schemas remain unchanged.
+This is not real Kali acceptance, runtime READY or E5-E construction.
 
 ### Approved package-manager refinement (next real-Kali finding)
 

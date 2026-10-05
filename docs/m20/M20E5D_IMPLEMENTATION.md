@@ -44,7 +44,7 @@ operator noise is both excluded and unmounted. Optional bounded `PYTHON.json` mu
 JSON object; its exact hash is retained as metadata identity, not trusted self-attestation.
 
 Bounded non-executing ELF64 inspection validates x86_64 and collects DT_NEEDED across all
-runtime ELF material. It resolves a closure only inside the explicit library root; no ldd,
+runtime ELF material. Bare SONAME closure uses the explicit library root; no ldd,
 PATH or implicit host search. The loader is pinned as well. Only selected library files,
 not the whole library directory or `/usr`, are mounted into `/support`. No arbitrary
 external RPATH/RUNPATH is admitted; only origin-relative entries inside the runtime view.
@@ -63,6 +63,35 @@ filesystem trust and link policies remain unchanged. Synthetic offline regressio
 cover the reported layout; no candidate or external ELF tool was executed to debug
 it. This fix is **not real Kali provenance acceptance**: operator inventory and the
 existing confined provenance preflight still must pass. Runtime remains unavailable.
+
+A second real-Kali static failure was `lib/libpython3.so` declaring
+`DT_NEEDED=$ORIGIN/../lib/libpython3.12.so.1.0`. A SONAME-only regex and basename-only
+internal-library shortcut were insufficient. Node-private dependency records now retain
+the declaring ELF path, raw string, BARE_SONAME/PATH_DEPENDENCY kind and normalized
+resolved path for pathname dependencies. Bare names keep the existing 128-character
+basename grammar and resolve through the explicit support root; an unrelated internal
+file with the same basename no longer suppresses that closure.
+
+Pathname dependencies admit only `$ORIGIN/…` or `${ORIGIN}/…`, bounded to 1024
+characters with bounded nonempty components. ORIGIN is the **declaring object's**
+directory, not the interpreter's directory or current working directory. Normalization
+must stay within the object's trusted root, traversing inventoried real directories;
+the exact final target must be an inventoried ELF regular file or the existing approved
+one-hop link to one. Missing/unmounted paths, special/untrusted material, absolute/plain
+relative paths, other tokens, shell/environment syntax and backslash tricks fail closed.
+Distribution pathname dependencies use exact bin/lib inventory records, not basename
+matching, extra traversal or duplicate hashing. Support-object ORIGIN paths are limited
+to the existing flat `/support/<name>` view; nested support layouts remain unsupported.
+This is DT_NEEDED resolution, **not** RPATH/RUNPATH search or a general loader emulator.
+
+The canonical manifest format is unchanged: sorted file/link records and content hashes
+already bind declaring ELF bytes (including raw dependencies), exact target material and
+root identity. Repeated edges do not duplicate distribution records; support closure
+remains sorted, bounded and deterministic. Existing sealed evidence is not rewritten;
+changed closure/pins fail revalidation rather than being automatically repaired. This
+compatibility fix is offline only and does not change the real acceptance/readiness gate.
+Owner-bound dependency records also obey the existing configured aggregate entry cap;
+retaining owner identity does not introduce an unbounded edge collection.
 
 Links must be relative, exactly one hop to an inventoried regular file within their own
 approved root. No directory symlinks, external links, chains, devices, sockets or FIFOs.

@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pytest
 from boberagent_execution_node.preparation.python_distribution import (
+    _DependencyKind,
     _elf,
+    _ELFDependency,
     _LoadSegment,
     _read_file_backed_vaddr_range,
 )
@@ -16,6 +18,11 @@ SECOND_OFFSET = 0x5000  # Deliberately not adjacent to the first segment's file 
 SECOND_SIZE = 0x20D70
 STRING_ADDRESS = 0x3FF5D8
 STRING_SIZE = 0xA51A
+OWNER = Path("/runtime/bin/python3.12")
+
+
+def parse_elf(data: bytes, *, owner: Path = OWNER) -> tuple[tuple[_ELFDependency, ...], str | None]:
+    return _elf(data, owner=owner, boundary=Path("/runtime"))
 
 
 def split_elf() -> bytearray:
@@ -54,8 +61,8 @@ def split_elf() -> bytearray:
 
 
 def test_static_string_table_crosses_file_backed_loads() -> None:
-    assert _elf(bytes(split_elf()), origin=Path("/runtime/bin"), boundary=Path("/runtime")) == (
-        NEEDED,
+    assert parse_elf(bytes(split_elf())) == (
+        tuple(_ELFDependency(OWNER, name, _DependencyKind.BARE_SONAME, None) for name in NEEDED),
         "/lib64/ld-linux-x86-64.so.2",
     )
 
@@ -76,12 +83,12 @@ def test_invalid_second_load_is_rejected(field: int, value: int) -> None:
     segment[field] = value
     struct.pack_into("<IIQQQQQQ", data, 120, *segment)
     with pytest.raises(ValueError):
-        _elf(bytes(data))
+        parse_elf(bytes(data))
 
 
 def test_truncated_second_load_is_rejected() -> None:
     with pytest.raises(ValueError, match="bounds"):
-        _elf(bytes(split_elf()[:-1]))
+        parse_elf(bytes(split_elf()[:-1]))
 
 
 def test_zero_fill_cannot_bridge_file_backed_mappings() -> None:
@@ -89,7 +96,7 @@ def test_zero_fill_cannot_bridge_file_backed_mappings() -> None:
     struct.pack_into("<Q", data, 64 + 40, 0x2000)  # First LOAD memsz, not filesz.
     struct.pack_into("<Q", data, 120 + 16, 0x401000)
     with pytest.raises(ValueError, match="gap"):
-        _elf(bytes(data))
+        parse_elf(bytes(data))
 
 
 def test_range_reader_handles_three_independent_offsets_and_unsorted_headers() -> None:
@@ -128,10 +135,12 @@ def test_overlapping_loads_must_resolve_identically(identical: bool) -> None:
     data[0x3000:0x3014] = payload if identical else b"X" * 20
     struct.pack_into("<IIQQQQQQ", data, 288, 1, 4, 0x3000, 0x400014, 0, 20, 20, 1)
     if identical:
-        assert _elf(bytes(data))[0] == NEEDED
+        assert parse_elf(bytes(data))[0] == tuple(
+            _ELFDependency(OWNER, name, _DependencyKind.BARE_SONAME, None) for name in NEEDED
+        )
     else:
         with pytest.raises(ValueError, match="ambiguous"):
-            _elf(bytes(data))
+            parse_elf(bytes(data))
 
 
 @pytest.mark.parametrize(
@@ -148,7 +157,7 @@ def test_invalid_string_table_range_is_rejected(address: int, size: int) -> None
     struct.pack_into("<qQ", data, 0x388, 5, address)
     struct.pack_into("<qQ", data, 0x398, 10, size)
     with pytest.raises(ValueError):
-        _elf(bytes(data))
+        parse_elf(bytes(data))
 
 
 @pytest.mark.parametrize("tag", [5, 10])
@@ -157,13 +166,13 @@ def test_missing_or_conflicting_string_table_metadata_is_rejected(tag: int) -> N
     offset = 0x388 if tag == 5 else 0x398
     struct.pack_into("<qQ", data, offset, 0, 0)
     with pytest.raises(ValueError, match="string table"):
-        _elf(bytes(data))
+        parse_elf(bytes(data))
     data = split_elf()
     struct.pack_into("<qQ", data, 0x388 + 9 * 16, tag, 1)
     with pytest.raises(ValueError, match="string table"):
-        _elf(bytes(data))
+        parse_elf(bytes(data))
 
 
 def test_split_table_preserves_normalized_origin_escape_rejection() -> None:
     with pytest.raises(ValueError, match="search path escape"):
-        _elf(bytes(split_elf()), origin=Path("/runtime"), boundary=Path("/runtime"))
+        parse_elf(bytes(split_elf()), owner=Path("/runtime/python3.12"))

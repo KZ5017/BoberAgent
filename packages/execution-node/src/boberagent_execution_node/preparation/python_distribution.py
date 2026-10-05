@@ -190,6 +190,42 @@ class _LoadSegment(NamedTuple):
     file_size: int
 
 
+class _DependencyKind(StrEnum):
+    BARE_SONAME = "BARE_SONAME"
+    PATH_DEPENDENCY = "PATH_DEPENDENCY"
+
+
+class _ELFDependency(NamedTuple):
+    owner: Path
+    raw: str
+    kind: _DependencyKind
+    resolved: Path | None
+
+
+def _dependency(name: str, owner: Path, boundary: Path) -> _ELFDependency:
+    """Closed DT_NEEDED syntax; lexical resolution performs no filesystem access."""
+    if not owner.is_absolute() or not boundary.is_absolute() or not owner.is_relative_to(boundary):
+        raise ValueError("dependency owner boundary")
+    if "/" not in name:
+        if re.fullmatch(r"[A-Za-z0-9_.+-]{1,128}", name) is None or name in {".", ".."}:
+            raise ValueError("invalid dependency name")
+        return _ELFDependency(owner, name, _DependencyKind.BARE_SONAME, None)
+    if len(name) > 1024:
+        raise ValueError("dependency pathname bound")
+    prefix = next((p for p in ("$ORIGIN/", "${ORIGIN}/") if name.startswith(p)), None)
+    if prefix is None:
+        raise ValueError("unsupported dependency pathname")
+    components = name.removeprefix(prefix).split("/")
+    if any(re.fullmatch(r"[A-Za-z0-9_.+-]{1,128}", part) is None for part in components):
+        raise ValueError("invalid dependency pathname")
+    resolved = owner.parent
+    for part in components:
+        resolved = Path(os.path.normpath(resolved / part))
+        if not resolved.is_relative_to(boundary):
+            raise ValueError("dependency pathname escape")
+    return _ELFDependency(owner, name, _DependencyKind.PATH_DEPENDENCY, resolved)
+
+
 def _read_file_backed_vaddr_range(
     data: bytes, loads: tuple[_LoadSegment, ...], address: int, size: int
 ) -> bytes:
@@ -236,8 +272,8 @@ def _read_file_backed_vaddr_range(
 
 
 def _elf(
-    data: bytes, *, origin: Path | None = None, boundary: Path | None = None
-) -> tuple[tuple[str, ...], str | None]:
+    data: bytes, *, owner: Path, boundary: Path
+) -> tuple[tuple[_ELFDependency, ...], str | None]:
     """Bounded ELF64 DT_NEEDED/PT_INTERP inspection; never ldd or executable probing."""
     if not data.startswith(b"\x7fELF"):
         return (), None
@@ -302,14 +338,14 @@ def _elf(
             raise ValueError("ELF string bounds")
         name = table[value : table.index(0, value)].decode("ascii")
         if key == 1:
-            if re.fullmatch(r"[A-Za-z0-9_.+-]{1,128}", name) is None or name in {".", ".."}:
-                raise ValueError("invalid dependency name")
-            needed.append(name)
+            needed.append(_dependency(name, owner, boundary))
         elif any(part != "$ORIGIN" and not part.startswith("$ORIGIN/") for part in name.split(":")):
             raise ValueError("external runtime search path")
-        elif origin is not None and boundary is not None:
+        else:
             for part in name.split(":"):
-                resolved = Path(os.path.normpath(origin / part.removeprefix("$ORIGIN").lstrip("/")))
+                resolved = Path(
+                    os.path.normpath(owner.parent / part.removeprefix("$ORIGIN").lstrip("/"))
+                )
                 if not resolved.is_relative_to(boundary):
                     raise ValueError("runtime search path escape")
     return tuple(needed), interpreter
@@ -340,8 +376,11 @@ def _inventory(
         )
     roots = (_parents(root), _parents(support))
     entries: list[ManifestEntry] = []
-    dependencies: set[str] = {"ld-linux-x86-64.so.2"}
-    internal_libraries: set[str] = set()
+    dependencies: set[_ELFDependency] = set()
+    regular_files: set[Path] = set()
+    elf_files: set[Path] = set()
+    links: dict[Path, Path] = {}
+    directories: set[Path] = {root, support}
     total = 0
     deadline = time.monotonic() + 60
     entry_count = 0
@@ -357,6 +396,7 @@ def _inventory(
             path=relative, mode=stat.S_IMODE(info.st_mode), uid=info.st_uid, gid=info.st_gid
         )
         if stat.S_ISDIR(info.st_mode):
+            directories.add(path)
             entries.append(ManifestEntry(kind="directory", **fields))
             for child in sorted(path.iterdir(), key=lambda p: p.name):
                 visit(child, relative + "/" + child.name)
@@ -374,6 +414,7 @@ def _inventory(
                 raise ValueError("link must be one-hop internal regular file")
             _trust(resolved.lstat())
             entries.append(ManifestEntry(kind="symlink", target=target, **fields))
+            links[path] = resolved
             return visit(resolved, relative + "#target", library=library) if library else None
         if not stat.S_ISREG(info.st_mode):
             raise ValueError("special file")
@@ -384,10 +425,13 @@ def _inventory(
                 kind="file", size=len(data), sha256=hashlib.sha256(data).hexdigest(), **fields
             )
         )
-        needed, _ = _elf(data, origin=path.parent, boundary=support if library else root)
+        regular_files.add(path)
+        needed, _ = _elf(data, owner=path, boundary=support if library else root)
         dependencies.update(needed)
-        if not library and path.name.endswith((".so", ".so.1", ".so.1.0")):
-            internal_libraries.add(path.name)
+        if len(dependencies) > configuration.max_entries:
+            raise ValueError("dependency record bound")
+        if data.startswith(b"\x7fELF"):
+            elf_files.add(path)
         return data
 
     # Only these trees are mounted. Every import-visible cache is runtime material,
@@ -407,7 +451,10 @@ def _inventory(
     if interpreter.kind != "file" or not interpreter.mode & 0o111 or interpreter.sha256 is None:
         raise ValueError("interpreter must be an executable regular file")
     interpreter_data = _bytes(root / "bin/python3.12", configuration.max_runtime_bytes)
-    if not interpreter_data.startswith(b"\x7fELF") or _elf(interpreter_data)[1] is None:
+    if (
+        not interpreter_data.startswith(b"\x7fELF")
+        or _elf(interpreter_data, owner=root / "bin/python3.12", boundary=root)[1] is None
+    ):
         raise ValueError("interpreter ELF required")
     metadata_hash = None
     metadata_path = root / "PYTHON.json"
@@ -432,12 +479,50 @@ def _inventory(
                 raise ValueError("symlink target not inventoried/mounted")
     entries.clear()
     loaded: set[str] = set()
-    while pending := sorted(dependencies - internal_libraries - loaded):
+
+    def path_target(dependency: _ELFDependency) -> Path:
+        assert dependency.resolved is not None
+        # Normalize only through inventoried real directories, never through a
+        # symlink/file followed by '..' or an unmounted/untrusted path component.
+        prefix = "$ORIGIN/" if dependency.raw.startswith("$ORIGIN/") else "${ORIGIN}/"
+        current = dependency.owner.parent
+        for component in dependency.raw.removeprefix(prefix).split("/")[:-1]:
+            current = Path(os.path.normpath(current / component))
+            if current not in directories:
+                raise ValueError("dependency parent not inventoried directory")
+        return links.get(dependency.resolved, dependency.resolved)
+
+    def support_names() -> set[str]:
+        names = {"ld-linux-x86-64.so.2"}
+        for dependency in dependencies:
+            if dependency.kind is _DependencyKind.BARE_SONAME:
+                names.add(dependency.raw)
+            else:
+                assert dependency.resolved is not None
+                target = path_target(dependency)
+                if dependency.owner.is_relative_to(support):
+                    # The existing namespace mounts support files at /support/<name>.
+                    # Do not claim support for nested support layouts not mounted there.
+                    if dependency.resolved.parent != support:
+                        raise ValueError("unsupported support pathname layout")
+                    names.add(dependency.resolved.name)
+                else:
+                    if target not in regular_files or target not in elf_files:
+                        raise ValueError("dependency target not inventoried ELF")
+        return names
+
+    while pending := sorted(support_names() - loaded):
         name = pending[0]
         if len(loaded) >= 32:
             raise ValueError("library closure bound")
         visit(support / name, name, library=True)
         loaded.add(name)
+    for dependency in dependencies:
+        if dependency.kind is _DependencyKind.PATH_DEPENDENCY:
+            assert dependency.resolved is not None
+            resolved_target = path_target(dependency)
+            if resolved_target not in regular_files or resolved_target not in elf_files:
+                raise ValueError("dependency target not inventoried ELF")
     if roots != (_parents(root), _parents(support)):
         raise ValueError("substitution parent changed")
     manifest = DistributionManifest(

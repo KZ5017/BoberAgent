@@ -714,6 +714,16 @@ From the repository root on Kali, choose an explicit absolute dedicated runtime 
 existing delegated parent. Build only the repository-owned trusted helper using a pre-existing
 static C toolchain; do not install missing prerequisites. Example operator commands:
 
+The installed helper must be a regular executable with an explicit mode such as **0755**,
+never group/world-writable or setuid/setgid. **Every ancestor directory**, including the
+runtime and tools directories, must be non-group/world-writable and not a symlink. Existing
+ancestors must already satisfy this prerequisite; do not automatically chmod host directories.
+A sticky writable parent such as `/tmp` is not a suitable installed-helper location for this
+manual harness. The preflight enforces this before creating runtime state or launching probes;
+production `_trusted_tool()` remains unchanged and still checks all its existing prerequisites.
+Use explicit installation modes rather than relying on the shell's umask. Compile in a private
+temporary build directory, then install the finished binary into the trusted parent chain:
+
 For the requester-death fix, reuse the operator's already verified runtime/delegated parent
 inside the existing transient service; rebuild the helper and recompute its pin with the
 commands below. Do not reuse its old SHA-256 or change host-wide delegation. The first run
@@ -722,13 +732,18 @@ returned through `_exit` without flushing. SIGKILL alone is not proof. This fix 
 real acceptance: the rerun must pass **all thirteen**, including supervisor_death.
 
 ```bash
+set -eu
 E5_RUNTIME=/absolute/operator-selected/e5c-preflight-runtime
 E5_CGROUP_PARENT=/sys/fs/cgroup/explicitly-delegated-empty-parent
 E5_HELPER="$E5_RUNTIME/tools/e5-confinement-helper"
-mkdir -p -- "$E5_RUNTIME/tools"
+install -d -m 0755 -- "$E5_RUNTIME" "$E5_RUNTIME/tools"
+E5_BUILD_DIR=$(mktemp -d)
 cc -static -O2 -Wall -Wextra -Werror \
-  -o "$E5_HELPER" \
+  -o "$E5_BUILD_DIR/e5-confinement-helper" \
   packages/execution-node/src/boberagent_execution_node/preparation/native/e5_confinement.c
+install -m 0755 -- "$E5_BUILD_DIR/e5-confinement-helper" "$E5_HELPER"
+rm -- "$E5_BUILD_DIR/e5-confinement-helper"
+rmdir -- "$E5_BUILD_DIR"
 E5_HELPER_SHA256=$(sha256sum -- "$E5_HELPER" | cut -d ' ' -f 1)
 E5_BWRAP_SHA256=$(sha256sum -- /usr/bin/bwrap | cut -d ' ' -f 1)
 
@@ -749,6 +764,8 @@ the dedicated Node journal; output includes logical probe identities via persist
 profile, event/peak facts and empty-group results, never raw environment/credentials/host stderr.
 Failures identify closed `probe`, reason and `stage` (e.g. `requester_death`,
 `DESCENDANT_CONTAINMENT_UNAVAILABLE`, `report_or_cleanup`) instead of raw validation input.
+Helper filesystem failures use `reason=CONFINEMENT_UNAVAILABLE`, `probe=null` and typed
+`stage=helper_file_mode` or `helper_parent_trust`; no raw path, environment or stderr is printed.
 Every probe must PASS with attachment-before-exec and group-empty proof. Expected tiny pids/OOM/
 output/deadline hits are intentional mechanism tests, not runtime construction failures.
 

@@ -8,6 +8,7 @@ import argparse
 import asyncio
 import hashlib
 import json
+import stat
 from pathlib import Path
 
 from boberagent_contracts import ConfinementFeature
@@ -17,8 +18,45 @@ from boberagent_execution_node.preparation.runtime_confinement import (
     RuntimeConfinementUnavailable,
 )
 from boberagent_execution_node.preparation.runtime_confinement_models import (
+    ConfinementFailureStage,
     RuntimeConfinementConfiguration,
 )
+
+
+def _require_helper_filesystem(path: Path) -> None:
+    """Read-only operator prerequisite; never replace or weaken _trusted_tool()."""
+    try:
+        mode = path.lstat().st_mode
+        if not path.is_absolute() or not stat.S_ISREG(mode) or mode & 0o6022 or not mode & 0o111:
+            raise ValueError("untrusted helper mode")
+    except (OSError, ValueError):
+        raise RuntimeConfinementUnavailable(
+            stage=ConfinementFailureStage.HELPER_FILE_MODE
+        ) from None
+    try:
+        for directory in path.parents:
+            mode = directory.lstat().st_mode
+            # No sticky-bit exception for this explicit installation prerequisite.
+            if not stat.S_ISDIR(mode) or mode & 0o022:
+                raise ValueError("untrusted helper parent")
+    except (OSError, ValueError):
+        raise RuntimeConfinementUnavailable(
+            stage=ConfinementFailureStage.HELPER_PARENT_TRUST
+        ) from None
+
+
+def _failure_json(error: RuntimeConfinementUnavailable) -> str:
+    return json.dumps(
+        {
+            "profile": "m20-e5-linux-bwrap-cgroup@1",
+            "result": "FAIL",
+            "reason": str(error),
+            "probe": error.probe.value if error.probe else None,
+            "stage": error.stage.value if error.stage else None,
+            "runtime": "UNAVAILABLE",
+            "ready": False,
+        }
+    )
 
 
 def arguments() -> argparse.Namespace:
@@ -36,6 +74,7 @@ def arguments() -> argparse.Namespace:
 async def run(args: argparse.Namespace) -> int:
     if not args.node_runtime_directory.is_absolute():
         raise ValueError("explicit absolute Node runtime directory required")
+    _require_helper_filesystem(args.trusted_helper)
     root = args.node_runtime_directory
     marker = root / "e5c-confinement-only"
     if (root / "runtime.sqlite3").exists() and not marker.is_file():
@@ -65,19 +104,7 @@ async def run(args: argparse.Namespace) -> int:
         try:
             result = await backend.check(tuple(ConfinementFeature))
         except RuntimeConfinementUnavailable as error:
-            print(
-                json.dumps(
-                    {
-                        "profile": "m20-e5-linux-bwrap-cgroup@1",
-                        "result": "FAIL",
-                        "reason": str(error),
-                        "probe": error.probe.value if error.probe else None,
-                        "stage": error.stage.value if error.stage else None,
-                        "runtime": "UNAVAILABLE",
-                        "ready": False,
-                    }
-                )
-            )
+            print(_failure_json(error))
             return 1
         for probe in result.probes:
             # Never dump raw environment or captured process stderr/host paths.
@@ -118,7 +145,10 @@ async def run(args: argparse.Namespace) -> int:
 def main() -> int:
     try:
         return asyncio.run(run(arguments()))
-    except (ValueError, OSError, RuntimeConfinementUnavailable) as error:
+    except RuntimeConfinementUnavailable as error:
+        print(_failure_json(error))
+        return 1
+    except (ValueError, OSError) as error:
         print(
             json.dumps(
                 {

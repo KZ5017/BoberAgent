@@ -24,6 +24,18 @@ Node composition keeps these two reserved tools in a separate private Tool Regis
 they are not exposed through SDK `ProcessService.run_tool` or capability dependencies.
 Python is only the existing Node control plane; no Python executable is inspected or invoked.
 
+The manual deployment requires an explicitly installed regular executable (e.g.
+`install -m 0755`), with no group/world write or setuid/setgid bits. Every directory in its parent
+chain must be non-group/world-writable and non-symlink; a sticky writable ancestor is not
+accepted by the manual harness's stricter installation preflight. Use `install -d -m 0755`
+for the selected runtime/tools directories; existing higher ancestors must already be trusted.
+Compile into a private temporary directory and install the completed binary explicitly; never
+rely on operator umask or automatically repair host ancestor permissions. The read-only
+harness preflight runs before Node initialization and emits only CONFINEMENT_UNAVAILABLE
+with a typed `helper_file_mode` or `helper_parent_trust` stage. `_trusted_tool()` remains
+unchanged, authoritative and fail-closed for its existing checks, including hash/ELF/ownership.
+See the [operator installation commands](../../scripts/manual-smoke/README.md#m20-e5-c-confinement-only-kali-preflight).
+
 ## Mechanisms and closed active probes
 
 The operator explicitly supplies an owned, delegated cgroup-v2 domain parent. Node validates

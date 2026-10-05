@@ -362,6 +362,8 @@ def test_manual_harness_failure_is_closed_and_probe_specific(
             stopped.append(True)
 
     monkeypatch.setattr(module, "ExecutionNode", LocalNodeFixture)
+    # This test exercises report diagnostics, not filesystem preflight (covered separately).
+    monkeypatch.setattr(module, "_require_helper_filesystem", lambda _path: None)
     args = argparse.Namespace(
         node_runtime_directory=tmp_path / "runtime",
         delegated_cgroup_parent=tmp_path / "controls",

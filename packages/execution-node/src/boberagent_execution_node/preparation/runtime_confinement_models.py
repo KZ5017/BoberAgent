@@ -70,6 +70,8 @@ class StopReason(StrEnum):
 
 
 class ConfinementFailureStage(StrEnum):
+    HELPER_FILE_MODE = "helper_file_mode"
+    HELPER_PARENT_TRUST = "helper_parent_trust"
     REPORT_OR_CLEANUP = "report_or_cleanup"
     PROBE = "probe"
 

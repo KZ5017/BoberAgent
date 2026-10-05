@@ -8,7 +8,12 @@ from sqlalchemy import select, text
 
 from ..persistence.database import RuntimeDatabase
 from ..persistence.orm import RuntimeConfinementRow
-from .runtime_confinement_models import ClosedProbe, ProbeEvidence, ProbeLimits
+from .runtime_confinement_models import (
+    ClosedProbe,
+    ProbeEvidence,
+    ProbeLimits,
+    TrustedPythonOperation,
+)
 
 
 class ConfinementJournal:
@@ -18,12 +23,13 @@ class ConfinementJournal:
     def begin(
         self,
         operation_id: RuntimeCorrelation,
-        probe: ClosedProbe,
+        probe: ClosedProbe | TrustedPythonOperation,
         limits: ProbeLimits,
         boot: RuntimeCorrelation,
         host_boot: str,
         parent_sha256: str,
         now: datetime,
+        input_sha256: str | None = None,
     ) -> ProbeEvidence | None:
         with self._database.transaction() as session:
             session.execute(text("BEGIN IMMEDIATE"))
@@ -33,6 +39,7 @@ class ConfinementJournal:
                     row.probe != probe.value
                     or row.limits_json != limits.model_dump(mode="json")
                     or row.parent_sha256 != parent_sha256
+                    or row.input_sha256 != input_sha256
                 ):
                     raise ValueError("conflicting confinement operation identity")
                 if row.evidence_json is not None:
@@ -46,6 +53,7 @@ class ConfinementJournal:
                     boot_generation=str(boot),
                     host_boot=host_boot,
                     parent_sha256=parent_sha256,
+                    input_sha256=input_sha256,
                     state="RUNNING",
                     started_at=now,
                     finished_at=None,

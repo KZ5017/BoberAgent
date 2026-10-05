@@ -91,6 +91,8 @@ def test_new_protocol_is_not_wired_to_runtime_or_adapters() -> None:
                         ownership / "resource_models.py",
                         ownership / "runtime_confinement.py",
                         ownership / "runtime_confinement_budget.py",
+                        ownership / "python_distribution.py",
+                        ownership / "python_provenance.py",
                     }:
                         assert not any(
                             alias.name.startswith("PythonRuntime") for alias in node.names

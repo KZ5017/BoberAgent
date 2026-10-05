@@ -1,6 +1,6 @@
 # M20-E5 enforcement and runtime confinement backend
 
-**E5-C IMPLEMENTED / REAL KALI ENFORCEMENT ACCEPTANCE PENDING.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-C CLOSED on real Kali acceptance; E5-D identity extension implemented offline / real acceptance required.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 E4 acceptance remains four-feature source-materialization evidence, not full runtime proof.
 
 ## Mandatory gate

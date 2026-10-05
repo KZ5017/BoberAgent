@@ -1,6 +1,6 @@
 # M20-E5 Resource, evidence and typed boundary
 
-**E5-A–B COMPLETE; E5-C IMPLEMENTED / REAL ACCEPTANCE PENDING; E5-D–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-A–C COMPLETE/CLOSED; E5-D implemented offline / real acceptance required; E5-E–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 
 ## Identity, ownership and storage roles
 
@@ -162,7 +162,9 @@ implementation or authority issuer:
 - `PythonRuntimeEvidence-v1` is intermediate historical evidence: typed inventory,
   interpreter/closure hashes, non-actions, all twelve mechanism/probe claims, effective
   caps/counters, measured usage, outputs, UTC timestamps and evidence ArtifactRefs.
-  VERIFIED requires complete evidence within budgets; rejected evidence needs typed reasons.
+  VERIFIED requires complete environment evidence within budgets; rejected evidence needs typed reasons.
+  E5-D additionally admits PROVENANCE_VERIFIED only for fixed interpreter inspection with
+  approved distribution pins, full enforcement and no environment/readiness claim.
   Validation proves no live host facts and does not complete the E6 final receipt.
 - `PythonRuntimeReason` adds narrow failure detail mapped to existing E1 reason codes;
   authority/resource/cancellation reasons are reused, not replaced by generic FAILED.

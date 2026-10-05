@@ -1,7 +1,7 @@
 # M20-E5 implementation slices and acceptance
 
-**E5-A–B COMPLETE; E5-C FIRST REAL ACCEPTANCE FAILED / OFFLINE FIX COMPLETE /
-REAL KALI RERUN REQUIRED; E5-D–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-A–C COMPLETE/CLOSED; E5-D IMPLEMENTED OFFLINE / REAL ACCEPTANCE REQUIRED;
+E5-E–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 The first real Kali run passed eleven probes but not the complete thirteen-probe acceptance.
 An operator-only E5-C harness exists;
 see [implementation and validation status](M20E5C_IMPLEMENTATION.md).
@@ -35,10 +35,11 @@ memory.max=67108864, memory.swap.max=0, memory.oom.group and cgroup.kill succeed
 with clean initial events. These support backend viability, not effective enforcement.
 
 The original reconnaissance did not prove active enforcement. Subsequent first-run evidence
-and its remaining gate are recorded below; complete E5-C acceptance is **NOT YET PROVEN**.
+and its successful subsequent rerun are recorded below; complete E5-C acceptance is now **CLOSED**.
 `/usr/bin/python3.12` is absent.
 CPython 3.13.7 is present but **NOT an approved fallback**. An explicit interpreter-profile
-decision is required before E5-D. E5-A changes no profile and selects/installs no interpreter.
+decision is approved for E5-D: explicit operator-preprovisioned uv CPython 3.12, not an
+automatic installer or system fallback. E5-A itself selected/installed no interpreter.
 The runtime remains UNAVAILABLE.
 
 ### First real E5-C acceptance and offline correction
@@ -59,25 +60,21 @@ mode. Offline reproduction and the narrow checked flush/report-validation correc
 recorded in [E5-C implementation](M20E5C_IMPLEMENTATION.md#requester-death-reporting-correction).
 Offline simulated controls do not prove enforcement. The operator must rebuild/repin and
 rerun the [complete thirteen-probe Kali harness](../../scripts/manual-smoke/README.md#m20-e5-c-confinement-only-kali-preflight).
-Real acceptance remains OPEN; runtime remains UNAVAILABLE / NOT READY; E5-D–H have not begun.
+That first-run failure remains historical. The operator subsequently passed all thirteen
+probes under `m20-e5-linux-bwrap-cgroup@1`, result PASS, runtime UNAVAILABLE, ready=false,
+digest `3f01339cf9c473004d1b038fa3b6afe9427897d06ec096f354450b4257ce08b8`.
+E5-C is CLOSED; E5-D real provenance acceptance is required. E5-E–H have not begun.
 
 ### Read-only host reconnaissance
 
-Run as the intended ordinary Node user, from a trusted directory, with the explicit approved
-interpreter path; do not source a repository `.env`, activate a venv, print environment values,
-or probe source. `/usr/bin/python3.12` below is an example configuration, not an installation
-step or fallback to Kali's default Python. A missing command/path is an unavailable prerequisite.
+Run as the intended ordinary Node user from a trusted directory. Do not source `.env`,
+activate a venv, print environment values or probe source. The old unconstrained Python
+reconnaissance is superseded by E5-D's non-executing inventory followed by confined identity.
+Never execute a supplied candidate before static trust and reviewed pins.
 
 ```bash
 id -u
 uname -srmo
-E5_PYTHON=/usr/bin/python3.12
-test -f "$E5_PYTHON" && test -x "$E5_PYTHON" && test ! -L "$E5_PYTHON"
-namei -l -- "$E5_PYTHON"
-stat -Lc '%U %G %a %s %n' -- "$E5_PYTHON"
-sha256sum -- "$E5_PYTHON"
-env -i PATH=/usr/bin:/bin LANG=C.UTF-8 "$E5_PYTHON" -I -S -B -c \
-  'import sys,sysconfig,platform,venv; print(sys.implementation.name,sys.version); print(platform.machine(),sysconfig.get_config_var("SOABI")); print(sys.prefix,sys.base_prefix); print(sysconfig.get_path("stdlib")); print(venv.__file__)'
 /usr/bin/bwrap --version
 /usr/bin/bwrap --help
 findmnt -no TARGET,FSTYPE,OPTIONS /sys/fs/cgroup
@@ -87,22 +84,10 @@ prlimit --pid "$$" --nproc --as --data --fsize --nofile
 readlink /proc/self/ns/user /proc/self/ns/pid /proc/self/ns/mnt /proc/self/ns/net
 ```
 
-These are trusted metadata checks only, **not E5 evidence**. The Python command imports
-trusted stdlib `venv` but creates no environment. Review real ownership, 3.12 implementation,
-base-prefix equality and stdlib provenance. Do not use presence of `venv` to imply that pip,
-ensurepip or a package installation is permitted. Later repeat the fixed probe within the
-approved backend; never replace it with arbitrary caller-supplied `-c` code in production.
-
-An optional disposable namespace check (no mount persists outside its namespace) is:
-
-```bash
-unshare --user --map-root-user --mount --pid --fork --mount-proc \
-  /usr/bin/env -i PATH=/usr/bin:/bin "$E5_PYTHON" -I -S -B -c \
-  'import os; print(os.getpid()); print(os.readlink("/proc/self/ns/user")); print(os.readlink("/proc/self/ns/pid"))'
-```
-
-Failure means the backend must report unavailable; no sysctl change or sudo workaround.
-This checks namespace support, not bwrap's complete filesystem/network policy.
+These host metadata checks alone are **not E5 evidence** or permission to construct a venv.
+Use the [D operator preflight](../../scripts/manual-smoke/README.md#m20-e5-d-trusted-cpython-provenance-only-kali-preflight)
+for the approved distribution and fresh confinement. Failure reports unavailable;
+no sysctl, install, sudo or system-Python workaround.
 
 ### Delegation inspection and disposable control-file check
 
@@ -242,15 +227,16 @@ E5-H real runtime acceptance supplements E4; E9 remains the later full E real ac
 
 ## E5 implementation sequence
 
-E5-A and E5-B are **COMPLETE**; E5-C is **IMPLEMENTED / REAL ACCEPTANCE PENDING**; E5-D–H are **NOT STARTED**. Their letter order deliberately puts enforcement
+E5-A–C are **COMPLETE/CLOSED**; E5-D is **IMPLEMENTED OFFLINE / REAL ACCEPTANCE REQUIRED**;
+E5-E–H are **NOT STARTED**. Their letter order deliberately puts enforcement
 before construction. No slice may claim the next one's acceptance.
 
 | Slice | Goal / production behavior added | Contracts and persistence | Tests / acceptance | Explicit non-goals |
 | --- | --- | --- | --- | --- |
 | E5-A — Typed Resource/evidence boundary (COMPLETE) | Closed operations, bindings, evidence and reasons implemented; runtime still unavailable | Shared Contracts and unwired preparation-runtime-v1 messages; no handles or DB migration | Strict round trips, schemas, immutability/digests/authority/unknown versions and architecture guards | Construction, transport dispatch wiring, F |
 | E5-B — Durable ownership/lifecycle (COMPLETE) | Atomic Resource reservation, provider state, leases, budget ledger, quarantine/cleanup skeleton | Forward Node migration keyed by existing ResourceRef; retain E3/E4; no new Core table | Fresh/upgrade/reopen/concurrency/crash tests; one Resource per binding | Venv creation or readiness claim |
-| E5-C — Full preparation confinement (IMPLEMENTED; REAL ACCEPTANCE PENDING) | RuntimeConfinementBackend, supervisor/guardian/cgroup, capped scratch/output and trusted probes | Node migration 0009 journal; no authority expansion | Portable negative/accounting/recovery tests; live probes pending Kali | Acquired code, weaker RLIMIT fallback, privileged host setup |
-| E5-D — Interpreter provenance | Tool Registry pinned CPython 3.12 closure and confined fixed inspection | Interpreter fingerprint/sealed binding; no competing registry | Wrong version/layout/venv/startup/PATH/update negatives; exact trusted identity | Source imports, installs, venv construction |
+| E5-C — Full preparation confinement (CLOSED) | RuntimeConfinementBackend, supervisor/guardian/cgroup, capped scratch/output and trusted probes | Node migration 0009 journal; no authority expansion | Real thirteen-probe Kali PASS retained | Acquired code, weaker RLIMIT fallback, privileged host setup |
+| E5-D — Interpreter provenance (IMPLEMENTED OFFLINE; REAL ACCEPTANCE REQUIRED) | Explicit pinned uv CPython 3.12 closure and confined fixed inspection | Node migration 0010 immutable existing Resource-bound evidence; no READY | Wrong version/layout/startup/PATH/update negatives; real preflight still required | Source imports, installs, venv construction |
 | E5-E — Empty environment construction | Closed accounted fresh venv, bounded publication and read-only same-path verification | Existing ownership/ledger, immutable inventory; no new domain ID | Empty packages/no pip, all writes charged, no source sentinel, partial never READY | Runtime execution, dynamic import checks |
 | E5-F — Evidence/revalidation + narrow pump | Seal evidence, READY/current validity, typed same-Run prepare/status/revalidate through existing Core admission/neutral adapters | E5 evidence Artifact; append verification; existing Run/preparation refs; no final manifest/result acceptance | Replay/conflict/expiry/disconnect/Node restart/drift/cleanup tests; current proof required | E6 terminal Result/Core COMPLETED, F authorization |
 | E5-G — Synthetic vertical | Real D→E2→E3→E4→E5 chain with production boundaries and controlled source | Migration-backed isolated Core/Node stores | One Resource, restart/reuse, immutable source, no source/package/Secret/target activity | Real target, full E6–E9 acceptance |

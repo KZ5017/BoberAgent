@@ -190,6 +190,19 @@ ownership, budget ledger, immutable pins and READY prohibition remain intact.
 Supervisor/guardian, race-free cgroup attachment, namespaces, byte/inode-capped tmpfs, bounded
 pipe drain and finite deadlines are detailed in [E5-C implementation](../../docs/m20/M20E5C_IMPLEMENTATION.md).
 Closed probes do not inspect Python, build an environment or run acquired code. Only synthetic
-source is mounted read-only. Real Kali enforcement acceptance is **PENDING**; portable mocks/
-negative tests cannot close it. See the [operator-only command](../../scripts/manual-smoke/README.md#m20-e5-c-confinement-only-kali-preflight).
-No new Core/SDK/MCP preparation endpoint or execution authority is added. E5-D–H remain untouched.
+source is mounted read-only. E5-C is **CLOSED** on operator real thirteen-probe Kali acceptance;
+portable mocks/negative tests alone cannot close it. See the [operator-only command](../../scripts/manual-smoke/README.md#m20-e5-c-confinement-only-kali-preflight).
+No new Core/SDK/MCP preparation endpoint or execution authority is added.
+
+## E5-D trusted interpreter provenance
+
+`PythonDistributionConfiguration` selects an explicit operator-preprovisioned uv CPython
+3.12 Linux/x86_64 root and explicit system-library root with reviewed full-manifest/binary
+pins. Production never invokes uv or discovers/downloads/installs/falls back to another
+interpreter. Full filesystem trust/inventory precedes the separate fixed confined identity.
+Migration `0010_python_provenance` retains immutable evidence on existing E5-B Resource
+operations; READY guards are unchanged. Revalidation fully rehashes; historic proof grants
+no fresh authority. See [implementation](../../docs/m20/M20E5D_IMPLEMENTATION.md) and the
+[manual-only preflight](../../scripts/manual-smoke/README.md#m20-e5-d-trusted-cpython-provenance-only-kali-preflight).
+**Implemented offline; real provenance acceptance required.** No venv, source execution,
+transport endpoint or READY runtime exists. E5-E–H and M20-F remain untouched.

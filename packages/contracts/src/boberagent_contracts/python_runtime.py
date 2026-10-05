@@ -5,6 +5,7 @@ bindings, historical verification and current validity are separate values. Even
 and READY claims do not authenticate a caller or authorize acquired-code execution.
 """
 
+import re
 from datetime import timedelta
 from enum import StrEnum
 from typing import Annotated, Literal, Self
@@ -203,6 +204,20 @@ class PythonRuntimeAuthorityProjection(PythonRuntimeModel):
         return self
 
 
+class PythonDistributionIdentity(PythonRuntimeModel):
+    """Logical pins, not a host path, installer attestation, readiness or authority."""
+
+    manifest_version: Literal["m20-e5-python-distribution@1"]
+    provisioning: Literal["OPERATOR_PREPROVISIONED_UV"]
+    interpreter_relative_path: Literal["bin/python3.12"]
+    manifest_sha256: Sha256Digest
+    root_binding_sha256: Sha256Digest
+    support_manifest_sha256: Sha256Digest
+    metadata_sha256: Sha256Digest | None
+    entry_count: Limit
+    runtime_bytes: Limit
+
+
 class PythonInterpreterIdentity(PythonRuntimeModel):
     summary: InterpreterEvidence
     implementation: Literal["CPython"]
@@ -210,19 +225,30 @@ class PythonInterpreterIdentity(PythonRuntimeModel):
     architecture: Literal["x86_64"]
     soabi: SymbolicName
     cache_tag: Literal["cpython-312"]
-    base_layout: Literal["m20-e5-system-python@1"]
-    stdlib_layout: Literal["m20-e5-system-stdlib@1"]
+    base_layout: Literal["m20-e5-system-python@1", "m20-e5-uv-python@1"]
+    stdlib_layout: Literal["m20-e5-system-stdlib@1", "m20-e5-uv-stdlib@1"]
     closure_sha256: Sha256Digest
+    distribution: PythonDistributionIdentity | None = None
 
     @model_validator(mode="after")
     def admitted_interpreter(self) -> Self:
         if (
             self.summary.registry_tool != "python-runtime-3.12"
-            or not self.summary.python_version.startswith("3.12.")
+            or re.fullmatch(r"3\.12\.[0-9]+", self.summary.python_version) is None
             or self.summary.platform != "linux"
             or self.summary.abi != "cpython-312"
         ):
             raise ValueError("interpreter does not satisfy the pinned CPython 3.12 profile")
+        if self.base_layout == "m20-e5-uv-python@1":
+            if (
+                self.stdlib_layout != "m20-e5-uv-stdlib@1"
+                or self.distribution is None
+                or self.closure_sha256 != self.distribution.manifest_sha256
+                or self.summary.runtime_fingerprint != self.closure_sha256
+            ):
+                raise ValueError("selected distribution requires exact closure pins")
+        elif self.distribution is not None or self.stdlib_layout != "m20-e5-system-stdlib@1":
+            raise ValueError("incompatible distribution layout")
         return self
 
 
@@ -382,7 +408,7 @@ class PythonRuntimeEvidence(PythonRuntimeModel):
     started_at: AwareDatetime
     completed_at: AwareDatetime
     monotonic_duration_milliseconds: Count
-    verification: Literal["VERIFIED", "REJECTED"]
+    verification: Literal["VERIFIED", "PROVENANCE_VERIFIED", "REJECTED"]
     failure: PythonRuntimeFailure | None
     evidence_artifact_refs: tuple[ArtifactRef, ...] = Field(
         max_length=64, json_schema_extra={"collection_semantics": "set"}
@@ -400,14 +426,25 @@ class PythonRuntimeEvidence(PythonRuntimeModel):
             if self.failure is None:
                 raise ValueError("rejected evidence requires a typed reason")
             return self
-        if self.failure is not None or self.environment is None or self.enforcement is None:
+        if self.verification == "PROVENANCE_VERIFIED":
+            if (
+                self.operation is not PythonProviderOperation.INSPECT_INTERPRETER
+                or self.binding.interpreter.distribution is None
+                or self.environment is not None
+                or self.enforcement is None
+                or self.failure is not None
+            ):
+                raise ValueError(
+                    "provenance is interpreter inspection, not environment verification"
+                )
+        elif self.failure is not None or self.environment is None or self.enforcement is None:
             raise ValueError("verified evidence requires environment and enforcement, no failure")
-        if self.operation not in {
+        elif self.operation not in {
             PythonProviderOperation.VERIFY_ENVIRONMENT,
             PythonProviderOperation.REVALIDATE,
         }:
             raise ValueError("only verification/revalidation can report VERIFIED")
-        if (
+        if self.environment is not None and (
             self.environment.copied_executable_sha256
             != self.binding.interpreter.summary.executable_sha256
         ):
@@ -430,6 +467,7 @@ class PythonRuntimeEvidence(PythonRuntimeModel):
             if aggregate > limit or getattr(self.e5_usage, field) > aggregate:
                 raise ValueError("aggregate/E5 usage does not fit admitted budgets")
         proof = self.enforcement
+        assert proof is not None
         for actual, maximum in (
             (proof.effective_process_limit, budgets.max_processes),
             (proof.effective_memory_bytes, budgets.max_memory_bytes),
@@ -450,7 +488,10 @@ class PythonRuntimeEvidence(PythonRuntimeModel):
             proof.memory_peak_bytes > self.e5_usage.peak_memory_bytes
             or proof.processes_peak > self.e5_usage.peak_processes
             or self.monotonic_duration_milliseconds > self.e5_usage.total_runtime_seconds * 1000
-            or self.environment.total_bytes > self.e5_usage.preparation_write_bytes
+            or (
+                self.environment is not None
+                and self.environment.total_bytes > self.e5_usage.preparation_write_bytes
+            )
         ):
             raise ValueError("measured runtime facts not charged to usage")
         if len(set(self.evidence_artifact_refs)) != len(self.evidence_artifact_refs):

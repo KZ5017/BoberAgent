@@ -1,8 +1,15 @@
 # M20-E5-C — Full preparation confinement
 
-**IMPLEMENTED; FIRST REAL KALI ACCEPTANCE FAILED; OFFLINE REPORT FIX COMPLETE;
-REAL KALI RERUN REQUIRED.** E5-A/B are COMPLETE.
-E5-D–H, E6–E9 and M20-F remain NOT STARTED. Runtime remains UNAVAILABLE / NOT READY.
+**CLOSED on operator-supplied real thirteen-probe Kali acceptance.** E5-A/B are COMPLETE.
+E5-D is implemented offline with real acceptance required; E5-E–H, E6–E9 and M20-F remain
+NOT STARTED. Runtime remains UNAVAILABLE / NOT READY. Historical first-run failure and
+offline correction below remain retained, not rewritten as successful first acceptance.
+
+The accepted E5-C rerun reported `profile=m20-e5-linux-bwrap-cgroup@1`, `probe_count=13`,
+`result=PASS`, `runtime=UNAVAILABLE`, `ready=false`, evidence SHA-256
+`3f01339cf9c473004d1b038fa3b6afe9427897d06ec096f354450b4257ce08b8`.
+E5-D extends only a separate fixed identity operation; its rebuilt helper must be repinned
+and fresh controls rerun before real D acceptance. It does not invalidate retained C history.
 
 ## Boundary and trusted deployment
 
@@ -156,7 +163,9 @@ Portable tests cover closed configuration, unavailable hosts, typed report rules
 migration 0008→0009, immutable history/reopen, negative native-supervisor wiring, changed
 boot/parent recovery and architecture guards. Synthetic control files/fake backends are
 explicitly **not** kernel enforcement evidence. The static helper builds with
-`cc -static -O2 -Wall -Wextra -Werror` using a pre-existing toolchain; it has no Python payload.
+`cc -static -O2 -Wall -Wextra -Werror` using a pre-existing toolchain; C's thirteen fixtures
+launch no Python. The shared helper now also contains the separately reviewed E5-D fixed
+identity operation, requiring a rebuilt binary pin and fresh controls before D acceptance.
 
 `test_runtime_confinement_linux.py` is opt-in with explicit parent, helper and binary pins.
 Missing opt-in prerequisites skips honestly; an explicitly opted-in broken configuration

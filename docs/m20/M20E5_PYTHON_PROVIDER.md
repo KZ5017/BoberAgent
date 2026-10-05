@@ -1,20 +1,21 @@
 # M20-E5 trusted Python provider
 
-**Architecture specified; implementation not started.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-D implemented offline; real provenance acceptance required. E5-E–H not started.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 This is closed preparation of trusted runtime infrastructure, not execution of the plan.
 
 ## Interpreter admission and provenance
 
-The Tool Registry is the single selector for logical tool `python-runtime-3.12`. E5 requires
-an operator-configured absolute, versioned executable in a trusted system installation
-(initial layout: `/usr/bin/python3.12` and its approved system runtime closure). This path
-is a deployment input, not a guarantee it exists on Kali and not a domain identity.
-No PATH lookup, active venv, pyenv, user-local interpreter or fallback to `/usr/bin/python3`.
-An absent approved 3.12 installation is RUNTIME_UNAVAILABLE; E5 never installs one.
+The approved first source is an operator-preprovisioned uv-managed CPython 3.12 Linux
+x86_64 distribution with an explicit absolute root and explicit system-library closure
+root. The logical family is `python-runtime-3.12`; backend tools use the Tool Registry.
+Neither a uv pathname nor generic availability/version probing proves provenance. No uv
+invocation, PATH lookup, active venv, pyenv, installer or system/3.13 fallback. An absent
+approved distribution is RUNTIME_UNAVAILABLE. This operator-approved refinement is recorded
+in ADR 0021 and [E5-D implementation](M20E5D_IMPLEMENTATION.md).
 
 Before invocation, inspect the path/components without following unapproved links: regular
-executable, trusted ownership, no group/other-writable component and no Node-user-writable
-interpreter/library tree. Reject a symlinked tool entry; preserve only E4's explicitly
+executable, root or Node-user ownership, no group/other-writable material or parent.
+Reject a symlinked interpreter entry; preserve only E4's explicitly
 validated system compatibility topology. Pin executable bytes/stat identity before launch
 and recheck afterwards. Root/admin compromise and malicious replacement by the trusted
 operator are outside this local trust model; detect ordinary package/layout drift and fail.
@@ -32,7 +33,8 @@ and base prefixes. Reject a virtualenv base, wrong family/platform, missing stdl
 unapproved import paths or ambiguous provenance. Build identity binds the full runtime
 fingerprint. Paths/stat identities stay Node-private; evidence uses logical layout plus
 hashes and typed version/ABI facts. An OS Python/library update invalidates current reuse;
-no upgrade-in-place of an existing Resource.
+no upgrade-in-place of an existing Resource. PROVENANCE_VERIFIED is historical interpreter
+evidence, not a constructed/VERIFIED environment, current VALID or READY.
 
 The current Tool Registry's optional `version_args` probe is **not** this inspection. Do
 not configure an E5 arbitrary version probe or run it before confinement; Node provider
@@ -124,9 +126,11 @@ if it cannot meet this invariant, reject rather than claim portability.
 Start from an empty environment, then set only provider constants: fixed PATH for approved
 runtime tools, `LANG`/`LC_ALL`, `HOME=/work/home`, `TMPDIR=/work/tmp`; pass Python isolation
 flags explicitly. Set PWD from the trusted cwd, not the caller. No `VIRTUAL_ENV` activation,
-PYTHONPATH, LD_PRELOAD/LD_LIBRARY_PATH, proxies, package configuration, MCP bearer,
+PYTHONPATH, LD_PRELOAD, ambient LD_LIBRARY_PATH, proxies, package configuration, MCP bearer,
 SSH_AUTH_SOCK, GitHub/cloud tokens or credential environment inheritance. Close all fds
 except explicitly bounded stdio/control channels; no socket fd is passed.
+The E5-D fixed identity sets only provider-owned `LD_LIBRARY_PATH=/runtime/lib:/support`
+to the fully pinned read-only closure; it does not inherit a caller value.
 
 Network namespace has no host interfaces/routes, no resolver files and no mounted host
 Unix sockets; additional namespace creation/capability escape is denied. Test loopback,

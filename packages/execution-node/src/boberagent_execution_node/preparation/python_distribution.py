@@ -1,0 +1,417 @@
+"""Non-executing, bounded inventory of an explicitly provisioned runtime closure.
+
+uv is an operator installation source, never a production dependency/discovery API.
+Nothing in this module executes the candidate, source, installer or ELF tooling.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import re
+import stat
+import struct
+import time
+from enum import StrEnum
+from pathlib import Path
+from typing import Literal, Self, TypedDict
+
+from boberagent_contracts import PythonRuntimeFailure, PythonRuntimeReason, Sha256Digest
+from boberagent_contracts.plan_canonical import canonical_digest, canonical_json, canonical_value
+from boberagent_contracts.python_runtime import PythonDistributionIdentity
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
+
+MANIFEST_VERSION: Literal["m20-e5-python-distribution@1"] = "m20-e5-python-distribution@1"
+
+
+class EntryFields(TypedDict):
+    path: str
+    mode: int
+    uid: int
+    gid: int
+
+
+def digest_value(value: object) -> str:
+    return hashlib.sha256(canonical_json(canonical_value(value)).encode()).hexdigest()
+
+
+class ProvenanceStage(StrEnum):
+    FILESYSTEM_TRUST = "filesystem_trust"
+    PARENT_TRUST = "parent_trust"
+    FILE_BOUND = "file_bound"
+    FILE_CHANGED = "file_changed"
+    DISTRIBUTION_INVENTORY = "distribution_inventory"
+    INTERPRETER_MISSING = "interpreter_missing"
+    CONFIGURED_DIGEST = "configured_digest"
+    CURRENT_DISTRIBUTION = "current_distribution"
+    IDENTITY_RESULT = "identity_result"
+    EVIDENCE_BINDING = "evidence_binding"
+    EVIDENCE_REPLAY = "evidence_replay"
+    RESOURCE_BINDING = "resource_binding"
+    SEALED_BINDING = "sealed_binding"
+    RETAINED_EVIDENCE = "retained_evidence"
+    FRESH_CONTROLS = "fresh_controls"
+    AUTHORITY_TIME = "authority_time"
+    POST_IDENTITY = "post_identity"
+    BACKEND_BINDING = "backend_binding"
+    OPERATION_INTERRUPTED = "operation_interrupted"
+    OPERATION_DEADLINE = "operation_deadline"
+
+
+class ProvenanceFailure(RuntimeError):
+    """Closed diagnostics only: no path, environment, metadata or captured output."""
+
+    def __init__(self, reason: PythonRuntimeReason, stage: str) -> None:
+        self.failure = PythonRuntimeFailure(
+            reason_code=reason.preparation_reason, runtime_reason=reason
+        )
+        self.stage = ProvenanceStage(stage)
+        super().__init__(reason.value)
+
+
+class Record(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+
+class PythonDistributionConfiguration(Record):
+    """Private operator configuration. No PATH/default/fallback or caller code."""
+
+    distribution_root: Path
+    system_library_root: Path
+    expected_manifest_sha256: Sha256Digest
+    expected_interpreter_sha256: Sha256Digest
+    max_entries: StrictInt = Field(default=25000, ge=1, le=100000)
+    max_runtime_bytes: StrictInt = Field(default=1024**3, ge=1, le=4 * 1024**3)
+    max_metadata_bytes: StrictInt = Field(default=128 * 1024, ge=1, le=1024**2)
+
+    @model_validator(mode="after")
+    def absolute_sources(self) -> Self:
+        for path in (self.distribution_root, self.system_library_root):
+            if not path.is_absolute() or ".." in path.parts or path == Path("/"):
+                raise ValueError("explicit absolute distribution/support root required")
+        return self
+
+
+class ManifestEntry(Record):
+    path: str
+    kind: Literal["file", "directory", "symlink"]
+    mode: int
+    uid: int
+    gid: int
+    size: int = 0
+    sha256: Sha256Digest | None = None
+    target: str | None = None
+
+
+class DistributionManifest(Record):
+    schema_version: Literal["m20-e5-python-distribution@1"] = MANIFEST_VERSION
+    root_binding_sha256: Sha256Digest
+    interpreter_relative_path: Literal["bin/python3.12"] = "bin/python3.12"
+    interpreter_sha256: Sha256Digest
+    entries: tuple[ManifestEntry, ...]
+    support_entries: tuple[ManifestEntry, ...]
+    metadata_sha256: Sha256Digest | None
+
+    @property
+    def digest(self) -> str:
+        return canonical_digest(self)
+
+    def identity(self) -> PythonDistributionIdentity:
+        return PythonDistributionIdentity(
+            manifest_version=MANIFEST_VERSION,
+            provisioning="OPERATOR_PREPROVISIONED_UV",
+            interpreter_relative_path="bin/python3.12",
+            manifest_sha256=self.digest,
+            root_binding_sha256=self.root_binding_sha256,
+            support_manifest_sha256=digest_value(self.support_entries),
+            metadata_sha256=self.metadata_sha256,
+            entry_count=len(self.entries) + len(self.support_entries),
+            runtime_bytes=sum(e.size for e in (*self.entries, *self.support_entries)),
+        )
+
+
+def _trust(info: os.stat_result, *, link: bool = False) -> None:
+    if info.st_uid not in {0, os.getuid()} or (not link and info.st_mode & 0o6022):
+        raise ProvenanceFailure(PythonRuntimeReason.RUNTIME_INTEGRITY_FAILURE, "filesystem_trust")
+
+
+def _parents(path: Path) -> list[tuple[str, int, int, int, int, int]]:
+    pins = []
+    for directory in (path, *path.parents):
+        info = directory.lstat()
+        _trust(info)
+        if not stat.S_ISDIR(info.st_mode):
+            raise ProvenanceFailure(PythonRuntimeReason.RUNTIME_INTEGRITY_FAILURE, "parent_trust")
+        pins.append(
+            (
+                str(directory),
+                info.st_dev,
+                info.st_ino,
+                info.st_uid,
+                info.st_gid,
+                stat.S_IMODE(info.st_mode),
+            )
+        )
+    return pins
+
+
+def _bytes(path: Path, maximum: int) -> bytes:
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+    with os.fdopen(fd, "rb") as stream:
+        before = os.fstat(stream.fileno())
+        _trust(before)
+        if not stat.S_ISREG(before.st_mode) or before.st_size > maximum:
+            raise ProvenanceFailure(PythonRuntimeReason.RUNTIME_INTEGRITY_FAILURE, "file_bound")
+        data = stream.read(maximum + 1)
+        after = os.fstat(stream.fileno())
+
+        def stable(i: os.stat_result) -> tuple[int, ...]:
+            return (
+                i.st_dev,
+                i.st_ino,
+                i.st_mode,
+                i.st_uid,
+                i.st_gid,
+                i.st_size,
+                i.st_mtime_ns,
+                i.st_ctime_ns,
+            )
+
+        if stable(before) != stable(after) or len(data) != before.st_size:
+            raise ProvenanceFailure(PythonRuntimeReason.RUNTIME_INTEGRITY_FAILURE, "file_changed")
+        return data
+
+
+def _elf(
+    data: bytes, *, origin: Path | None = None, boundary: Path | None = None
+) -> tuple[tuple[str, ...], str | None]:
+    """Bounded ELF64 DT_NEEDED/PT_INTERP inspection; never ldd or executable probing."""
+    if not data.startswith(b"\x7fELF"):
+        return (), None
+    if (
+        len(data) < 64
+        or data[:6] != b"\x7fELF\x02\x01"
+        or struct.unpack_from("<H", data, 18)[0] != 62
+    ):
+        raise ValueError("unsupported ELF")
+    offset = struct.unpack_from("<Q", data, 32)[0]
+    width, count = struct.unpack_from("<HH", data, 54)
+    if struct.unpack_from("<H", data, 16)[0] == 1 and count == 0:
+        # Inert config/*.o files may be retained in the install-only tree;
+        # inventory them, but never mistake them for executable/library closure.
+        return (), None
+    if width != 56 or not 1 <= count <= 128 or offset + count * width > len(data):
+        raise ValueError("ELF bounds")
+    segments = [struct.unpack_from("<IIQQQQQQ", data, offset + i * width) for i in range(count)]
+    for _, _, file_offset, _, _, size, _, _ in segments:
+        if file_offset + size > len(data):
+            raise ValueError("ELF segment bounds")
+    interpreter = None
+    dynamic: list[tuple[int, int]] = []
+    for kind, _, file_offset, _, _, size, _, _ in segments:
+        if kind == 3:
+            if size > 256:
+                raise ValueError("ELF loader bound")
+            interpreter = data[file_offset : file_offset + size].rstrip(b"\0").decode("ascii")
+            if interpreter != "/lib64/ld-linux-x86-64.so.2":
+                raise ValueError("unsupported loader")
+        if kind == 2:
+            if size > 65536 or size % 16:
+                raise ValueError("ELF dynamic bound")
+            dynamic = [
+                struct.unpack_from("<qQ", data, i)
+                for i in range(file_offset, file_offset + size, 16)
+            ]
+    if not dynamic:
+        return (), interpreter
+    strings_address = next((value for key, value in dynamic if key == 5), None)
+    strings_size = next((value for key, value in dynamic if key == 10), None)
+    if strings_address is None or strings_size is None or strings_size > 4 * 1024**2:
+        raise ValueError("ELF string table")
+    strings_offset = next(
+        (
+            file_offset + strings_address - address
+            for kind, _, file_offset, address, _, size, _, _ in segments
+            if kind == 1
+            and address <= strings_address
+            and strings_address + strings_size <= address + size
+        ),
+        None,
+    )
+    if strings_offset is None:
+        raise ValueError("ELF mapped strings")
+    table = data[strings_offset : strings_offset + strings_size]
+    needed = []
+    for key, value in dynamic:
+        if key not in {1, 15, 29}:
+            continue
+        if value >= len(table) or b"\0" not in table[value:]:
+            raise ValueError("ELF string bounds")
+        name = table[value : table.index(0, value)].decode("ascii")
+        if key == 1:
+            if re.fullmatch(r"[A-Za-z0-9_.+-]{1,128}", name) is None or name in {".", ".."}:
+                raise ValueError("invalid dependency name")
+            needed.append(name)
+        elif any(part != "$ORIGIN" and not part.startswith("$ORIGIN/") for part in name.split(":")):
+            raise ValueError("external runtime search path")
+        elif origin is not None and boundary is not None:
+            for part in name.split(":"):
+                resolved = Path(os.path.normpath(origin / part.removeprefix("$ORIGIN").lstrip("/")))
+                if not resolved.is_relative_to(boundary):
+                    raise ValueError("runtime search path escape")
+    return tuple(needed), interpreter
+
+
+def inventory(
+    configuration: PythonDistributionConfiguration, *, verify_pins: bool = True
+) -> DistributionManifest:
+    """Full fresh rehash. Operator inventory mode does not authorize candidate execution."""
+    try:
+        configuration = PythonDistributionConfiguration.model_validate(configuration.model_dump())
+        return _inventory(configuration, verify_pins=verify_pins)
+    except ProvenanceFailure:
+        raise
+    except (OSError, ValueError, UnicodeError, struct.error, RecursionError):
+        raise ProvenanceFailure(
+            PythonRuntimeReason.RUNTIME_INTEGRITY_FAILURE, "distribution_inventory"
+        ) from None
+
+
+def _inventory(
+    configuration: PythonDistributionConfiguration, *, verify_pins: bool
+) -> DistributionManifest:
+    root, support = configuration.distribution_root, configuration.system_library_root
+    if not (root / "bin/python3.12").is_file():
+        raise ProvenanceFailure(
+            PythonRuntimeReason.PYTHON_RUNTIME_UNAVAILABLE, "interpreter_missing"
+        )
+    roots = (_parents(root), _parents(support))
+    entries: list[ManifestEntry] = []
+    dependencies: set[str] = {"ld-linux-x86-64.so.2"}
+    internal_libraries: set[str] = set()
+    total = 0
+    deadline = time.monotonic() + 60
+    entry_count = 0
+
+    def visit(path: Path, relative: str, *, library: bool = False) -> bytes | None:
+        nonlocal total, entry_count
+        if entry_count >= configuration.max_entries or time.monotonic() > deadline:
+            raise ValueError("entry bound")
+        entry_count += 1
+        info = path.lstat()
+        _trust(info, link=stat.S_ISLNK(info.st_mode))
+        fields: EntryFields = dict(
+            path=relative, mode=stat.S_IMODE(info.st_mode), uid=info.st_uid, gid=info.st_gid
+        )
+        if stat.S_ISDIR(info.st_mode):
+            entries.append(ManifestEntry(kind="directory", **fields))
+            for child in sorted(path.iterdir(), key=lambda p: p.name):
+                visit(child, relative + "/" + child.name)
+            return None
+        if stat.S_ISLNK(info.st_mode):
+            target = os.readlink(path)
+            resolved = Path(os.path.normpath(path.parent / target))
+            boundary = support if library else root
+            if (
+                Path(target).is_absolute()
+                or not resolved.is_relative_to(boundary)
+                or resolved.is_symlink()
+                or not resolved.is_file()
+            ):
+                raise ValueError("link must be one-hop internal regular file")
+            _trust(resolved.lstat())
+            entries.append(ManifestEntry(kind="symlink", target=target, **fields))
+            return visit(resolved, relative + "#target", library=library) if library else None
+        if not stat.S_ISREG(info.st_mode):
+            raise ValueError("special file")
+        data = _bytes(path, min(64 * 1024**2, configuration.max_runtime_bytes - total))
+        total += len(data)
+        entries.append(
+            ManifestEntry(
+                kind="file", size=len(data), sha256=hashlib.sha256(data).hexdigest(), **fields
+            )
+        )
+        needed, _ = _elf(data, origin=path.parent, boundary=support if library else root)
+        dependencies.update(needed)
+        if not library and path.name.endswith((".so", ".so.1", ".so.1.0")):
+            internal_libraries.add(path.name)
+        return data
+
+    # Only these trees are mounted. Every import-visible cache is runtime material,
+    # including pyc/__pycache__; -B suppresses writes, not reads. include/share noise
+    # is excluded AND absent from the identity namespace.
+    for tree in ("bin", "lib"):
+        if not (root / tree).is_dir() or (root / tree).is_symlink():
+            raise ValueError("missing trusted runtime layout")
+        visit(root / tree, tree)
+    for required in ("lib/python3.12/venv/__init__.py", "lib/python3.12/lib-dynload"):
+        if not any(
+            e.path == required and e.kind == ("file" if required.endswith(".py") else "directory")
+            for e in entries
+        ):
+            raise ValueError("required stdlib/venv layout missing")
+    interpreter = next(e for e in entries if e.path == "bin/python3.12")
+    if interpreter.kind != "file" or not interpreter.mode & 0o111 or interpreter.sha256 is None:
+        raise ValueError("interpreter must be an executable regular file")
+    interpreter_data = _bytes(root / "bin/python3.12", configuration.max_runtime_bytes)
+    if not interpreter_data.startswith(b"\x7fELF") or _elf(interpreter_data)[1] is None:
+        raise ValueError("interpreter ELF required")
+    metadata_hash = None
+    metadata_path = root / "PYTHON.json"
+    if metadata_path.exists() or metadata_path.is_symlink():
+        if metadata_path.lstat().st_size > configuration.max_metadata_bytes:
+            raise ValueError("metadata bound")
+        data = visit(metadata_path, "PYTHON.json")
+        if data is None or len(data) > configuration.max_metadata_bytes:
+            raise ValueError("metadata bound")
+        metadata = json.loads(data)
+        if not isinstance(metadata, dict) or len(metadata) > 256:
+            raise ValueError("distribution metadata object required")
+        metadata_hash = hashlib.sha256(data).hexdigest()
+    distribution_entries = tuple(entries)
+    for entry in distribution_entries:
+        if entry.kind == "symlink":
+            assert entry.target is not None
+            target = os.path.relpath(
+                os.path.normpath(root / entry.path / ".." / entry.target), root
+            )
+            if not any(e.path == target and e.kind == "file" for e in distribution_entries):
+                raise ValueError("symlink target not inventoried/mounted")
+    entries.clear()
+    loaded: set[str] = set()
+    while pending := sorted(dependencies - internal_libraries - loaded):
+        name = pending[0]
+        if len(loaded) >= 32:
+            raise ValueError("library closure bound")
+        visit(support / name, name, library=True)
+        loaded.add(name)
+    if roots != (_parents(root), _parents(support)):
+        raise ValueError("substitution parent changed")
+    manifest = DistributionManifest(
+        root_binding_sha256=digest_value(roots),
+        interpreter_sha256=interpreter.sha256,
+        entries=tuple(sorted(distribution_entries, key=lambda e: e.path)),
+        support_entries=tuple(sorted(entries, key=lambda e: e.path)),
+        metadata_sha256=metadata_hash,
+    )
+    if verify_pins and (
+        manifest.digest != configuration.expected_manifest_sha256
+        or interpreter.sha256 != configuration.expected_interpreter_sha256
+    ):
+        raise ProvenanceFailure(PythonRuntimeReason.RUNTIME_INTEGRITY_FAILURE, "configured_digest")
+    return manifest
+
+
+def revalidate(
+    configuration: PythonDistributionConfiguration, retained: PythonDistributionIdentity
+) -> DistributionManifest:
+    try:
+        manifest = inventory(configuration)
+        if manifest.identity() != retained:
+            raise ValueError("changed distribution")
+        return manifest
+    except (ProvenanceFailure, ValueError):
+        raise ProvenanceFailure(
+            PythonRuntimeReason.RUNTIME_REVALIDATION_FAILED, "current_distribution"
+        ) from None

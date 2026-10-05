@@ -21,7 +21,7 @@ def test_empty_database_migrates_and_survives_reopen(tmp_path: Path) -> None:
     assert current_revision(database) is None
 
     upgrade_database(database)
-    assert current_revision(database) == "0009_runtime_confinement"
+    assert current_revision(database) == "0010_python_provenance"
     assert set(inspect(database.migration_engine).get_table_names()) == {
         "alembic_version",
         "artifact_spool",
@@ -33,6 +33,7 @@ def test_empty_database_migrates_and_survives_reopen(tmp_path: Path) -> None:
         "python_resource_details",
         "python_resource_operations",
         "python_resource_budget_entries",
+        "python_runtime_evidence",
         "imported_artifacts",
         "result_outbox",
         "runtime_interactions",
@@ -46,7 +47,7 @@ def test_empty_database_migrates_and_survives_reopen(tmp_path: Path) -> None:
 
     reopened = RuntimeDatabase(database_path)
     try:
-        assert current_revision(reopened) == "0009_runtime_confinement"
+        assert current_revision(reopened) == "0010_python_provenance"
         upgrade_database(reopened)
     finally:
         reopened.close()
@@ -66,7 +67,7 @@ def test_invocation_fingerprint_migration_upgrades_milestone_4_schema(
         assert "invocation_fingerprint" not in columns
 
         upgrade_database(database)
-        assert current_revision(database) == "0009_runtime_confinement"
+        assert current_revision(database) == "0010_python_provenance"
         columns = {
             column["name"]
             for column in inspect(database.migration_engine).get_columns("runtime_runs")
@@ -104,7 +105,7 @@ def test_artifact_sync_migration_preserves_milestone_5_spool_metadata(
             )
 
         upgrade_database(database)
-        assert current_revision(database) == "0009_runtime_confinement"
+        assert current_revision(database) == "0010_python_provenance"
         with database.migration_engine.connect() as connection:
             row = connection.execute(
                 text(
@@ -134,7 +135,7 @@ def test_resource_session_migration_upgrades_previous_node_schema(tmp_path: Path
             )
 
         upgrade_database(database)
-        assert current_revision(database) == "0009_runtime_confinement"
+        assert current_revision(database) == "0010_python_provenance"
         tables = set(inspect(database.migration_engine).get_table_names())
         assert {"runtime_interactions", "runtime_resources", "runtime_sessions"} <= tables
         with database.migration_engine.connect() as connection:
@@ -178,7 +179,7 @@ def test_e4_migration_upgrades_e3_without_rewriting_import_state(tmp_path: Path)
                 {"digest": "a" * 64},
             )
         upgrade_database(database)
-        assert current_revision(database) == "0009_runtime_confinement"
+        assert current_revision(database) == "0010_python_provenance"
         assert (
             "preparation_materializations" in inspect(database.migration_engine).get_table_names()
         )

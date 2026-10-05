@@ -25,6 +25,12 @@ class ClosedProbe(StrEnum):
     SUPERVISOR_DEATH = "supervisor_death"
 
 
+class TrustedPythonOperation(StrEnum):
+    """Separate from the unchanged thirteen E5-C synthetic probes."""
+
+    IDENTITY = "python_identity"
+
+
 class Record(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -87,7 +93,7 @@ class ProbeEvidence(Record):
     profile: Literal["m20-e5-linux-bwrap-cgroup@1"] = "m20-e5-linux-bwrap-cgroup@1"
     operation_id: RuntimeCorrelation
     boot_generation: RuntimeCorrelation
-    probe: ClosedProbe
+    probe: ClosedProbe | TrustedPythonOperation
     helper_sha256: Sha256Digest
     bubblewrap_sha256: Sha256Digest
     kernel: str = Field(min_length=1, max_length=128)

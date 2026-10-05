@@ -4119,6 +4119,65 @@
       "title": "PythonBackendIdentity",
       "type": "object"
     },
+    "PythonDistributionIdentity": {
+      "additionalProperties": false,
+      "description": "Logical pins, not a host path, installer attestation, readiness or authority.",
+      "properties": {
+        "entry_count": {
+          "$ref": "#/$defs/Limit"
+        },
+        "interpreter_relative_path": {
+          "const": "bin/python3.12",
+          "title": "Interpreter Relative Path",
+          "type": "string"
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "manifest_version": {
+          "const": "m20-e5-python-distribution@1",
+          "title": "Manifest Version",
+          "type": "string"
+        },
+        "metadata_sha256": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sha256Digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provisioning": {
+          "const": "OPERATOR_PREPROVISIONED_UV",
+          "title": "Provisioning",
+          "type": "string"
+        },
+        "root_binding_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "runtime_bytes": {
+          "$ref": "#/$defs/Limit"
+        },
+        "support_manifest_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        }
+      },
+      "required": [
+        "manifest_version",
+        "provisioning",
+        "interpreter_relative_path",
+        "manifest_sha256",
+        "root_binding_sha256",
+        "support_manifest_sha256",
+        "metadata_sha256",
+        "entry_count",
+        "runtime_bytes"
+      ],
+      "title": "PythonDistributionIdentity",
+      "type": "object"
+    },
     "PythonEnvironmentEvidence": {
       "additionalProperties": false,
       "properties": {
@@ -4237,7 +4296,10 @@
           "type": "string"
         },
         "base_layout": {
-          "const": "m20-e5-system-python@1",
+          "enum": [
+            "m20-e5-system-python@1",
+            "m20-e5-uv-python@1"
+          ],
           "title": "Base Layout",
           "type": "string"
         },
@@ -4252,6 +4314,17 @@
         "closure_sha256": {
           "$ref": "#/$defs/Sha256Digest"
         },
+        "distribution": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PythonDistributionIdentity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "implementation": {
           "const": "CPython",
           "title": "Implementation",
@@ -4261,7 +4334,10 @@
           "$ref": "#/$defs/SymbolicName"
         },
         "stdlib_layout": {
-          "const": "m20-e5-system-stdlib@1",
+          "enum": [
+            "m20-e5-system-stdlib@1",
+            "m20-e5-uv-stdlib@1"
+          ],
           "title": "Stdlib Layout",
           "type": "string"
         },
@@ -4671,6 +4747,7 @@
         "verification": {
           "enum": [
             "VERIFIED",
+            "PROVENANCE_VERIFIED",
             "REJECTED"
           ],
           "title": "Verification",

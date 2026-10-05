@@ -1,8 +1,9 @@
-"""Closed E5-C Linux probes, NOT a Python provider or generic process API.
+"""Closed E5-C probes and the E5-D fixed identity, never a generic process API.
 
 The statically linked reviewed helper owns deadlines, concurrent pipe caps, the
 attach barrier, a separate death guardian and exact-subtree cleanup. Python is
-only the existing Node control plane; it never invokes a Python payload here.
+only the Node control plane for C; D launches only statically verified trusted
+CPython with one constant identity program, never a caller/source payload.
 """
 
 from __future__ import annotations
@@ -36,6 +37,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from ..identity import NodeId
 from ..persistence.database import RuntimeDatabase
 from ..tools import ToolAvailability, ToolRegistry
+from .python_distribution import PythonDistributionConfiguration, inventory
 from .runtime_confinement_models import (
     ClosedProbe,
     ConfinementCheck,
@@ -44,6 +46,7 @@ from .runtime_confinement_models import (
     ProbeLimits,
     RuntimeConfinementConfiguration,
     StopReason,
+    TrustedPythonOperation,
 )
 
 PROFILE = "m20-e5-linux-bwrap-cgroup@1"
@@ -54,7 +57,7 @@ class RuntimeConfinementUnavailable(RuntimeError):
         self,
         detail: PythonRuntimeReason | None = None,
         *,
-        probe: ClosedProbe | None = None,
+        probe: ClosedProbe | TrustedPythonOperation | None = None,
         stage: ConfinementFailureStage | None = None,
     ) -> None:
         self.probe = probe
@@ -98,7 +101,9 @@ class _Report(BaseModel):
     stderr: str = Field(max_length=8192, pattern=r"^(?:[0-9a-f]{2})*$", strict=True)
 
 
-def _decode_report(data: bytes, probe: ClosedProbe, limits: ProbeLimits) -> _Report:
+def _decode_report(
+    data: bytes, probe: ClosedProbe | TrustedPythonOperation, limits: ProbeLimits
+) -> _Report:
     """Closed bounded wire evidence; never expose Pydantic's raw input diagnostics."""
     try:
         if len(data) > 20000:
@@ -117,7 +122,12 @@ def _decode_report(data: bytes, probe: ClosedProbe, limits: ProbeLimits) -> _Rep
 
 
 def _completed_proof(
-    probe: ClosedProbe, report: _Report, *, returncode: int | None, empty: bool, limits: ProbeLimits
+    probe: ClosedProbe | TrustedPythonOperation,
+    report: _Report,
+    *,
+    returncode: int | None,
+    empty: bool,
+    limits: ProbeLimits,
 ) -> bool:
     return (
         empty
@@ -229,10 +239,17 @@ def _trusted_tool(tools: ToolRegistry, name: str, digest: str, *, static_elf: bo
     return path
 
 
-def _passed(probe: ClosedProbe, report: _Report) -> bool:
+def _passed(probe: ClosedProbe | TrustedPythonOperation, report: _Report) -> bool:
     if not report.attached or not report.empty or report.memory_peak > 64 * 1024 * 1024:
         return False
     marker = bytes.fromhex(report.stdout)
+    if probe is TrustedPythonOperation.IDENTITY:
+        return (
+            report.reason is StopReason.EXITED
+            and report.exit == 0
+            and not report.pids
+            and not report.oom
+        )
     if probe is ClosedProbe.PIDS:
         return (
             report.pids > 0
@@ -345,10 +362,47 @@ class LinuxRuntimeConfinementBackend:
         *,
         cancellation: CancellationService | None = None,
     ) -> ProbeEvidence:
-        from .runtime_confinement_store import ConfinementJournal
-
         if not isinstance(operation, ClosedProbe):
             raise ValueError("closed trusted probe required")
+        return await self._run_operation(operation, operation_id, limits, cancellation=cancellation)
+
+    async def run_identity(
+        self,
+        distribution: PythonDistributionConfiguration,
+        operation_id: RuntimeCorrelation,
+        *,
+        cancellation: CancellationService | None = None,
+    ) -> ProbeEvidence:
+        """Only the fixed -I -S -B identity; explicit pinned operator material first.
+
+        No code, argv, executable, mount or environment parameter from a capability.
+        Rehash before and after; historical journal replay is not current integrity.
+        """
+        before = inventory(distribution)
+        result = await self._run_operation(
+            TrustedPythonOperation.IDENTITY,
+            operation_id,
+            ProbeLimits(),
+            distribution=distribution,
+            cancellation=cancellation,
+        )
+        if inventory(distribution) != before:
+            from .python_distribution import ProvenanceFailure
+
+            raise ProvenanceFailure(PythonRuntimeReason.RUNTIME_INTEGRITY_FAILURE, "post_identity")
+        return result
+
+    async def _run_operation(
+        self,
+        operation: ClosedProbe | TrustedPythonOperation,
+        operation_id: RuntimeCorrelation,
+        limits: ProbeLimits,
+        *,
+        distribution: PythonDistributionConfiguration | None = None,
+        cancellation: CancellationService | None = None,
+    ) -> ProbeEvidence:
+        from .runtime_confinement_store import ConfinementJournal
+
         if cancellation is not None:
             await cancellation.checkpoint()
         journal = ConfinementJournal(self._database)
@@ -378,6 +432,7 @@ class LinuxRuntimeConfinementBackend:
             self._host_boot(),
             self._parent_pin(),
             self._clock(),
+            input_sha256=inventory(distribution).digest if distribution is not None else None,
         )
         if previous is not None:
             return previous  # historical evidence only; check() always uses fresh identities
@@ -414,15 +469,27 @@ class LinuxRuntimeConfinementBackend:
                 tempfile.TemporaryDirectory(
                     prefix="e5-trusted-probe-", dir=self._root
                 ) as temporary,
-                socket.socket() as listener,
+                socket.socket() if distribution is None else contextlib.nullcontext() as listener,
             ):
                 source = Path(temporary)
-                (source / "sentinel").write_bytes(b"E5_SOURCE\n")
-                listener.bind(("127.0.0.1", 0))
-                listener.listen(1)
-                # Deliberately seed an inherited socket: helper close_range removes it
-                # before bubblewrap. No socket/control descriptor enters the fixture.
-                listener.set_inheritable(True)
+                if listener is not None:
+                    (source / "sentinel").write_bytes(b"E5_SOURCE\n")
+                    listener.bind(("127.0.0.1", 0))
+                    listener.listen(1)
+                    # Deliberately seed an inherited socket: helper close_range removes it
+                    # before bubblewrap. No socket/control descriptor enters the fixture.
+                    listener.set_inheritable(True)
+                extra: tuple[str, ...] = ()
+                if operation is TrustedPythonOperation.IDENTITY:
+                    assert distribution is not None
+                    manifest = inventory(distribution)
+                    source = distribution.distribution_root
+                    names = sorted({e.path.split("#")[0] for e in manifest.support_entries})
+                    # Every alias is a pinned, one-hop internal regular target.
+                    extra = (
+                        manifest.schema_version,
+                        *(str(distribution.system_library_root / name) for name in names),
+                    )
                 process = await asyncio.create_subprocess_exec(
                     str(helper),
                     "requester" if operation is ClosedProbe.REQUESTER_DEATH else "supervise",
@@ -433,16 +500,19 @@ class LinuxRuntimeConfinementBackend:
                     str(limits.processes),
                     str(limits.output_bytes),
                     str(limits.seconds),
+                    *extra,
                     stdin=read_fd,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.DEVNULL,
-                    pass_fds=(listener.fileno(),),
+                    pass_fds=(listener.fileno(),) if listener is not None else (),
                     start_new_session=True,
                     cwd=group,
                     env={
                         "PATH": "/usr/bin:/bin",
                         "LANG": "C",
-                        "E5_PROBE_PORT": str(listener.getsockname()[1]),
+                        "E5_PROBE_PORT": str(listener.getsockname()[1])
+                        if listener is not None
+                        else "1",
                     },
                 )
                 os.close(read_fd)
@@ -655,7 +725,7 @@ class LinuxRuntimeConfinementBackend:
         group.rmdir()  # cgroup pseudo-files disappear with their empty group
 
 
-def _detail(probe: ClosedProbe) -> PythonRuntimeReason | None:
+def _detail(probe: ClosedProbe | TrustedPythonOperation) -> PythonRuntimeReason | None:
     if probe is ClosedProbe.PIDS:
         return PythonRuntimeReason.PROCESS_LIMIT_UNAVAILABLE
     if probe is ClosedProbe.MEMORY:

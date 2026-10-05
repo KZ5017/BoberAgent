@@ -4,6 +4,11 @@
 E3 import and E4 confinement/source-materialization acceptance; Python runtime behavior
 has not begun.
 
+**E5-D refinement:** the original Tool Registry/system-interpreter selection assumption
+below is superseded by [ADR 0021](0021-m20-e5-prepared-python-resource-and-enforcement.md#approved-e5-d-refinement).
+The approved source is an explicit operator-preprovisioned uv distribution, never a
+production installer or PATH fallback. The remaining authority/E-F rules are unchanged.
+
 ## Decision
 
 The initial supported preparation profile is Kali attacker-side, noninteractive, user-space

@@ -23,6 +23,7 @@ class RuntimeConfinementRow(Base):
     boot_generation: Mapped[str] = mapped_column(String(255))
     host_boot: Mapped[str] = mapped_column(String(64))
     parent_sha256: Mapped[str] = mapped_column(String(64))
+    input_sha256: Mapped[str | None] = mapped_column(String(64))
     state: Mapped[str] = mapped_column(String(32))
     started_at: Mapped[datetime] = mapped_column(UTCDateTime())
     finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
@@ -79,6 +80,20 @@ class PythonResourceBudgetRow(Base):
     category: Mapped[str] = mapped_column(String(64), primary_key=True)
     reserved: Mapped[int] = mapped_column(Integer)
     spent: Mapped[int | None] = mapped_column(Integer)
+
+
+class PythonRuntimeEvidenceRow(Base):
+    __tablename__ = "python_runtime_evidence"
+    operation_id: Mapped[str] = mapped_column(
+        ForeignKey("python_resource_operations.operation_id", ondelete="RESTRICT"), primary_key=True
+    )
+    resource_id: Mapped[str] = mapped_column(
+        ForeignKey("python_resource_details.resource_id", ondelete="RESTRICT")
+    )
+    binding_sha256: Mapped[str] = mapped_column(String(64))
+    evidence_sha256: Mapped[str] = mapped_column(String(64))
+    evidence_json: Mapped[JsonObject] = mapped_column(JSON)
+    manifest_json: Mapped[JsonObject] = mapped_column(JSON)
 
 
 class RunRow(Base):

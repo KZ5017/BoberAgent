@@ -696,8 +696,11 @@ for exact C2/C3 refs and digests. This negative result is neither safety nor aut
 
 ## M20-E5-C confinement-only Kali preflight
 
-**IMPLEMENTED; first real Kali acceptance FAILED; offline requester-report fix complete;
-real thirteen-probe rerun REQUIRED.** This operator-only check is
+**E5-C CLOSED on operator real thirteen-probe acceptance.** The first failed run and
+offline correction remain historical; the successful rerun retained digest
+`3f01339cf9c473004d1b038fa3b6afe9427897d06ec096f354450b4257ce08b8`.
+Rebuild/repin the helper after reviewed native changes, including E5-D, and run fresh
+controls for the new operation. This operator-only check is
 not E5-H Python preparation and is never invoked by normal pytest or automatically by Codex.
 It executes only fixed native synthetic probes. No Python runtime/interpreter probe, venv,
 acquired source, package install, target/public network, Core/MCP traffic or execution authority.
@@ -728,8 +731,8 @@ For the requester-death fix, reuse the operator's already verified runtime/deleg
 inside the existing transient service; rebuild the helper and recompute its pin with the
 commands below. Do not reuse its old SHA-256 or change host-wide delegation. The first run
 passed eleven probes, then lost requester-death JSON because the independent supervisor
-returned through `_exit` without flushing. SIGKILL alone is not proof. This fix does not close
-real acceptance: the rerun must pass **all thirteen**, including supervisor_death.
+returned through `_exit` without flushing. SIGKILL alone is not proof. The subsequent
+operator rerun closed C with **all thirteen**, including supervisor_death.
 
 ```bash
 set -eu
@@ -782,7 +785,98 @@ uv run pytest packages/execution-node/tests/test_runtime_confinement_linux.py
 Without opt-in delegation that test skips; a skip is not enforcement proof. Supplying an
 invalid/broken opt-in configuration fails, not skips. Do not run either real mode automatically
 during implementation. After even a successful check the runtime remains UNAVAILABLE / NOT READY;
-E5-D–H and M20-F have not begun. No production execute_plan() authorization is created.
+E5-D is now implemented offline, real provenance acceptance required; E5-E–H and M20-F
+have not begun. No production execute_plan() authorization is created.
+
+## M20-E5-D trusted CPython provenance-only Kali preflight
+
+**IMPLEMENTED OFFLINE; real Kali acceptance REQUIRED.** Use the operator's already
+preprovisioned uv-managed CPython **3.12** distribution, not Kali's system 3.13 and not
+an install/download/discovery operation. No venv/source preparation, Secret, target access,
+Core/MCP traffic, new authority, Resource or READY state. This is manual-only; portable
+pytest uses synthetic material, never automatically invokes a real candidate.
+
+Use the existing repository control-plane `.venv/bin/python -B`; it is not the candidate.
+The control plane must not create caches in the selected base distribution during proof.
+Keep other writers quiescent; concurrent legitimate cache/library changes also invalidate
+the full manifest. Do not exclude import-visible caches to mask that drift.
+Run as the intended ordinary Node user in the already delegated service. Supply explicit
+canonical absolute roots: no `/lib` alias, writable/symlink substitution parent, `/tmp`,
+PATH or active-venv interpreter selection. Root/Node-owned files and ancestors must be
+non-group/world-writable. A typical candidate is an already provisioned
+`cpython-3.12.14-linux-x86_64-gnu` directory, but its name proves nothing and is not hardcoded.
+Do not install `/usr/bin/python3.12` or replace host Python.
+
+First run **non-executing** inventory and independently review that this is the operator's
+trusted distribution before approving its observed pins. Inventory is not vendor attestation
+or a success/readiness result. It includes all import-visible bin/lib bytes and bounded
+metadata plus the complete statically discovered shared-library closure. Unsupported layout,
+unknown/missing library, metadata, mode or ownership fails closed. Do not chmod host-wide
+parents automatically; a provisioned runtime with unsafe modes needs explicit operator review.
+
+```bash
+set -eu
+E5_PYTHON_ROOT=/absolute/operator-selected/uv-cpython-3.12-distribution
+E5_LIBRARY_ROOT=/usr/lib/x86_64-linux-gnu  # explicit canonical trusted library root
+.venv/bin/python -B scripts/manual-smoke/m20e5d_python_provenance_smoke_test.py \
+  --inventory-only \
+  --distribution-root "$E5_PYTHON_ROOT" \
+  --system-library-root "$E5_LIBRARY_ROOT"
+```
+
+Copy the **reviewed** `manifest_sha256` and `interpreter_sha256` into the variables below.
+Do not use the digest of bin/python alone as the distribution pin. Any runtime/owner/mode/
+parent-root drift after inventory causes check/revalidation to reject, not silently repin.
+
+Choose a dedicated absolute provenance runtime, distinct from a live Node or C-only DB.
+Every helper ancestor must already be non-group/world-writable; installation uses explicit
+0755, not umask. Rebuild the reviewed native helper because D adds a fixed identity operation;
+the previous C helper hash is **not** the new pin. No toolchain/install/delegation provisioning
+is performed by the harness:
+
+```bash
+E5_RUNTIME=/absolute/operator-selected/e5d-provenance-runtime
+E5_CGROUP_PARENT=/sys/fs/cgroup/explicitly-delegated-empty-parent
+E5_MANIFEST_SHA256=REVIEWED_INVENTORY_MANIFEST_SHA256
+E5_INTERPRETER_SHA256=REVIEWED_INVENTORY_INTERPRETER_SHA256
+E5_HELPER="$E5_RUNTIME/tools/e5-confinement-helper"
+install -d -m 0755 -- "$E5_RUNTIME" "$E5_RUNTIME/tools"
+E5_BUILD_DIR=$(mktemp -d)
+cc -static -O2 -Wall -Wextra -Werror \
+  -o "$E5_BUILD_DIR/e5-confinement-helper" \
+  packages/execution-node/src/boberagent_execution_node/preparation/native/e5_confinement.c
+install -m 0755 -- "$E5_BUILD_DIR/e5-confinement-helper" "$E5_HELPER"
+rm -- "$E5_BUILD_DIR/e5-confinement-helper"
+rmdir -- "$E5_BUILD_DIR"
+E5_HELPER_SHA256=$(sha256sum -- "$E5_HELPER" | cut -d ' ' -f 1)
+E5_BWRAP_SHA256=$(sha256sum -- /usr/bin/bwrap | cut -d ' ' -f 1)
+.venv/bin/python -B scripts/manual-smoke/m20e5d_python_provenance_smoke_test.py \
+  --check-provenance \
+  --distribution-root "$E5_PYTHON_ROOT" \
+  --system-library-root "$E5_LIBRARY_ROOT" \
+  --manifest-sha256 "$E5_MANIFEST_SHA256" \
+  --interpreter-sha256 "$E5_INTERPRETER_SHA256" \
+  --node-runtime-directory "$E5_RUNTIME" \
+  --delegated-cgroup-parent "$E5_CGROUP_PARENT" \
+  --trusted-helper "$E5_HELPER" --helper-sha256 "$E5_HELPER_SHA256" \
+  --bubblewrap /usr/bin/bwrap --bubblewrap-sha256 "$E5_BWRAP_SHA256"
+```
+
+Keep the bounded PASS/FAIL summary and the dedicated Node journal/dossier. PASS must show
+exact CPython 3.12.x/Linux/x86_64, full manifest/interpreter/root pins, completed fixed
+confined identity, all thirteen controls and successful full revalidation, with
+`resource_created=false`, `runtime=UNAVAILABLE`, `ready=false`. Repeating the same explicit
+configuration creates fresh proof while retaining prior history; no automatic replay grants
+authority. The host-only harness does **not** fabricate an expired/fake E4 permit or Resource.
+Resource-bound production evidence remains owned by the existing authenticated E5-B claim
+and ledger API; later construction needs fresh eligible preparation authority.
+
+Optional safe negative check: run only `--inventory-only` on an **operator-created disposable
+copy**, pin it, then modify a stdlib file in that copy and rerun with the original pins.
+It must reject before candidate execution. Do not mutate the trusted installed distribution,
+system Python, live Resource or retained source. Ordinary CI already covers byte/mode/root
+substitution and identity mismatches. This task does not automatically run a Kali check.
+E5-E–H, E6–E9 and M20-F remain unimplemented; production execute_plan() stays denied.
 
 ## M20-E3 authenticated opaque Artifact import (operator-only)
 

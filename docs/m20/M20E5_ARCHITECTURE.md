@@ -1,6 +1,6 @@
 # M20-E5 — Prepared Python runtime architecture
 
-**Status: E5-A–B COMPLETE; E5-C IMPLEMENTED / REAL KALI ACCEPTANCE PENDING; E5-D–H NOT STARTED.** E1–E3 COMPLETE,
+**Status: E5-A–C COMPLETE/CLOSED; E5-D IMPLEMENTED OFFLINE / REAL ACCEPTANCE REQUIRED; E5-E–H NOT STARTED.** E1–E3 COMPLETE,
 E4 COMPLETE/CLOSED with real Kali acceptance; E6–E9 NOT STARTED; M20-E OPEN;
 M20-F NOT STARTED. This package specifies future implementation, not a permission,
 host capability attestation, or claim that a usable Python runtime exists today.
@@ -55,7 +55,7 @@ Production `ProcessService.execute_plan()` remains denied throughout E.
 | Node `RuntimeResourceRow` / `ResourceRuntimeState` | Real reusable Resource identity/lifecycle already exist; add provider detail, not a parallel Resource store. |
 | Node `RuntimeSessionRow` | No use in E5. A venv is not an interactive Session. |
 | SDK `RuntimePreparationService` | Final `prepare_runtime` returns the existing receipt. E5 internal provider evidence is not that final receipt; completion wiring is E6. |
-| Tool Registry | Single configured tool selection boundary, but current availability/version probes are not confined provenance proof. Generic PATH resolution/version subprocess cannot supply E5 trust. |
+| Tool Registry | Configured backend-tool selection; E5-D uses explicit operator distribution/library roots and full pins. Availability/PATH/version probes are not confined interpreter provenance proof. |
 | `ManagedProcessService` | Generic argv execution, direct-child cancellation and output spillover are insufficient for E5 hard limits/descendants. `execute_plan` denies today. |
 | E4 `ConfinementBackend.preflight()` | Proves only four E4 features. Its tmpfs, timeout and process-group probe do not prove full runtime limits. Keep that proof's meaning unchanged. |
 | Workspace manager | Logical ownership/path confinement, not storage quota. E5 needs Resource ownership and real enforcement. |
@@ -108,15 +108,23 @@ See [typed boundary](M20E5_RUNTIME_RESOURCE.md#e5-a-implemented-boundary) and
 
 E5-C implements the selected backend's closed trusted probes, independent supervisor/guardian
 and Node journal. See [E5-C implementation](M20E5C_IMPLEMENTATION.md). Portable wiring tests
-are not active enforcement proof. All controls/death directions still require operator Kali
-acceptance. No interpreter, environment, E5 transport wiring or READY transition is added.
+are not active enforcement proof. Operator real acceptance has now closed E5-C (thirteen
+probes; retained digest in its implementation record). C itself added no interpreter,
+environment, E5 transport wiring or READY transition.
 
 No E5 architecture choice remains delegated to an implementation shortcut. Supplied Kali
 reconnaissance confirms namespace availability and delegated cgroup control-file writes,
-not active enforcement. CPython 3.12 is absent; 3.13.7 is not an approved fallback. Trusted
-layout, sized writable mounts and active death/limit probes remain **unverified prerequisites**;
+not active enforcement. System CPython 3.12 is absent; 3.13.7 is not an approved fallback.
+An explicit preprovisioned uv-managed CPython 3.12 distribution is approved for E5-D;
+its real provenance acceptance is still required. Trusted
+interpreter layout remains an **unverified real-host prerequisite**;
 see [acceptance](M20E5_ACCEPTANCE.md#operator-supplied-reconnaissance-e5-a). E4's CPython probe
 may use another host version; it is not E5 interpreter provenance. Do not install Python,
 change systemd configuration, grant root or weaken a limit to make acceptance pass.
 If the approved backend cannot meet this package, report the failed prerequisite and stop
 positive acceptance; a different backend needs an explicit architecture revision.
+
+E5-D implements bounded full-distribution inventory and fixed confined identity, with
+immutable Resource-bound PROVENANCE_VERIFIED evidence. It never constructs an environment
+or makes READY; the approved uv-source refinement and trust transition are recorded in
+ADR 0021 and [E5-D implementation](M20E5D_IMPLEMENTATION.md).

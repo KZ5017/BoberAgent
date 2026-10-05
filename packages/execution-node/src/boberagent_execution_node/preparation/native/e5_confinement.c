@@ -39,7 +39,7 @@ static const char *names[] = {"isolation", "pids", "memory", "bytes", "inodes",
 static int probe_index(const char *s) {
     for (unsigned i = 0; i < sizeof(names)/sizeof(names[0]); i++)
         if (!strcmp(s, names[i])) return (int)i;
-    return -1;
+    return !strcmp(s,"python_identity") ? 13 : -1;
 }
 static unsigned long number(const char *s, unsigned long lo, unsigned long hi) {
     char *end; errno = 0;
@@ -101,7 +101,7 @@ static void sleep_fixture(void) {
     /* Finite even if all tested mechanisms unexpectedly fail. */
     struct timespec t = {10, 0}; nanosleep(&t, NULL); _exit(0);
 }
-static void restrict_syscalls(void) {
+static void restrict_syscalls(int identity) {
     struct __user_cap_header_struct h = {_LINUX_CAPABILITY_VERSION_3, 0};
     struct __user_cap_data_struct d[2] = {{0}, {0}};
     if (syscall(SYS_capset, &h, d) || prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)) _exit(90);
@@ -117,7 +117,10 @@ static void restrict_syscalls(void) {
         DENY(SYS_mount), DENY(SYS_umount2), DENY(SYS_unshare), DENY(SYS_setns),
         DENY(SYS_fsopen), DENY(SYS_fsmount), DENY(SYS_move_mount), DENY(SYS_open_tree),
         DENY(SYS_mount_setattr), DENY(SYS_clone3), DENY(SYS_ptrace), DENY(SYS_bpf),
-        DENY(SYS_execve), DENY(SYS_execveat),
+        /* Only the fixed identity fixture needs an initial trusted execve.
+         * It still has no caller code/argv API; all other closed probes deny it.
+         * A second exec is rejected by the pointer-bound rule below. */
+        DENY(SYS_execveat),
 #undef DENY
         /* fork remains allowed; clone with ANY namespace flag is not. */
         BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K, SYS_clone, 0, 3),
@@ -128,6 +131,15 @@ static void restrict_syscalls(void) {
         BPF_STMT(BPF_RET|BPF_K, SECCOMP_RET_ERRNO|EPERM),
         BPF_STMT(BPF_RET|BPF_K, SECCOMP_RET_ALLOW)
     };
+    if (!identity) {
+        struct sock_filter noexec[]={
+            BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,nr)),
+            BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,SYS_execve,0,1),
+            BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ERRNO|EPERM),
+            BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ALLOW)};
+        struct sock_fprog noexecp={4,noexec};
+        if (prctl(PR_SET_SECCOMP,SECCOMP_MODE_FILTER,&noexecp)) _exit(90);
+    }
     struct sock_fprog p = {(unsigned short)(sizeof(f)/sizeof(f[0])), f};
     if (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &p)) _exit(90);
 }
@@ -149,11 +161,44 @@ static void setup_fixture(int op, unsigned port) {
     }
     /* Parent root, /proc and all non-scratch bindings are read-only. */
     if (mount(NULL, "/", NULL, MS_REMOUNT|MS_RDONLY|MS_NOSUID|MS_NODEV, NULL)) _exit(91);
-    restrict_syscalls();
+    restrict_syscalls(op==13);
     /* Inspect actual descriptors after close_range. No socket/control FD is usable. */
     for (int fd = 0; fd < 1024; fd++) {
         struct stat s;
         if (!fstat(fd, &s) && (S_ISSOCK(s.st_mode) || fd > 2)) _exit(92);
+    }
+    if (op==13) {
+        /* Fixed BoberAgent identity, no source/venv/packages, site or env input.
+         * Bind this initial syscall's path pointer. After exec replaces the
+         * address space, ordinary subsequent execve calls fail closed. This is
+         * not a hostile-code executor or protection against a compromised,
+         * operator-trusted interpreter recreating the same address. */
+        static char loader[]="/runtime/bin/python3.12";
+        uintptr_t address=(uintptr_t)loader;
+        struct sock_filter once[]={
+            BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,nr)),
+            BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,SYS_execve,0,5),
+            BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,args[0])),
+            BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,(uint32_t)address,0,2),
+            BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,args[0])+4),
+            BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,(uint32_t)(address>>32),1,0),
+            BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ERRNO|EPERM),
+            BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ALLOW)};
+        struct sock_fprog oncep={8,once};
+        if (prctl(PR_SET_SECCOMP,SECCOMP_MODE_FILTER,&oncep)) _exit(90);
+        static char program[]=
+            "import sys,os,json,sysconfig; "
+            "print(json.dumps(dict(implementation=sys.implementation.name,"
+            "version='.'.join(map(str,sys.version_info[:3])),platform=sys.platform,"
+            "architecture=os.uname().machine,cache_tag=sys.implementation.cache_tag,"
+            "soabi=sysconfig.get_config_var('SOABI'),prefix=sys.prefix,"
+            "base_prefix=sys.base_prefix,executable=sys.executable,paths=sys.path,"
+            "isolated=sys.flags.isolated,no_site=sys.flags.no_site,"
+            "no_bytecode=sys.dont_write_bytecode),sort_keys=True,separators=(',',':')))";
+        char *args[]={loader,"-I","-S","-B","-c",program,NULL};
+        char *env[]={"LANG=C","HOME=/work/home","TMPDIR=/work/tmp",
+            "LD_LIBRARY_PATH=/runtime/lib:/support",NULL};
+        execve(loader,args,env); _exit(90);
     }
     if (op == 0) {
         const char *hidden[] = {"/etc/passwd", "/home", "/run", "/sys", "/dev/shm",
@@ -243,9 +288,11 @@ static void hex_print(const unsigned char *data, size_t n) {
     for (size_t i=0; i<n; i++) printf("%02x", data[i]);
 }
 static void supervisor(int argc, char **argv) {
-    if (argc != 9 || probe_index(argv[5]) < 0) _exit(90);
+    if (argc<9 || probe_index(argv[5]) < 0) _exit(90);
     const char *bwrap=argv[2], *helper=argv[3], *source=argv[4];
     int op=probe_index(argv[5]);
+    if ((op!=13 && argc!=9) || (op==13 && (argc<11 || argc>42
+        || strcmp(argv[9],"m20-e5-python-distribution@1")))) _exit(90);
     unsigned cap=(unsigned)number(argv[6], 6, 8);
     unsigned output=(unsigned)number(argv[7], 1024, MAX_OUTPUT);
     unsigned seconds=(unsigned)number(argv[8], 1, 3);
@@ -311,8 +358,41 @@ static void supervisor(int argc, char **argv) {
             "--dir", "/work/tmp", "--dir", "/work/home", "--dir", "/trusted",
             "--ro-bind", (char*)helper, "/trusted/helper", "--ro-bind", (char*)source, "/source",
             "--setenv", "HOME", "/work/home", "--setenv", "TMPDIR", "/work/tmp",
-            "--chdir", "/work", "/trusted/helper", "fixture", (char*)names[op], port, NULL};
+            "--chdir", "/work", "/trusted/helper", "fixture", op==13 ? "python_identity" : (char*)names[op], port, NULL};
         char *env[]={"PATH=/usr/bin:/bin", "LANG=C", NULL};
+        if (op==13) {
+            /* Paths are produced only by the Node's fully verified operator
+             * distribution closure. No generic executable/code selection. */
+            char *identity_args[256]; unsigned k=0;
+#define ARG(s) identity_args[k++]=(char*)(s)
+            const char *base[]={bwrap,"--unshare-all","--die-with-parent","--new-session",
+                "--clearenv","--uid","0","--gid","0","--cap-drop","ALL",
+                "--cap-add","CAP_SYS_ADMIN","--proc","/proc","--remount-ro","/proc",
+                "--dir","/work","--dir","/work/venv","--dir","/work/tmp","--dir",
+                "/work/home","--dir","/trusted","--dir","/runtime","--dir","/support","--dir","/lib64",
+                "--ro-bind",helper,"/trusted/helper"};
+            for (unsigned j=0;j<sizeof(base)/sizeof(base[0]);j++) ARG(base[j]);
+            char bin[4096],lib[4096];
+            if (snprintf(bin,sizeof(bin),"%s/bin",source)>=(int)sizeof(bin)
+                || snprintf(lib,sizeof(lib),"%s/lib",source)>=(int)sizeof(lib)) _exit(90);
+            ARG("--ro-bind");ARG(bin);ARG("/runtime/bin");
+            ARG("--ro-bind");ARG(lib);ARG("/runtime/lib");
+            char destinations[32][256];
+            for (int j=10;j<argc;j++) {
+                const char *name=strrchr(argv[j],'/');
+                if (!name || !*++name || strlen(name)>128 || strspn(name,
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.+-")!=strlen(name)) _exit(90);
+                snprintf(destinations[j-10],256,"/support/%s",name);
+                ARG("--ro-bind");ARG(argv[j]);ARG(destinations[j-10]);
+                if (!strcmp(name,"ld-linux-x86-64.so.2")) {
+                    ARG("--ro-bind");ARG(argv[j]);ARG("/lib64/ld-linux-x86-64.so.2");
+                }
+            }
+            ARG("--chdir");ARG("/work");ARG("/trusted/helper");
+            ARG("identity-fixture");identity_args[k]=NULL;
+#undef ARG
+            execve(bwrap,identity_args,env); _exit(90);
+        }
         execve(bwrap, args, env); _exit(90);
     }
     close(gate[0]); close(out[1]); close(err[1]);
@@ -405,7 +485,8 @@ int main(int argc,char **argv) {
             kill(getpid(),SIGKILL);
         close(ready[0]); close(owner[1]); waitpid(child,NULL,0); return 90;
     }
-    if (argc==4 && !strcmp(argv[1],"fixture") && probe_index(argv[2])>=0) {
+    if (argc==2 && !strcmp(argv[1],"identity-fixture")) { setup_fixture(13,1); return 0; }
+    if (argc==4 && !strcmp(argv[1],"fixture") && probe_index(argv[2])>=0 && probe_index(argv[2])<13) {
         setup_fixture(probe_index(argv[2]),(unsigned)number(argv[3],1,65535)); return 0;
     }
     return 90;

@@ -1,6 +1,6 @@
 # M20-E5 recovery, expiry and failure classification
 
-**E5-B metadata recovery COMPLETE; E5-C IMPLEMENTED / REAL ACCEPTANCE PENDING; live runtime revalidation NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-B metadata recovery COMPLETE; E5-C CLOSED; E5-D full distribution revalidation implemented offline; constructed-runtime revalidation NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 Historical evidence, current integrity, authority and execution readiness are separate.
 
 ## Implemented E5-B recovery boundary
@@ -82,6 +82,12 @@ or Session closure. Durable lease/operation generation prevents cleanup racing c
 evidence/history persists after bytes are removed.
 
 ## Revalidation algorithm
+
+The following complete constructed-environment algorithm remains future E5 work. E5-D
+currently implements full fresh static distribution rehash/comparison only, with current
+root/trust/schema pins. It never marks a Resource VALID/READY. Immutable provenance survives
+reopen; an interrupted inspect claim is quarantined, never completed by recovery. See
+[E5-D implementation](M20E5D_IMPLEMENTATION.md#evidence-accounting-and-durability).
 
 1. Revalidate current Core D applicability before sending the typed request. Node checks
    principal, permit/digest/time, exact Run/Node/provider/Resource/spec binding and allowed

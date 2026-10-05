@@ -1,7 +1,8 @@
 # ADR 0021 — E5 prepared Python Resource and mandatory enforcement
 
 **Status:** Accepted architecture; E5-A typed boundary and E5-B durable metadata ownership COMPLETE.
-E5-C enforcement IMPLEMENTED / REAL KALI ACCEPTANCE PENDING; E5-D–H NOT STARTED; E5 remains OPEN.
+E5-C CLOSED on operator real acceptance; E5-D implemented offline, real acceptance required;
+E5-E–H NOT STARTED; E5 remains OPEN.
 Refines ADRs 0018–0020 without changing E1 authority, E4 publication, or the E/F boundary.
 
 ## Context
@@ -25,7 +26,8 @@ before construction; incomplete controls cannot yield READY. RLIMITs and post-wr
 accounting are not equivalent substitutes. No silent sudo, host reconfiguration or installer.
 
 Runtime construction is limited to provider-owned inspect/create/verify operations. Tool
-Registry selects the approved interpreter; the provider verifies its trusted runtime closure.
+Registry selects backend tools; the E5-D refinement below selects the explicit interpreter
+distribution and the provider verifies its trusted runtime closure.
 No acquired module, entrypoint, README command, package installer, secret or network is used.
 E5 evidence is intermediate; E6 owns final manifest/Result/Core acceptance, E7 end-to-end
 recovery, and F separate execution readiness/authorization/launch.
@@ -41,3 +43,26 @@ unenforced budgets. Existing E4 acceptance remains valid but is not upgraded to 
 Prepared bytes/history may survive authority expiry; current revalidation/reuse still needs
 current authority. No production behavior, migration or execution authorization is added by
 this ADR. `execute_plan()` remains denied; M20-E remains OPEN and M20-F NOT STARTED.
+
+## Approved E5-D refinement
+
+The operator approved an explicitly configured, preprovisioned **uv-managed CPython 3.12
+Linux x86_64 distribution** instead of requiring the absent `/usr/bin/python3.12`.
+This supersedes the system-only interpreter-selection assumption in ADR 0020 and the
+original provider spec, not the confinement, empty-dependency or authority requirements.
+uv is only out-of-band provisioning: production does not invoke it, discover/download/install
+Python, use PATH, or fall back to system Python/3.13. Explicit root/library configuration
+and reviewed full-distribution/binary pins are required before candidate execution.
+
+Root or Node-user-owned runtime material with non-group/world-writable parents is allowed;
+malicious same-UID operator/root compromise is not newly covered. Inventory hashes include
+stdlib/extensions/shared libraries/metadata, links, owners/modes and root binding. Self-declared
+metadata/path names do not attest vendor origin. Only fixed confined `-I -S -B` identity
+executes; no acquired source or environment is constructed.
+
+Existing `PythonRuntimeEvidence-v1` gains a distinct `PROVENANCE_VERIFIED` inspection verdict
+with no environment. Resource lifecycle/current validity/readiness remain separate and
+unchanged. Node migration 0010 adds immutable evidence attached to existing E5-B operation/
+Resource ownership; it does not relax READY guards or add transport/authority. See the
+[E5-D implementation](../m20/M20E5D_IMPLEMENTATION.md) for the exact supported closure,
+fixed operation, replay/revalidation and operator acceptance limits.

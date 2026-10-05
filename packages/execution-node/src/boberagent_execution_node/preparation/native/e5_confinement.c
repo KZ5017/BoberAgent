@@ -371,6 +371,44 @@ static void projection_records(const char *file,const char *source) {
     if (!records) _exit(90);
     free(data);
 }
+/* Private fixed identity launch, called only after the supervisor's admission
+ * and attach gate. Keeping it separate permits offline argument-boundary tests
+ * without substituting the production namespace/cgroup controls. */
+static void identity_launch(int argc,char **argv,const char *bwrap,
+    const char *helper,const char *source,char **env) {
+    argument_fd=memfd_create("e5-identity-args",MFD_ALLOW_SEALING);
+    if (argument_fd<0) _exit(90);
+#define ARG(s) projection_arg(s)
+    const char *base[]={"--unshare-all","--die-with-parent","--new-session",
+        "--clearenv","--uid","0","--gid","0","--cap-drop","ALL",
+        "--cap-add","CAP_SYS_ADMIN","--proc","/proc","--remount-ro","/proc",
+        "--dir","/work","--dir","/work/venv","--dir","/work/tmp","--dir",
+        "/work/home","--dir","/trusted","--dir","/runtime","--dir","/support","--dir","/lib64",
+        "--ro-bind",helper,"/trusted/helper"};
+    for (unsigned j=0;j<sizeof(base)/sizeof(base[0]);j++) ARG(base[j]);
+    projection_records(argv[10],source);
+    char destinations[32][256];
+    for (int j=11;j<argc;j++) {
+        const char *name=strrchr(argv[j],'/');
+        if (!name || !*++name || strlen(name)>128 || strspn(name,
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.+-")!=strlen(name)) _exit(90);
+        snprintf(destinations[j-11],256,"/support/%s",name);
+        ARG("--ro-bind");ARG(argv[j]);ARG(destinations[j-11]);
+        if (!strcmp(name,"ld-linux-x86-64.so.2")) {
+            ARG("--ro-bind");ARG(argv[j]);ARG("/lib64/ld-linux-x86-64.so.2");
+        }
+    }
+    ARG("--chdir");ARG("/work");
+#undef ARG
+    if (lseek(argument_fd,0,SEEK_SET)<0 || fcntl(argument_fd,F_ADD_SEALS,
+        F_SEAL_WRITE|F_SEAL_GROW|F_SEAL_SHRINK|F_SEAL_SEAL)) _exit(90);
+    char fd_number[24];snprintf(fd_number,sizeof(fd_number),"%d",argument_fd);
+    /* --args recursively consumes OPTIONS only. Its command remainder does not
+     * become the outer argv: this fixed command must stay outside the memfd. */
+    char *identity_args[]={(char*)bwrap,"--args",fd_number,"--",
+        "/trusted/helper","identity-fixture",NULL};
+    execve(bwrap,identity_args,env); _exit(90);
+}
 static void supervisor(int argc, char **argv) {
     if (argc<9 || probe_index(argv[5]) < 0) _exit(90);
     const char *bwrap=argv[2], *helper=argv[3], *source=argv[4];
@@ -447,36 +485,7 @@ static void supervisor(int argc, char **argv) {
         if (op==13) {
             /* Paths are produced only by the Node's fully verified operator
              * distribution closure. No generic executable/code selection. */
-            argument_fd=memfd_create("e5-identity-args",MFD_ALLOW_SEALING);
-            if (argument_fd<0) _exit(90);
-#define ARG(s) projection_arg(s)
-            const char *base[]={bwrap,"--unshare-all","--die-with-parent","--new-session",
-                "--clearenv","--uid","0","--gid","0","--cap-drop","ALL",
-                "--cap-add","CAP_SYS_ADMIN","--proc","/proc","--remount-ro","/proc",
-                "--dir","/work","--dir","/work/venv","--dir","/work/tmp","--dir",
-                "/work/home","--dir","/trusted","--dir","/runtime","--dir","/support","--dir","/lib64",
-                "--ro-bind",helper,"/trusted/helper"};
-            for (unsigned j=1;j<sizeof(base)/sizeof(base[0]);j++) ARG(base[j]);
-            projection_records(argv[10],source);
-            char destinations[32][256];
-            for (int j=11;j<argc;j++) {
-                const char *name=strrchr(argv[j],'/');
-                if (!name || !*++name || strlen(name)>128 || strspn(name,
-                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.+-")!=strlen(name)) _exit(90);
-                snprintf(destinations[j-11],256,"/support/%s",name);
-                ARG("--ro-bind");ARG(argv[j]);ARG(destinations[j-11]);
-                if (!strcmp(name,"ld-linux-x86-64.so.2")) {
-                    ARG("--ro-bind");ARG(argv[j]);ARG("/lib64/ld-linux-x86-64.so.2");
-                }
-            }
-            ARG("--chdir");ARG("/work");ARG("/trusted/helper");
-            ARG("identity-fixture");
-#undef ARG
-            if (lseek(argument_fd,0,SEEK_SET)<0 || fcntl(argument_fd,F_ADD_SEALS,
-                F_SEAL_WRITE|F_SEAL_GROW|F_SEAL_SHRINK|F_SEAL_SEAL)) _exit(90);
-            char fd_number[24];snprintf(fd_number,sizeof(fd_number),"%d",argument_fd);
-            char *identity_args[]={(char*)bwrap,"--args",fd_number,NULL};
-            execve(bwrap,identity_args,env); _exit(90);
+            identity_launch(argc,argv,bwrap,helper,source,env);
         }
         execve(bwrap, args, env); _exit(90);
     }

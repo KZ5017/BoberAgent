@@ -219,6 +219,19 @@ package manager or caller code. The environment is empty except fixed LANG, scra
 TMPDIR and provider-owned `LD_LIBRARY_PATH=/runtime/lib:/support`. No inherited PYTHONPATH,
 LD_PRELOAD, user site, activation, cwd import, control FD or secret enters the payload.
 
+The sealed, count/byte-bounded `--args FD` contains only generated bubblewrap options
+and mount operands, ending with `--chdir /work`. The fixed command remains outside
+the FD: `bwrap --args FD -- /trusted/helper identity-fixture`. Bubblewrap 0.11.0's
+[recursive argument parser](https://github.com/containers/bubblewrap/blob/v0.11.0/bubblewrap.c)
+does not propagate an argument-file command remainder to the outer argv. Putting
+the command inside the FD left the outer invocation commandless and printed usage
+before Python could start. `/trusted/helper` still occurs in the FD as the required
+read-only mount destination, never as its command. No caller command/argv API is added.
+Offline native tests capture the production builder, verify immutable memfd seals,
+model that parser boundary and exercise unchanged argument/descriptor rejection.
+Rebuild/review/repin the helper bytes before the operator reruns real provenance;
+this correction is not real Kali acceptance and does not change runtime readiness.
+
 Bubblewrap binds only the verified selected projection/support files and reviewed helper. Source is
 absent, network namespace empty, `/proc` read-only, root read-only, three private capped
 scratch mounts, capabilities dropped, namespace/control syscalls denied. The native
@@ -233,6 +246,11 @@ SOABI/cache tag, `/runtime` prefixes, fixed executable and exact three stdlib se
 isolated/no-site/no-bytecode flags. Provider family is >=3.12,<3.13, not forever 3.12.14;
 each dossier pins its actual patch, binary and full closure. Unexpected paths/facts/output
 fail with bounded existing E5 runtime reasons; raw environment/stderr is never exposed.
+An unsuccessful fixed-operation proof now reports existing `RUNTIME_UNAVAILABLE /
+PYTHON_RUNTIME_UNAVAILABLE`, stage `identity_result`, rather than claiming an interpreter
+identity mismatch. Only a successfully completed operation's report is decoded and
+compared; incompatible or malformed identity facts remain `PYTHON_RUNTIME_MISMATCH`.
+No contract, schema, migration or historical evidence is changed.
 
 ## Evidence, accounting and durability
 

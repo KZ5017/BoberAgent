@@ -75,18 +75,20 @@ class IdentityResult(BaseModel):
 def validate_identity(
     manifest: DistributionEvidenceManifest, probe: ProbeEvidence
 ) -> PythonInterpreterIdentity:
+    # An unsuccessful fixed operation supplies no interpreter identity to compare.
+    # Do not parse usage/error output or report a version/ABI mismatch for it.
+    if (
+        probe.probe is not TrustedPythonOperation.IDENTITY
+        or not probe.passed
+        or not probe.attached_before_exec
+        or not probe.group_empty
+        or probe.exit_code != 0
+        or probe.pids_events
+        or probe.oom_events
+        or probe.stderr_hex
+    ):
+        raise ProvenanceFailure(PythonRuntimeReason.PYTHON_RUNTIME_UNAVAILABLE, "identity_result")
     try:
-        if (
-            probe.probe is not TrustedPythonOperation.IDENTITY
-            or not probe.passed
-            or not probe.attached_before_exec
-            or not probe.group_empty
-            or probe.exit_code != 0
-            or probe.pids_events
-            or probe.oom_events
-            or probe.stderr_hex
-        ):
-            raise ValueError("incomplete identity proof")
         identity = IdentityResult.model_validate_json(bytes.fromhex(probe.stdout_hex))
         if (
             identity.paths

@@ -253,6 +253,46 @@ def test_identity_rejects_incompatible_or_unisolated(
     assert "data" not in str(error.value)
 
 
+@pytest.mark.parametrize(
+    "changes",
+    [
+        dict(
+            passed=False,
+            exit_code=1,
+            stdout_hex="",
+            stop_reason=StopReason.OUTPUT,
+            stderr_hex=b"usage: /usr/bin/bwrap [OPTIONS...] [--] COMMAND [ARGS...]".hex(),
+        ),
+        dict(passed=False, exit_code=90, stop_reason=StopReason.START_FAILED),
+        dict(passed=False, exit_code=None, stop_reason=StopReason.TIMEOUT),
+        dict(attached_before_exec=False),
+        dict(group_empty=False),
+        dict(pids_events=1),
+        dict(oom_events=1),
+        dict(stderr_hex=b"bounded operation error".hex()),
+    ],
+)
+def test_failed_fixed_operation_is_not_an_interpreter_identity_mismatch(
+    configured: PythonDistributionConfiguration, changes: dict[str, object]
+) -> None:
+    probe = ProbeEvidence.model_validate({**identity_probe().model_dump(), **changes})
+    with pytest.raises(ProvenanceFailure) as error:
+        validate_identity(inventory(configured), probe)
+    assert error.value.failure.runtime_reason is PythonRuntimeReason.PYTHON_RUNTIME_UNAVAILABLE
+    assert error.value.failure.reason_code.value == "RUNTIME_UNAVAILABLE"
+    assert error.value.stage == "identity_result"
+    assert "/usr/bin/bwrap" not in str(error.value) and "usage" not in str(error.value)
+
+
+def test_successful_operation_with_malformed_identity_still_rejects_as_mismatch(
+    configured: PythonDistributionConfiguration,
+) -> None:
+    probe = identity_probe().model_copy(update={"stdout_hex": b"not identity JSON".hex()})
+    with pytest.raises(ProvenanceFailure) as error:
+        validate_identity(inventory(configured), probe)
+    assert error.value.failure.runtime_reason is PythonRuntimeReason.PYTHON_RUNTIME_MISMATCH
+
+
 @pytest.mark.parametrize("relative", ["bin/python3.12", "lib/python3.12/json.py"])
 def test_changed_runtime_bytes_invalidates(
     configured: PythonDistributionConfiguration, relative: str

@@ -853,9 +853,16 @@ parent-root drift after inventory causes check/revalidation to reject, not silen
 
 Choose a dedicated absolute provenance runtime, distinct from a live Node or C-only DB.
 Every helper ancestor must already be non-group/world-writable; installation uses explicit
-0755, not umask. Rebuild the reviewed native helper because D now has a v2 projection mount operation;
+0755, not umask. Rebuild the reviewed native helper because D now has a v2 projection mount operation
+and the fixed `bwrap --args FD -- /trusted/helper identity-fixture` command-boundary correction;
 the previous C helper hash is **not** the new pin. No toolchain/install/delegation provisioning
 is performed by the harness:
+
+`--args FD` now carries only options/mounts, not the command. The offline fix prevents
+bubblewrap 0.11.0 from treating the outer argv as commandless. Use a newly reviewed
+helper SHA-256, not the previously compiled binary/pin. Real Kali provenance must
+still be rerun; runtime remains UNAVAILABLE / not READY. Failed fixed-operation
+evidence reports bounded `PYTHON_RUNTIME_UNAVAILABLE` rather than a version/ABI mismatch.
 
 ```bash
 E5_RUNTIME=/absolute/operator-selected/e5d-provenance-runtime

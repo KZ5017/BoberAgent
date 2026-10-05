@@ -124,7 +124,10 @@ change systemd configuration, grant root or weaken a limit to make acceptance pa
 If the approved backend cannot meet this package, report the failed prerequisite and stop
 positive acceptance; a different backend needs an explicit architecture revision.
 
-E5-D implements bounded full-distribution inventory and fixed confined identity, with
+E5-D implements bounded base inventory, a versioned non-GUI executable projection
+and fixed confined identity over exactly that projection, with
 immutable Resource-bound PROVENANCE_VERIFIED evidence. It never constructs an environment
 or makes READY; the approved uv-source refinement and trust transition are recorded in
-ADR 0021 and [E5-D implementation](M20E5D_IMPLEMENTATION.md).
+ADRs 0021–0022 and [E5-D implementation](M20E5D_IMPLEMENTATION.md). E5-E must instantiate
+the same certified projection, never re-expose excluded optional Tcl/Tk bytes. General
+environment construction remains unimplemented and real D acceptance remains required.

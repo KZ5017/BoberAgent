@@ -60,6 +60,13 @@ stdlib/extensions/shared libraries/metadata, links, owners/modes and root bindin
 metadata/path names do not attest vendor origin. Only fixed confined `-I -S -B` identity
 executes; no acquired source or environment is constructed.
 
+The subsequently approved [ADR 0022](0022-m20-e5-trusted-python-runtime-projection.md)
+refines full-tree executable exposure into a typed non-GUI runtime projection.
+All base bytes remain trust-checked/inventoried, but optional structurally identified
+Tkinter/Tcl/Tk material is absent from the certified identity view. Selected absolute
+RPATH remains denied. New v2 manifest/projection pins are distinct from immutable v1
+history; E5-E must expose exactly the same certified projection.
+
 Existing `PythonRuntimeEvidence-v1` gains a distinct `PROVENANCE_VERIFIED` inspection verdict
 with no environment. Resource lifecycle/current validity/readiness remain separate and
 unchanged. Node migration 0010 adds immutable evidence attached to existing E5-B operation/

@@ -809,8 +809,10 @@ Do not install `/usr/bin/python3.12` or replace host Python.
 
 First run **non-executing** inventory and independently review that this is the operator's
 trusted distribution before approving its observed pins. Inventory is not vendor attestation
-or a success/readiness result. It includes all import-visible bin/lib bytes and bounded
-metadata plus the complete statically discovered shared-library closure. Unsupported layout,
+or a success/readiness result. It checks/hashes all base bin/lib bytes and bounded
+metadata, then selects the typed non-GUI projection and complete retained support closure.
+Optional Tkinter/Tcl/Tk is excluded structurally, not by accepting its external RPATH.
+Unknown/malformed native material remains fail-closed. Unsupported layout,
 unknown/missing library, metadata, mode or ownership fails closed. Do not chmod host-wide
 parents automatically; a provisioned runtime with unsafe modes needs explicit operator review.
 
@@ -825,12 +827,17 @@ E5_LIBRARY_ROOT=/usr/lib/x86_64-linux-gnu  # explicit canonical trusted library 
 ```
 
 Copy the **reviewed** `manifest_sha256` and `interpreter_sha256` into the variables below.
+Output also includes `manifest_version=m20-e5-python-distribution@2`, the profile and
+profile/base/selected/excluded/projection digests, and an excluded-entry count. Keep those
+pins with the acceptance record. Historical v1 pins are not v2 pins and must not be
+silently reused. [ADR 0022](../../docs/adr/0022-m20-e5-trusted-python-runtime-projection.md)
+explains the exact view; E5-E must later expose the same view, not the whole `lib` tree.
 Do not use the digest of bin/python alone as the distribution pin. Any runtime/owner/mode/
 parent-root drift after inventory causes check/revalidation to reject, not silently repin.
 
 Choose a dedicated absolute provenance runtime, distinct from a live Node or C-only DB.
 Every helper ancestor must already be non-group/world-writable; installation uses explicit
-0755, not umask. Rebuild the reviewed native helper because D adds a fixed identity operation;
+0755, not umask. Rebuild the reviewed native helper because D now has a v2 projection mount operation;
 the previous C helper hash is **not** the new pin. No toolchain/install/delegation provisioning
 is performed by the harness:
 
@@ -863,7 +870,7 @@ E5_BWRAP_SHA256=$(sha256sum -- /usr/bin/bwrap | cut -d ' ' -f 1)
 ```
 
 Keep the bounded PASS/FAIL summary and the dedicated Node journal/dossier. PASS must show
-exact CPython 3.12.x/Linux/x86_64, full manifest/interpreter/root pins, completed fixed
+exact CPython 3.12.x/Linux/x86_64, v2 manifest/projection/interpreter/root pins, completed fixed
 confined identity, all thirteen controls and successful full revalidation, with
 `resource_created=false`, `runtime=UNAVAILABLE`, `ready=false`. Repeating the same explicit
 configuration creates fresh proof while retaining prior history; no automatic replay grants

@@ -20,8 +20,14 @@ from typing import Literal, NamedTuple, Self, TypedDict
 
 from boberagent_contracts import PythonRuntimeFailure, PythonRuntimeReason, Sha256Digest
 from boberagent_contracts.plan_canonical import canonical_digest, canonical_json, canonical_value
-from boberagent_contracts.python_runtime import PythonDistributionIdentity
-from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
+from boberagent_contracts.python_runtime import (
+    PythonDistributionEvidence,
+    PythonDistributionIdentity,
+    PythonProjectedDistributionIdentity,
+    PythonRuntimeProjectionIdentity,
+    PythonRuntimeProjectionProfile,
+)
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, TypeAdapter, model_validator
 
 MANIFEST_VERSION: Literal["m20-e5-python-distribution@1"] = "m20-e5-python-distribution@1"
 
@@ -130,6 +136,65 @@ class DistributionManifest(Record):
             entry_count=len(self.entries) + len(self.support_entries),
             runtime_bytes=sum(e.size for e in (*self.entries, *self.support_entries)),
         )
+
+
+class ExcludedRuntimeEntry(Record):
+    entry: ManifestEntry
+    feature: Literal["TKINTER_TCL_TK"] = "TKINTER_TCL_TK"
+    role: Literal["NATIVE_MODULE", "PYTHON_PACKAGE", "EXCLUSIVE_LIBRARY", "FEATURE_DATA"]
+
+
+class ProjectedDistributionManifest(Record):
+    """v2 is a new, explicit executable view, never a reinterpretation of v1."""
+
+    schema_version: Literal["m20-e5-python-distribution@2"] = "m20-e5-python-distribution@2"
+    root_binding_sha256: Sha256Digest
+    interpreter_relative_path: Literal["bin/python3.12"] = "bin/python3.12"
+    interpreter_sha256: Sha256Digest
+    entries: tuple[ManifestEntry, ...]
+    excluded_entries: tuple[ExcludedRuntimeEntry, ...]
+    support_entries: tuple[ManifestEntry, ...]
+    metadata_sha256: Sha256Digest | None
+    projection: PythonRuntimeProjectionIdentity
+
+    @model_validator(mode="after")
+    def exact_membership(self) -> Self:
+        base = tuple(
+            sorted((*self.entries, *(e.entry for e in self.excluded_entries)), key=lambda e: e.path)
+        )
+        if (
+            len({e.path for e in base}) != len(base)
+            or self.projection.base_manifest_sha256 != digest_value(base)
+            or self.projection.selected_manifest_sha256
+            != digest_value((self.entries, self.support_entries))
+            or self.projection.excluded_manifest_sha256 != digest_value(self.excluded_entries)
+        ):
+            raise ValueError("projection manifest mismatch")
+        return self
+
+    @property
+    def digest(self) -> str:
+        return canonical_digest(self)
+
+    def identity(self) -> PythonProjectedDistributionIdentity:
+        return PythonProjectedDistributionIdentity(
+            manifest_version=self.schema_version,
+            provisioning="OPERATOR_PREPROVISIONED_UV",
+            interpreter_relative_path=self.interpreter_relative_path,
+            manifest_sha256=self.digest,
+            root_binding_sha256=self.root_binding_sha256,
+            support_manifest_sha256=digest_value(self.support_entries),
+            metadata_sha256=self.metadata_sha256,
+            entry_count=len(self.entries) + len(self.support_entries),
+            runtime_bytes=sum(e.size for e in (*self.entries, *self.support_entries)),
+            projection=self.projection,
+        )
+
+
+type DistributionEvidenceManifest = DistributionManifest | ProjectedDistributionManifest
+MANIFEST_ADAPTER: TypeAdapter[DistributionEvidenceManifest] = TypeAdapter(
+    DistributionEvidenceManifest
+)
 
 
 def _trust(info: os.stat_result, *, link: bool = False) -> None:
@@ -271,12 +336,62 @@ def _read_file_backed_vaddr_range(
     return bytes(result)
 
 
-def _elf(
-    data: bytes, *, owner: Path, boundary: Path
-) -> tuple[tuple[_ELFDependency, ...], str | None]:
-    """Bounded ELF64 DT_NEEDED/PT_INTERP inspection; never ldd or executable probing."""
+class _ELFMetadata(NamedTuple):
+    needed: tuple[_ELFDependency, ...] = ()
+    interpreter: str | None = None
+    soname: str | None = None
+    search_paths: tuple[str, ...] = ()
+    python_exports: tuple[str, ...] = ()
+
+
+def _python_exports(data: bytes) -> tuple[str, ...]:
+    """Bounded ELF64 dynamic-symbol identities, not filename inference or execution."""
+    offset = struct.unpack_from("<Q", data, 40)[0]
+    width, count = struct.unpack_from("<HH", data, 58)
+    if not offset and not count:
+        return ()
+    if width != 64 or not 1 <= count <= 4096 or offset + width * count > len(data):
+        raise ValueError("ELF section bounds")
+    sections = [struct.unpack_from("<IIQQQQIIQQ", data, offset + i * width) for i in range(count)]
+    exports = set()
+    symbol_count = 0
+    for section in sections:
+        _, kind, _, _, start, size, link, _, _, entry_size = section
+        if kind != 11:  # SHT_DYNSYM
+            continue
+        symbol_count += size // 24
+        if (
+            entry_size != 24
+            or size % 24
+            or symbol_count > 65536
+            or start + size > len(data)
+            or link >= count
+        ):
+            raise ValueError("ELF symbol bounds")
+        strings = sections[link]
+        if strings[1] != 3 or strings[5] > 4 * 1024**2 or strings[4] + strings[5] > len(data):
+            raise ValueError("ELF symbol strings")
+        table = data[strings[4] : strings[4] + strings[5]]
+        for position in range(start, start + size, 24):
+            name, info, _, index, _, _ = struct.unpack_from("<IBBHQQ", data, position)
+            end = table.find(b"\0", name, name + 4097)
+            if name >= len(table) or end < 0:
+                raise ValueError("ELF symbol name")
+            if index and info >> 4 in {1, 2} and table.startswith(b"PyInit_", name):
+                if end - name > 135:
+                    raise ValueError("ELF Python module identity bound")
+                raw = table[name:end]
+                value = raw.decode("ascii")
+                if re.fullmatch(r"PyInit_[A-Za-z0-9_]{1,128}", value) is None:
+                    raise ValueError("ELF Python module identity")
+                exports.add(value)
+    return tuple(sorted(exports))
+
+
+def _inspect_elf(data: bytes, *, owner: Path, boundary: Path) -> _ELFMetadata:
+    """Validate structure for EVERY ELF; eligibility is separate from membership."""
     if not data.startswith(b"\x7fELF"):
-        return (), None
+        return _ELFMetadata()
     if (
         len(data) < 64
         or data[:6] != b"\x7fELF\x02\x01"
@@ -288,7 +403,8 @@ def _elf(
     if struct.unpack_from("<H", data, 16)[0] == 1 and count == 0:
         # Inert config/*.o files may be retained in the install-only tree;
         # inventory them, but never mistake them for executable/library closure.
-        return (), None
+        _python_exports(data)
+        return _ELFMetadata()
     if width != 56 or not 1 <= count <= 128 or offset + count * width > len(data):
         raise ValueError("ELF bounds")
     segments = [struct.unpack_from("<IIQQQQQQ", data, offset + i * width) for i in range(count)]
@@ -320,7 +436,7 @@ def _elf(
                 for i in range(file_offset, file_offset + size, 16)
             ]
     if not dynamic:
-        return (), interpreter
+        return _ELFMetadata(interpreter=interpreter, python_exports=_python_exports(data))
     string_addresses = [value for key, value in dynamic if key == 5]
     string_sizes = [value for key, value in dynamic if key == 10]
     if (
@@ -331,15 +447,47 @@ def _elf(
         raise ValueError("ELF string table")
     table = _read_file_backed_vaddr_range(data, loads, string_addresses[0], string_sizes[0])
     needed = []
+    search_paths = []
+    sonames = []
     for key, value in dynamic:
-        if key not in {1, 15, 29}:
+        if key not in {1, 14, 15, 29}:
             continue
         if value >= len(table) or b"\0" not in table[value:]:
             raise ValueError("ELF string bounds")
         name = table[value : table.index(0, value)].decode("ascii")
         if key == 1:
             needed.append(_dependency(name, owner, boundary))
-        elif any(part != "$ORIGIN" and not part.startswith("$ORIGIN/") for part in name.split(":")):
+        elif key == 14:
+            if _dependency(name, owner, boundary).kind is not _DependencyKind.BARE_SONAME:
+                raise ValueError("ELF SONAME identity")
+            sonames.append(name)
+        else:
+            # Syntax stays bounded even for excluded optional components. Only
+            # executable eligibility (absolute vs confined ORIGIN) is deferred.
+            if (
+                len(name) > 4096
+                or not name
+                or any(
+                    not part or re.fullmatch(r"[A-Za-z0-9_./${}+-]+", part) is None
+                    for part in name.split(":")
+                )
+            ):
+                raise ValueError("ELF search path syntax")
+            search_paths.append(name)
+    if len(sonames) > 1:
+        raise ValueError("ELF ambiguous SONAME")
+    return _ELFMetadata(
+        tuple(needed),
+        interpreter,
+        sonames[0] if sonames else None,
+        tuple(search_paths),
+        _python_exports(data),
+    )
+
+
+def _eligible(metadata: _ELFMetadata, *, owner: Path, boundary: Path) -> None:
+    for name in metadata.search_paths:
+        if any(part != "$ORIGIN" and not part.startswith("$ORIGIN/") for part in name.split(":")):
             raise ValueError("external runtime search path")
         else:
             for part in name.split(":"):
@@ -348,12 +496,156 @@ def _elf(
                 )
                 if not resolved.is_relative_to(boundary):
                     raise ValueError("runtime search path escape")
-    return tuple(needed), interpreter
+
+
+def _elf(
+    data: bytes, *, owner: Path, boundary: Path
+) -> tuple[tuple[_ELFDependency, ...], str | None]:
+    metadata = _inspect_elf(data, owner=owner, boundary=boundary)
+    _eligible(metadata, owner=owner, boundary=boundary)
+    return metadata.needed, metadata.interpreter
+
+
+def _project(
+    root: Path,
+    base: tuple[ManifestEntry, ...],
+    metadata: dict[Path, _ELFMetadata],
+    links: dict[Path, Path],
+) -> tuple[tuple[ManifestEntry, ...], tuple[ExcludedRuntimeEntry, ...]]:
+    """Closed feature selector: import identity + native dependency ownership.
+
+    No caller excludes paths. SONAME and exported PyInit identity establish the
+    native feature. Libraries with any retained consumer stay selected and must
+    pass normal eligibility. Unknown native material is never silently removed.
+    """
+    native = {
+        path
+        for path, facts in metadata.items()
+        if facts.python_exports == ("PyInit__tkinter",)
+        and path.parent == root / "lib/python3.12/lib-dynload"
+        and path.name
+        in {"_tkinter.cpython-312-x86_64-linux-gnu.so", "_tkinter.abi3.so", "_tkinter.so"}
+    }
+
+    def local(dependency: _ELFDependency) -> Path | None:
+        target = (
+            dependency.resolved
+            if dependency.resolved is not None
+            else root / "lib" / dependency.raw
+        )
+        target = links.get(target, target)
+        facts = metadata.get(target)
+        if facts is None:
+            return None
+        if dependency.kind is _DependencyKind.BARE_SONAME and facts.soname != dependency.raw:
+            return None
+        return target
+
+    graph = {
+        path: {target for d in facts.needed if (target := local(d)) is not None}
+        for path, facts in metadata.items()
+    }
+    closure = set(native)
+    pending = list(native)
+    while pending:
+        for target in graph[pending.pop()]:
+            if target not in closure:
+                closure.add(target)
+                pending.append(target)
+    # Importable non-Tk modules and the interpreter are never feature-private.
+    exclusive = closure - {
+        path
+        for path in closure - native
+        if metadata[path].python_exports or metadata[path].interpreter or not metadata[path].soname
+    }
+    while shared := {
+        target
+        for path, targets in graph.items()
+        if path not in exclusive
+        for target in targets
+        if target in exclusive
+    }:
+        exclusive -= shared
+    if not native <= exclusive:
+        raise ValueError("unsupported native feature has retained consumer")
+    roles: dict[
+        str, Literal["NATIVE_MODULE", "PYTHON_PACKAGE", "EXCLUSIVE_LIBRARY", "FEATURE_DATA"]
+    ] = {
+        path.relative_to(root).as_posix(): "NATIVE_MODULE"
+        if path in native
+        else "EXCLUSIVE_LIBRARY"
+        for path in exclusive
+    }
+    for alias, target in links.items():
+        if target in exclusive:
+            roles[alias.relative_to(root).as_posix()] = roles[target.relative_to(root).as_posix()]
+    package = "lib/python3.12/tkinter"
+    if any(e.path == package for e in base) and not any(
+        e.path == package + "/__init__.py" and e.kind == "file" for e in base
+    ):
+        raise ValueError("unsupported optional Python package layout")
+    if any(e.path == package + "/__init__.py" and e.kind == "file" for e in base):
+        for entry in base:
+            if entry.path == package or entry.path.startswith(package + "/"):
+                roles[entry.path] = "PYTHON_PACKAGE"
+    # Data selectors are tied to the proven private native SONAME/version AND
+    # a feature sentinel, not a filename blacklist. Unknown data remains visible.
+    for path in exclusive - native:
+        soname = metadata[path].soname
+        assert soname is not None
+        match = re.fullmatch(
+            r"lib(tcl|tk)([0-9]+\.[0-9]+)(?:tk[0-9]+\.[0-9]+)?\.so(?:\.[0-9.]+)?", soname
+        )
+        combined = re.fullmatch(r"libtcl[0-9]+tk([0-9]+\.[0-9]+)\.so(?:\.[0-9.]+)?", soname)
+        if combined is not None:
+            feature, version = "tk", combined.group(1)
+        elif match is not None:
+            feature, version = match.groups()
+        else:
+            continue
+        directory = f"lib/{feature}{version}"
+        sentinel = "init.tcl" if feature == "tcl" else "tk.tcl"
+        if any(e.path == directory + "/" + sentinel and e.kind == "file" for e in base):
+            for entry in base:
+                if entry.path == directory or entry.path.startswith(directory + "/"):
+                    roles[entry.path] = "FEATURE_DATA"
+    selected = tuple(e for e in base if e.path not in roles)
+    excluded = tuple(
+        ExcludedRuntimeEntry(entry=e, role=roles[e.path]) for e in base if e.path in roles
+    )
+    # Retained links must not reach excluded bytes through a different import path.
+    for entry in selected:
+        if (
+            entry.kind == "symlink"
+            and links[root / entry.path].relative_to(root).as_posix() in roles
+        ):
+            raise ValueError("projection symlink reaches unsupported feature")
+    for required in (
+        "bin/python3.12",
+        "lib/python3.12/venv/__init__.py",
+        "lib/python3.12/lib-dynload",
+    ):
+        if not any(e.path == required for e in selected):
+            raise ValueError("required projection material removed")
+    # An optional GUI feature is the only exclusion. Unexpected third-party or
+    # alternative Python implementations of that feature are not silently pruned.
+    for entry in selected:
+        if (
+            entry.path.startswith("lib/python3.12/site-packages/")
+            or entry.path == "lib/python312.zip"
+            or entry.path in {"lib/python3.12/tkinter.py", "lib/python3.12/tkinter.pyc"}
+            or any(
+                entry.path.startswith(prefix) and entry.path.endswith((".py", ".pyc"))
+                for prefix in ("lib/python3.12/_tkinter", "lib/python3.12/lib-dynload/_tkinter")
+            )
+        ):
+            raise ValueError("unsupported import-visible projection material")
+    return selected, excluded
 
 
 def inventory(
     configuration: PythonDistributionConfiguration, *, verify_pins: bool = True
-) -> DistributionManifest:
+) -> ProjectedDistributionManifest:
     """Full fresh rehash. Operator inventory mode does not authorize candidate execution."""
     try:
         configuration = PythonDistributionConfiguration.model_validate(configuration.model_dump())
@@ -368,7 +660,7 @@ def inventory(
 
 def _inventory(
     configuration: PythonDistributionConfiguration, *, verify_pins: bool
-) -> DistributionManifest:
+) -> ProjectedDistributionManifest:
     root, support = configuration.distribution_root, configuration.system_library_root
     if not (root / "bin/python3.12").is_file():
         raise ProvenanceFailure(
@@ -377,6 +669,8 @@ def _inventory(
     roots = (_parents(root), _parents(support))
     entries: list[ManifestEntry] = []
     dependencies: set[_ELFDependency] = set()
+    inspected_dependencies: set[_ELFDependency] = set()
+    elf_metadata: dict[Path, _ELFMetadata] = {}
     regular_files: set[Path] = set()
     elf_files: set[Path] = set()
     links: dict[Path, Path] = {}
@@ -426,8 +720,14 @@ def _inventory(
             )
         )
         regular_files.add(path)
-        needed, _ = _elf(data, owner=path, boundary=support if library else root)
-        dependencies.update(needed)
+        facts = _inspect_elf(data, owner=path, boundary=support if library else root)
+        inspected_dependencies.update(facts.needed)
+        if len(inspected_dependencies) > configuration.max_entries:
+            raise ValueError("base dependency record bound")
+        elf_metadata[path] = facts
+        if library:
+            _eligible(facts, owner=path, boundary=support)
+            dependencies.update(facts.needed)
         if len(dependencies) > configuration.max_entries:
             raise ValueError("dependency record bound")
         if data.startswith(b"\x7fELF"):
@@ -477,6 +777,18 @@ def _inventory(
             )
             if not any(e.path == target and e.kind == "file" for e in distribution_entries):
                 raise ValueError("symlink target not inventoried/mounted")
+    base_entries = tuple(sorted(distribution_entries, key=lambda e: e.path))
+    distribution_entries, excluded_entries = _project(root, base_entries, elf_metadata, links)
+    selected_paths = {root / e.path for e in distribution_entries}
+    regular_files &= selected_paths
+    elf_files &= selected_paths
+    directories = {p for p in directories if p in selected_paths or p in {root, support}}
+    for path in sorted(selected_paths):
+        if path in elf_metadata:
+            _eligible(elf_metadata[path], owner=path, boundary=root)
+            dependencies.update(elf_metadata[path].needed)
+    if len(dependencies) > configuration.max_entries:
+        raise ValueError("dependency record bound")
     entries.clear()
     loaded: set[str] = set()
 
@@ -525,13 +837,38 @@ def _inventory(
                 raise ValueError("dependency target not inventoried ELF")
     if roots != (_parents(root), _parents(support)):
         raise ValueError("substitution parent changed")
-    manifest = DistributionManifest(
+    selected_entries = tuple(sorted(distribution_entries, key=lambda e: e.path))
+    support_entries = tuple(sorted(entries, key=lambda e: e.path))
+    profile = PythonRuntimeProjectionProfile()
+    projection_fields = dict(
+        profile=profile,
+        profile_sha256=canonical_digest(profile),
+        base_manifest_sha256=digest_value(base_entries),
+        selected_manifest_sha256=digest_value((selected_entries, support_entries)),
+        excluded_manifest_sha256=digest_value(excluded_entries),
+    )
+    projection = PythonRuntimeProjectionIdentity(
+        profile=profile,
+        profile_sha256=canonical_digest(profile),
+        base_manifest_sha256=digest_value(base_entries),
+        selected_manifest_sha256=digest_value((selected_entries, support_entries)),
+        excluded_manifest_sha256=digest_value(excluded_entries),
+        projection_sha256=digest_value(projection_fields),
+    )
+    manifest = ProjectedDistributionManifest(
         root_binding_sha256=digest_value(roots),
         interpreter_sha256=interpreter.sha256,
-        entries=tuple(sorted(distribution_entries, key=lambda e: e.path)),
-        support_entries=tuple(sorted(entries, key=lambda e: e.path)),
+        entries=selected_entries,
+        excluded_entries=excluded_entries,
+        support_entries=support_entries,
         metadata_sha256=metadata_hash,
+        projection=projection,
     )
+    # Certify representability BEFORE any fixed candidate probe, not merely hash
+    # a selection that the native namespace would later be unable to expose.
+    from .python_projection import mount_descriptor
+
+    mount_descriptor(manifest)
     if verify_pins and (
         manifest.digest != configuration.expected_manifest_sha256
         or interpreter.sha256 != configuration.expected_interpreter_sha256
@@ -541,8 +878,8 @@ def _inventory(
 
 
 def revalidate(
-    configuration: PythonDistributionConfiguration, retained: PythonDistributionIdentity
-) -> DistributionManifest:
+    configuration: PythonDistributionConfiguration, retained: PythonDistributionEvidence
+) -> ProjectedDistributionManifest:
     try:
         manifest = inventory(configuration)
         if manifest.identity() != retained:

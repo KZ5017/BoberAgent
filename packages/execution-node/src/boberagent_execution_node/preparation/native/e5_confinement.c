@@ -9,6 +9,7 @@
 #include <linux/audit.h>
 #include <linux/capability.h>
 #include <linux/filter.h>
+#include <linux/memfd.h>
 #include <linux/seccomp.h>
 #include <poll.h>
 #include <sched.h>
@@ -19,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mount.h>
+#include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -287,12 +289,94 @@ static void setup_fixture(int op, unsigned port) {
 static void hex_print(const unsigned char *data, size_t n) {
     for (size_t i=0; i<n; i++) printf("%02x", data[i]);
 }
+/* Node-owned, bounded v2 descriptor. No whole lib bind, arbitrary bwrap options
+ * or code/command selection. bwrap --args reads NUL arguments and closes its fd.
+ * The payload still passes close_extra()/the fixed fixture's fd leak checks.
+ */
+static int argument_fd;
+static size_t argument_bytes;
+static unsigned argument_count;
+static void projection_arg(const char *s) {
+    size_t n=strlen(s)+1;
+    if (++argument_count>8500 || n>8192 || argument_bytes+n>2*MiB
+        || write_all(argument_fd,s,n)) _exit(90);
+    argument_bytes+=n;
+}
+static void relative_path(const char *s) {
+    if (!*s || strlen(s)>2048 || *s=='/' || s[strlen(s)-1]=='/') _exit(90);
+    const char *p=s;
+    while (*p) {
+        size_t n=strcspn(p,"/");
+        if (!n || n>255 || (n==1 && p[0]=='.') || (n==2 && !strncmp(p,"..",2))
+            || strspn(p,"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.+-")<n) _exit(90);
+        p+=n; if (*p) p++;
+    }
+    if (strncmp(s,"bin/",4) && strcmp(s,"bin") && strncmp(s,"lib/",4)
+        && strcmp(s,"lib") && strcmp(s,"PYTHON.json")) _exit(90);
+}
+static void relative_link(const char *path,const char *target) {
+    if (!*target || *target=='/' || strlen(target)>2048 || target[strlen(target)-1]=='/') _exit(90);
+    unsigned depth=0;
+    for (const char *p=path;*p;p++) if (*p=='/') depth++;
+    const char *p=target;
+    while (*p) {
+        size_t n=strcspn(p,"/");
+        if (!n || n>255 || strspn(p,"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.+-")<n) _exit(90);
+        if (n==2 && !strncmp(p,"..",2)) { if (!depth) _exit(90); depth--; }
+        else if (!(n==1 && *p=='.')) depth++;
+        p+=n; if (*p) p++;
+    }
+    if (!depth) _exit(90);
+}
+static void projection_records(const char *file,const char *source) {
+    int fd=open(file,O_RDONLY|O_NOFOLLOW|O_CLOEXEC);
+    struct stat before,after;
+    if (fd<0 || fstat(fd,&before) || !S_ISREG(before.st_mode)
+        || before.st_uid!=getuid() || (before.st_mode&07777)!=0600
+        || before.st_size<1 || before.st_size>(long)MiB) _exit(90);
+    size_t size=(size_t)before.st_size;
+    char *data=malloc(size+1); if (!data) _exit(90);
+    size_t used=0;
+    while (used<size) { ssize_t n=read(fd,data+used,size-used); if (n<=0) _exit(90); used+=(size_t)n; }
+    if (fstat(fd,&after) || before.st_ino!=after.st_ino || before.st_dev!=after.st_dev
+        || before.st_size!=after.st_size || before.st_mode!=after.st_mode
+        || before.st_uid!=after.st_uid || before.st_gid!=after.st_gid
+        || before.st_mtim.tv_sec!=after.st_mtim.tv_sec || before.st_mtim.tv_nsec!=after.st_mtim.tv_nsec
+        || before.st_ctim.tv_sec!=after.st_ctim.tv_sec || before.st_ctim.tv_nsec!=after.st_ctim.tv_nsec) _exit(90);
+    close(fd); data[size]=0;
+    if (strlen(data)!=size || data[size-1]!='\n') _exit(90);
+    char *save=NULL,*line=strtok_r(data,"\n",&save);
+    if (!line || strcmp(line,"m20-e5-python-projection-mounts@1")) _exit(90);
+    line=strtok_r(NULL,"\n",&save);
+    if (!line || strlen(line)!=64 || strspn(line,"0123456789abcdef")!=64) _exit(90);
+    unsigned records=0;
+    while ((line=strtok_r(NULL,"\n",&save))) {
+        if (++records>2046) _exit(90);
+        char *path=strchr(line,'\t'); if (!path) _exit(90); *path++=0;
+        char *target=strchr(path,'\t'); if (!target) _exit(90); *target++=0;
+        if (strchr(target,'\t')) _exit(90);
+        relative_path(path);
+        char from[4096],to[4096];
+        if (snprintf(from,sizeof(from),"%s/%s",source,path)>=(int)sizeof(from)
+            || snprintf(to,sizeof(to),"/runtime/%s",path)>=(int)sizeof(to)) _exit(90);
+        if (!strcmp(line,"DIRECTORY") && !strcmp(target,"-")) {
+            projection_arg("--dir");projection_arg(to);
+        } else if (!strcmp(line,"BIND") && !strcmp(target,"-")) {
+            projection_arg("--ro-bind");projection_arg(from);projection_arg(to);
+        } else if (!strcmp(line,"SYMLINK")) {
+            relative_link(path,target);
+            projection_arg("--symlink");projection_arg(target);projection_arg(to);
+        } else _exit(90);
+    }
+    if (!records) _exit(90);
+    free(data);
+}
 static void supervisor(int argc, char **argv) {
     if (argc<9 || probe_index(argv[5]) < 0) _exit(90);
     const char *bwrap=argv[2], *helper=argv[3], *source=argv[4];
     int op=probe_index(argv[5]);
-    if ((op!=13 && argc!=9) || (op==13 && (argc<11 || argc>42
-        || strcmp(argv[9],"m20-e5-python-distribution@1")))) _exit(90);
+    if ((op!=13 && argc!=9) || (op==13 && (argc<12 || argc>43
+        || strcmp(argv[9],"m20-e5-python-distribution@2")))) _exit(90);
     unsigned cap=(unsigned)number(argv[6], 6, 8);
     unsigned output=(unsigned)number(argv[7], 1024, MAX_OUTPUT);
     unsigned seconds=(unsigned)number(argv[8], 1, 3);
@@ -363,34 +447,35 @@ static void supervisor(int argc, char **argv) {
         if (op==13) {
             /* Paths are produced only by the Node's fully verified operator
              * distribution closure. No generic executable/code selection. */
-            char *identity_args[256]; unsigned k=0;
-#define ARG(s) identity_args[k++]=(char*)(s)
+            argument_fd=memfd_create("e5-identity-args",MFD_ALLOW_SEALING);
+            if (argument_fd<0) _exit(90);
+#define ARG(s) projection_arg(s)
             const char *base[]={bwrap,"--unshare-all","--die-with-parent","--new-session",
                 "--clearenv","--uid","0","--gid","0","--cap-drop","ALL",
                 "--cap-add","CAP_SYS_ADMIN","--proc","/proc","--remount-ro","/proc",
                 "--dir","/work","--dir","/work/venv","--dir","/work/tmp","--dir",
                 "/work/home","--dir","/trusted","--dir","/runtime","--dir","/support","--dir","/lib64",
                 "--ro-bind",helper,"/trusted/helper"};
-            for (unsigned j=0;j<sizeof(base)/sizeof(base[0]);j++) ARG(base[j]);
-            char bin[4096],lib[4096];
-            if (snprintf(bin,sizeof(bin),"%s/bin",source)>=(int)sizeof(bin)
-                || snprintf(lib,sizeof(lib),"%s/lib",source)>=(int)sizeof(lib)) _exit(90);
-            ARG("--ro-bind");ARG(bin);ARG("/runtime/bin");
-            ARG("--ro-bind");ARG(lib);ARG("/runtime/lib");
+            for (unsigned j=1;j<sizeof(base)/sizeof(base[0]);j++) ARG(base[j]);
+            projection_records(argv[10],source);
             char destinations[32][256];
-            for (int j=10;j<argc;j++) {
+            for (int j=11;j<argc;j++) {
                 const char *name=strrchr(argv[j],'/');
                 if (!name || !*++name || strlen(name)>128 || strspn(name,
                     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.+-")!=strlen(name)) _exit(90);
-                snprintf(destinations[j-10],256,"/support/%s",name);
-                ARG("--ro-bind");ARG(argv[j]);ARG(destinations[j-10]);
+                snprintf(destinations[j-11],256,"/support/%s",name);
+                ARG("--ro-bind");ARG(argv[j]);ARG(destinations[j-11]);
                 if (!strcmp(name,"ld-linux-x86-64.so.2")) {
                     ARG("--ro-bind");ARG(argv[j]);ARG("/lib64/ld-linux-x86-64.so.2");
                 }
             }
             ARG("--chdir");ARG("/work");ARG("/trusted/helper");
-            ARG("identity-fixture");identity_args[k]=NULL;
+            ARG("identity-fixture");
 #undef ARG
+            if (lseek(argument_fd,0,SEEK_SET)<0 || fcntl(argument_fd,F_ADD_SEALS,
+                F_SEAL_WRITE|F_SEAL_GROW|F_SEAL_SHRINK|F_SEAL_SEAL)) _exit(90);
+            char fd_number[24];snprintf(fd_number,sizeof(fd_number),"%d",argument_fd);
+            char *identity_args[]={(char*)bwrap,"--args",fd_number,NULL};
             execve(bwrap,identity_args,env); _exit(90);
         }
         execve(bwrap, args, env); _exit(90);

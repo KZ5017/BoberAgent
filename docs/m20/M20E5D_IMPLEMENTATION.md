@@ -36,12 +36,64 @@ the closed runtime family; generic Registry availability/version probes are not 
 
 ## Exactly what is fingerprinted
 
-Only `bin` and `lib` are mounted into `/runtime`; every file/directory/link in those trees
-is inventoried, including the interpreter, stdlib, venv templates, extensions, libpython,
+The base `bin` and `lib` trees are fully inventoried; only their versioned selected
+projection is mounted into `/runtime`. Every file/directory/link is checked, including
+the interpreter, stdlib, venv templates, extensions, libpython,
 and **import-visible caches**. `-B` prevents cache writes, not reads: `.pyc`/`__pycache__`
 cannot be silently excluded from an import-visible tree. Unrelated root/include/share
 operator noise is both excluded and unmounted. Optional bounded `PYTHON.json` must be a
 JSON object; its exact hash is retained as metadata identity, not trusted self-attestation.
+The bounded metadata file is included in the selected read-only view when present.
+
+### Approved non-GUI projection refinement
+
+The third real-Kali finding localized absolute RPATHs to the optional Tcl/Tk branch:
+`libtcl9.0.so` and `libtcl9tk9.0.so` use `/tools/deps/lib`; `_tkinter` needs them.
+The path's absence does not authorize it. [ADR 0022](../adr/0022-m20-e5-trusted-python-runtime-projection.md)
+defines `m20-e5-python-runtime-profile@1`, retaining interpreter/core stdlib/non-GUI
+extensions/venv/shared closure and excluding the explicit `TKINTER_TCL_TK` feature.
+
+Selection uses the native exported `PyInit__tkinter` identity plus module/ABI location,
+DT_NEEDED graph, SONAME metadata and absence of retained consumers. It is not a broad
+filename denylist. `_tkinter`, the `tkinter` package/caches, feature-private libraries
+and SONAME-version/sentinel-matched Tcl/Tk data are excluded. Unrecognized data and
+unrelated stdlib remain selected; `turtle`/`idlelib` are not speculatively removed,
+but their GUI imports cannot work in this non-GUI profile. Nonempty third-party
+site-packages, alternative GUI module overlays and packed `python312.zip` layouts
+are rejected, not silently certified. Required venv/stdlib material cannot be removed.
+
+All excluded base material still needs trusted owners/modes/parents, approved links,
+stable bounded reads and structurally valid ELF. Unknown/malformed ELF is not exempt.
+Only search-path executable eligibility is deferred until membership is known.
+Every retained ELF still rejects absolute RPATH/RUNPATH; interpreter
+`$ORIGIN/../lib` remains accepted when confined. A shared Tcl library stays retained
+and must pass that policy. Distribution bytes are never patched/deleted.
+
+Manifest `m20-e5-python-distribution@2` and `PythonProjectedDistributionIdentity`
+bind exact profile/base/selected+support/excluded hashes and a combined projection
+digest. Typed exclusions preserve feature and native/package/library/data roles.
+Old `@1` manifest/identity shapes and hashes remain immutable/readable; a v1 manifest
+cannot be reinterpreted as a v2 projection or reused against newly inventoried pins.
+Existing JSON evidence columns need no migration; schema exports are regenerated.
+
+D's fixed identity now uses a bounded Node-private read-only mount descriptor with
+exact selected membership. Complete selected subtrees may be bound; ancestors of
+exclusions are split, never bound wholesale. The native helper validates closed
+directory/bind/relative-link records, then passes sealed NUL arguments to bubblewrap.
+Descriptor bounds are 1 MiB/2,046 mount records; native arguments are capped at 2 MiB/
+8,500. The existing E5-B ledger additionally reserves conservative descriptor/argument/
+mount-scaffold costs: temporary/control maximum 16 MiB + 12,288 bytes, 16 MiB extra
+cumulative writes, and 2,050 extra control entries. Insufficient authority rejects
+before inventory/probes; the permit's limits are never enlarged. Inability to
+represent a view fails during inventory, before candidate execution. No environment
+construction, workspace Resource or general-purpose command interface is introduced.
+
+**E5-D certifies a versioned executable runtime projection. E5-E must instantiate
+exactly that certified projection.** `verify_exposure()` rejects extra, missing,
+excluded or changed selected entries. This is a future constructor obligation, not
+a claim that E5-E exists. Whole-tree exposure is forbidden. Rebuild/repin the helper,
+review fresh v2 manifest/projection pins, then rerun real Kali provenance acceptance.
+The offline change does not close D or set READY.
 
 Bounded non-executing ELF64 inspection validates x86_64 and collects DT_NEEDED across all
 runtime ELF material. Bare SONAME closure uses the explicit library root; no ldd,
@@ -84,7 +136,8 @@ matching, extra traversal or duplicate hashing. Support-object ORIGIN paths are 
 to the existing flat `/support/<name>` view; nested support layouts remain unsupported.
 This is DT_NEEDED resolution, **not** RPATH/RUNPATH search or a general loader emulator.
 
-The canonical manifest format is unchanged: sorted file/link records and content hashes
+For the preceding DT_NEEDED fix, the historical v1 canonical format was unchanged:
+sorted file/link records and content hashes
 already bind declaring ELF bytes (including raw dependencies), exact target material and
 root identity. Repeated edges do not duplicate distribution records; support closure
 remains sorted, bounded and deterministic. Existing sealed evidence is not rewritten;
@@ -110,7 +163,7 @@ package manager or caller code. The environment is empty except fixed LANG, scra
 TMPDIR and provider-owned `LD_LIBRARY_PATH=/runtime/lib:/support`. No inherited PYTHONPATH,
 LD_PRELOAD, user site, activation, cwd import, control FD or secret enters the payload.
 
-Bubblewrap binds only verified bin/lib/support files and the reviewed helper. Source is
+Bubblewrap binds only the verified selected projection/support files and reviewed helper. Source is
 absent, network namespace empty, `/proc` read-only, root read-only, three private capped
 scratch mounts, capabilities dropped, namespace/control syscalls denied. The native
 supervisor attaches the blocked launcher before execution, bounds both output streams,
@@ -128,8 +181,9 @@ fail with bounded existing E5 runtime reasons; raw environment/stderr is never e
 ## Evidence, accounting and durability
 
 Existing `PythonInterpreterIdentity` now admits the approved uv layout and contains
-`PythonDistributionIdentity`: logical relative executable, full/support/root/metadata
-digests, count/size and provisioning label. Existing `PythonRuntimeEvidence-v1` gains
+historical `PythonDistributionIdentity` or current `PythonProjectedDistributionIdentity`:
+logical relative executable, manifest/support/root/metadata and projection digests,
+count/size and provisioning label. Existing `PythonRuntimeEvidence-v1` gains
 `PROVENANCE_VERIFIED`, restricted to interpreter inspection, complete enforcement and
 **no environment**. This is historical provenance, not VERIFIED environment/readiness.
 Old system-layout/VERIFIED dossiers still decode; unknown layouts/versions fail closed.

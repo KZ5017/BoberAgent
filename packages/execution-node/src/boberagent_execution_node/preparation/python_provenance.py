@@ -38,7 +38,8 @@ from sqlalchemy import select
 
 from ..persistence.orm import PythonRuntimeEvidenceRow
 from .python_distribution import (
-    DistributionManifest,
+    MANIFEST_ADAPTER,
+    DistributionEvidenceManifest,
     ProvenanceFailure,
     PythonDistributionConfiguration,
     digest_value,
@@ -72,7 +73,7 @@ class IdentityResult(BaseModel):
 
 
 def validate_identity(
-    manifest: DistributionManifest, probe: ProbeEvidence
+    manifest: DistributionEvidenceManifest, probe: ProbeEvidence
 ) -> PythonInterpreterIdentity:
     try:
         if (
@@ -148,7 +149,7 @@ class PythonProvenanceRepository:
             result = []
             for row in rows:
                 evidence = PythonRuntimeEvidence.model_validate_json(json.dumps(row.evidence_json))
-                manifest = DistributionManifest.model_validate(row.manifest_json)
+                manifest = MANIFEST_ADAPTER.validate_json(json.dumps(row.manifest_json))
                 if (
                     python_runtime_evidence_digest(evidence) != row.evidence_sha256
                     or python_runtime_binding_digest(evidence.binding) != row.binding_sha256
@@ -164,10 +165,10 @@ class PythonProvenanceRepository:
         self,
         claim: ResourceOperation,
         evidence: PythonRuntimeEvidence,
-        manifest: DistributionManifest,
+        manifest: DistributionEvidenceManifest,
     ) -> None:
         evidence = PythonRuntimeEvidence.model_validate_json(evidence.model_dump_json())
-        manifest = DistributionManifest.model_validate_json(manifest.model_dump_json())
+        manifest = MANIFEST_ADAPTER.validate_json(manifest.model_dump_json())
         if (
             evidence.verification != "PROVENANCE_VERIFIED"
             or claim.operation is not PythonProviderOperation.INSPECT_INTERPRETER
@@ -299,9 +300,13 @@ async def inspect_owned_interpreter(
         raise ValueError("interpreter inspection ownership required")
     # Maxima include all fresh thirteen probes, static hashing and safe teardown.
     reservations = {
-        BudgetCategory.TEMPORARY_BYTES: 1024**2 + 12288,
-        BudgetCategory.WRITE_BYTES: 14 * (2 * 1024**2 + 8192),
-        BudgetCategory.FILE_COUNT: 14 * 65,
+        # Additional v2 descriptor (1 MiB), sealed args (2 MiB) and up to
+        # 2,046 mount-point scaffolds are bounded trusted control overhead.
+        # Charge conservatively before inventory/probes; never exceed a permit
+        # merely because no environment is being constructed yet.
+        BudgetCategory.TEMPORARY_BYTES: 16 * 1024**2 + 12288,
+        BudgetCategory.WRITE_BYTES: 14 * (2 * 1024**2 + 8192) + 16 * 1024**2,
+        BudgetCategory.FILE_COUNT: 14 * 65 + 2050,
         BudgetCategory.PROCESSES: 11,
         BudgetCategory.MEMORY_BYTES: 72 * 1024**2,
         BudgetCategory.PROCESS_SECONDS: 11,

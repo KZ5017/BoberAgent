@@ -38,6 +38,7 @@ from ..identity import NodeId
 from ..persistence.database import RuntimeDatabase
 from ..tools import ToolAvailability, ToolRegistry
 from .python_distribution import PythonDistributionConfiguration, inventory
+from .python_projection import write_mount_descriptor
 from .runtime_confinement_models import (
     ClosedProbe,
     ConfinementCheck,
@@ -483,11 +484,14 @@ class LinuxRuntimeConfinementBackend:
                 if operation is TrustedPythonOperation.IDENTITY:
                     assert distribution is not None
                     manifest = inventory(distribution)
+                    descriptor = Path(temporary) / "projection.mounts"
+                    write_mount_descriptor(descriptor, manifest)
                     source = distribution.distribution_root
                     names = sorted({e.path.split("#")[0] for e in manifest.support_entries})
                     # Every alias is a pinned, one-hop internal regular target.
                     extra = (
                         manifest.schema_version,
+                        str(descriptor),
                         *(str(distribution.system_library_root / name) for name in names),
                     )
                 process = await asyncio.create_subprocess_exec(

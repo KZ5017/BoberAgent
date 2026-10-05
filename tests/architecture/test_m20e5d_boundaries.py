@@ -41,7 +41,7 @@ def test_no_installer_source_execution_or_readiness_api() -> None:
         "exec",
         "compile",
     }
-    for name in ("python_distribution.py", "python_provenance.py"):
+    for name in ("python_distribution.py", "python_provenance.py", "python_projection.py"):
         tree = ast.parse((PREPARATION / name).read_text())
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -68,7 +68,14 @@ def test_fixed_native_program_environment_and_no_generic_execution_parameters() 
     assert "static char program[]=" in native
     assert "execve(loader,args,env)" in native
     assert "SECCOMP_RET_ERRNO|EPERM" in native
-    assert 'strcmp(argv[9],"m20-e5-python-distribution@1")' in native
+    assert 'strcmp(argv[9],"m20-e5-python-distribution@2")' in native
+    assert 'ARG("/runtime/lib")' not in native
+    assert "projection_records(argv[10],source)" in native
+    assert "F_SEAL_WRITE|F_SEAL_GROW|F_SEAL_SHRINK|F_SEAL_SEAL" in native
+    assert (
+        "write_mount_descriptor(descriptor, manifest)"
+        in (PREPARATION / "runtime_confinement.py").read_text()
+    )
     assert "DENY(SYS_execveat)" in native
     backend = (PREPARATION / "runtime_confinement.py").read_text()
     identity_method = inspect.getsource(LinuxRuntimeConfinementBackend.run_identity)

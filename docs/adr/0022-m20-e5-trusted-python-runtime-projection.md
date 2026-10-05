@@ -1,0 +1,78 @@
+# ADR 0022 — E5 trusted Python executable projection
+
+Status: accepted by the operator's E5-D refinement request; implemented offline.
+Real Kali provenance acceptance remains required. E5-E and M20-F have not begun.
+Refines [ADR 0021](0021-m20-e5-prepared-python-resource-and-enforcement.md).
+
+## Context
+
+The operator's preprovisioned CPython 3.12.14 distribution includes optional Tcl/Tk
+libraries with absolute `/tools/deps/lib` RPATHs. The interpreter uses the admissible
+`$ORIGIN/../lib`. Missing external directories do not make absolute search safe.
+Ignoring optional objects while mounting the full distribution would certify one
+runtime and execute another. Removing or patching operator files is not acceptable.
+
+## Decision
+
+`m20-e5-python-runtime-profile@1` defines the CPython 3.12 Linux x86_64,
+stdlib-oriented, dependency-empty, non-GUI executable view. Interpreter, core
+stdlib, non-GUI extensions, venv and retained shared closure are required/supported.
+`TKINTER_TCL_TK` is an explicitly unsupported optional feature, not a caller denylist.
+
+The static selector identifies the importable `_tkinter` extension using both its
+CPython module location/ABI and exported `PyInit__tkinter` dynamic-symbol identity.
+It follows owner-bound DT_NEEDED edges to local SONAME-identified libraries and
+excludes only the feature-private closure. A retained consumer makes a library
+retained: its absolute RPATH then fails normally. The `tkinter` Python package,
+including caches, is absent. Version-matched Tcl/Tk data trees are excluded only
+with an exclusive library's SONAME and the `init.tcl`/`tk.tcl` feature sentinel.
+Unrecognized data remains inventoried/selected; no speculative stdlib pruning.
+Alternative GUI Python modules, third-party site-packages content and an opaque
+import-visible `python312.zip` overlay are unsupported layouts, rejected rather
+than silently filtered. stdlib `ensurepip` data is not an installation permission.
+
+Every base `bin`/`lib` entry still undergoes filesystem trust, stable bounded
+hashing and ELF-structure checks. Exclusion defers only executable RPATH eligibility,
+not malformed-ELF rejection. Retained material keeps confined ORIGIN-only search;
+absolute RPATH/RUNPATH remains rejected. No host-directory existence exception.
+
+Manifest `m20-e5-python-distribution@2` binds profile identity/digest, complete base
+membership, selected/support membership, exclusions with typed roles, and the
+combined projection digest. Filesystem/root pins and exact bytes remain bound.
+Separate v1 models retain old serialization/digests; old evidence is historical,
+not reinterpreted or automatically upgraded. No DB migration/history rewrite.
+
+D's **fixed identity namespace**, not an environment builder, mounts exactly the
+certified selection. Fully selected subtrees may be read-only bound; every ancestor
+of excluded material is split into empty directories and selected child bindings.
+No full `lib` bind when exclusions exist. Node-owned private mount descriptors are
+bounded and compiled by the pinned native helper into a sealed NUL-argument file.
+Bubblewrap's [`--args FD` implementation](https://github.com/containers/bubblewrap/blob/main/bubblewrap.c)
+reads those arguments and closes the FD; the fixed fixture still denies inherited
+FDs. The descriptor cannot add arbitrary bubblewrap options or executable code.
+Additional bounded descriptor/argument/mount-scaffold costs are charged to the existing
+E5-B ledger before work (16 MiB conservative temporary/control allowance, 16 MiB
+additional cumulative write allowance, 2,050 extra control entries). An insufficient
+permit rejects before probes; no authority ceiling is enlarged automatically.
+Unrepresentable views fail closed. All thirteen C controls remain unchanged.
+
+E5-E **must instantiate exactly this certified base projection** alongside its
+separately verified empty venv. It must use current ownership/authority, fresh
+rehashing and exact membership/pin comparison; extra/excluded/changed material is
+a projection mismatch, never an automatic repair. `verify_exposure()` supplies
+that exact comparison boundary, not an E5-E constructor. Mounting a whole source
+`lib` tree or adding excluded GUI bytes under another import path is prohibited.
+
+## Consequences and limits
+
+Existing reviewed v1 pins must not be reused as v2 pins. Inventory-only prints the
+new projection identity; the operator must review/repin the manifest and rebuild/
+repin the native helper before a fresh confined provenance check. Distribution
+bytes are never modified. Unknown layouts/features fail closed.
+
+This is local runtime integrity, not vendor attestation, arbitrary-code safety,
+runtime READY, execution authorization or a defense against a malicious trusted
+same-UID operator/root. No candidate was executed to debug static compatibility;
+offline native tests exercise only descriptor formatting and simulated controls.
+No venv, package install, source/target/Secret/Session or E5-E/F behavior is added.
+Production `execute_plan()` remains denied; runtime remains UNAVAILABLE, ready=false.

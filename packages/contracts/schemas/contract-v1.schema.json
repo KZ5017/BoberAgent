@@ -4119,9 +4119,19 @@
       "title": "PythonBackendIdentity",
       "type": "object"
     },
+    "PythonDistributionEvidence": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PythonDistributionIdentity"
+        },
+        {
+          "$ref": "#/$defs/PythonProjectedDistributionIdentity"
+        }
+      ]
+    },
     "PythonDistributionIdentity": {
       "additionalProperties": false,
-      "description": "Logical pins, not a host path, installer attestation, readiness or authority.",
+      "description": "Historical full-tree v1 evidence; never reinterpreted as a projection.",
       "properties": {
         "entry_count": {
           "$ref": "#/$defs/Limit"
@@ -4165,7 +4175,6 @@
         }
       },
       "required": [
-        "manifest_version",
         "provisioning",
         "interpreter_relative_path",
         "manifest_sha256",
@@ -4173,7 +4182,8 @@
         "support_manifest_sha256",
         "metadata_sha256",
         "entry_count",
-        "runtime_bytes"
+        "runtime_bytes",
+        "manifest_version"
       ],
       "title": "PythonDistributionIdentity",
       "type": "object"
@@ -4317,7 +4327,7 @@
         "distribution": {
           "anyOf": [
             {
-              "$ref": "#/$defs/PythonDistributionIdentity"
+              "$ref": "#/$defs/PythonDistributionEvidence"
             },
             {
               "type": "null"
@@ -4357,6 +4367,68 @@
         "closure_sha256"
       ],
       "title": "PythonInterpreterIdentity",
+      "type": "object"
+    },
+    "PythonProjectedDistributionIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "entry_count": {
+          "$ref": "#/$defs/Limit"
+        },
+        "interpreter_relative_path": {
+          "const": "bin/python3.12",
+          "title": "Interpreter Relative Path",
+          "type": "string"
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "manifest_version": {
+          "const": "m20-e5-python-distribution@2",
+          "title": "Manifest Version",
+          "type": "string"
+        },
+        "metadata_sha256": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sha256Digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "projection": {
+          "$ref": "#/$defs/PythonRuntimeProjectionIdentity"
+        },
+        "provisioning": {
+          "const": "OPERATOR_PREPROVISIONED_UV",
+          "title": "Provisioning",
+          "type": "string"
+        },
+        "root_binding_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "runtime_bytes": {
+          "$ref": "#/$defs/Limit"
+        },
+        "support_manifest_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        }
+      },
+      "required": [
+        "provisioning",
+        "interpreter_relative_path",
+        "manifest_sha256",
+        "root_binding_sha256",
+        "support_manifest_sha256",
+        "metadata_sha256",
+        "entry_count",
+        "runtime_bytes",
+        "manifest_version",
+        "projection"
+      ],
+      "title": "PythonProjectedDistributionIdentity",
       "type": "object"
     },
     "PythonProviderOperation": {
@@ -4912,6 +4984,102 @@
         "layout_version"
       ],
       "title": "PythonRuntimeProfileIdentity",
+      "type": "object"
+    },
+    "PythonRuntimeProjectionIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "base_manifest_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "excluded_manifest_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "profile": {
+          "$ref": "#/$defs/PythonRuntimeProjectionProfile"
+        },
+        "profile_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "projection_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "selected_manifest_sha256": {
+          "$ref": "#/$defs/Sha256Digest"
+        }
+      },
+      "required": [
+        "profile",
+        "profile_sha256",
+        "base_manifest_sha256",
+        "selected_manifest_sha256",
+        "excluded_manifest_sha256",
+        "projection_sha256"
+      ],
+      "title": "PythonRuntimeProjectionIdentity",
+      "type": "object"
+    },
+    "PythonRuntimeProjectionProfile": {
+      "additionalProperties": false,
+      "description": "Closed initial executable view; not caller-provided exclusion rules.",
+      "properties": {
+        "profile_id": {
+          "const": "m20-e5-python-runtime-profile",
+          "default": "m20-e5-python-runtime-profile",
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "profile_version": {
+          "const": "1",
+          "default": "1",
+          "title": "Profile Version",
+          "type": "string"
+        },
+        "required": {
+          "default": [
+            "INTERPRETER",
+            "CORE_STDLIB",
+            "STDLIB_EXTENSIONS",
+            "VENV",
+            "SHARED_CLOSURE"
+          ],
+          "items": {
+            "enum": [
+              "INTERPRETER",
+              "CORE_STDLIB",
+              "STDLIB_EXTENSIONS",
+              "VENV",
+              "SHARED_CLOSURE"
+            ],
+            "type": "string"
+          },
+          "title": "Required",
+          "type": "array"
+        },
+        "supported_optional": {
+          "default": [
+            "NON_GUI_STDLIB"
+          ],
+          "items": {
+            "const": "NON_GUI_STDLIB",
+            "type": "string"
+          },
+          "title": "Supported Optional",
+          "type": "array"
+        },
+        "unsupported_optional": {
+          "default": [
+            "TKINTER_TCL_TK"
+          ],
+          "items": {
+            "const": "TKINTER_TCL_TK",
+            "type": "string"
+          },
+          "title": "Unsupported Optional",
+          "type": "array"
+        }
+      },
+      "title": "PythonRuntimeProjectionProfile",
       "type": "object"
     },
     "PythonRuntimeReason": {

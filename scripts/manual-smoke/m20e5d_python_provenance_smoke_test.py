@@ -71,6 +71,9 @@ async def run(args: argparse.Namespace) -> int:
                     "interpreter_sha256": manifest.interpreter_sha256,
                     "root_binding_sha256": manifest.root_binding_sha256,
                     "entries": len(manifest.entries) + len(manifest.support_entries),
+                    "manifest_version": manifest.schema_version,
+                    "projection": manifest.projection.model_dump(mode="json"),
+                    "excluded_entries": len(manifest.excluded_entries),
                     "runtime": "UNAVAILABLE",
                     "ready": False,
                 }
@@ -147,6 +150,8 @@ async def run(args: argparse.Namespace) -> int:
                     "interpreter_sha256": manifest.interpreter_sha256,
                     "manifest_sha256": manifest.digest,
                     "root_binding_sha256": manifest.root_binding_sha256,
+                    "manifest_version": manifest.schema_version,
+                    "projection": manifest.projection.model_dump(mode="json"),
                     "evidence_sha256": digest_value(dossier),
                     "revalidation": "PASS",
                     "resource_created": False,

@@ -27,7 +27,7 @@ from boberagent_execution_node.persistence.migrations import current_revision, u
 from boberagent_execution_node.persistence.orm import PythonRuntimeEvidenceRow
 from boberagent_execution_node.preparation import python_distribution as distribution
 from boberagent_execution_node.preparation.python_distribution import (
-    DistributionManifest,
+    MANIFEST_ADAPTER,
     ProvenanceFailure,
     PythonDistributionConfiguration,
     inventory,
@@ -220,7 +220,7 @@ def test_exact_family_and_full_canonical_closure(
     assert identity.distribution is not None
     assert identity.distribution.interpreter_relative_path == "bin/python3.12"
     assert "venv/__init__.py" in " ".join(e.path for e in manifest.entries)
-    assert DistributionManifest.model_validate_json(manifest.model_dump_json()) == manifest
+    assert MANIFEST_ADAPTER.validate_json(manifest.model_dump_json()) == manifest
     # Ordered canonical entries don't depend on directory iteration order or mtimes.
     os.utime(configured.distribution_root / "lib/python3.12/json.py", (1, 1))
     assert inventory(configured) == manifest
@@ -365,7 +365,9 @@ def test_metadata_support_caches_and_root_binding(
         revalidate(moved, manifest.identity())
 
 
-def owned(database: RuntimeDatabase) -> tuple[PythonResourceRepository, PythonProvenanceRepository]:
+def owned(
+    database: RuntimeDatabase, *, temporary_bytes: int = 20 * 1024**2, file_count: int = 4000
+) -> tuple[PythonResourceRepository, PythonProvenanceRepository]:
     authority = runtime_authority_fixture()
     # Real ownership admission with roomy synthetic budgets for fourteen fixed ops.
     budgets = authority.permit.spec.budgets.model_copy(
@@ -373,8 +375,8 @@ def owned(database: RuntimeDatabase) -> tuple[PythonResourceRepository, PythonPr
             "max_processes": 11,
             "max_total_runtime_seconds": 600,
             "max_preparation_write_bytes": 64 * 1024**2,
-            "max_temporary_bytes": 2 * 1024**2,
-            "max_file_count": 2000,
+            "max_temporary_bytes": temporary_bytes,
+            "max_file_count": file_count,
             "max_captured_output_bytes": 100000,
         }
     )
@@ -392,6 +394,49 @@ def owned(database: RuntimeDatabase) -> tuple[PythonResourceRepository, PythonPr
     )
     resources.reserve(authority, principal_id="core-test")
     return resources, PythonProvenanceRepository(resources)
+
+
+@pytest.mark.parametrize("limits", [dict(temporary_bytes=2 * 1024**2), dict(file_count=2000)])
+def test_projection_control_overhead_must_fit_existing_authority(
+    configured: PythonDistributionConfiguration, tmp_path: Path, limits: dict[str, int]
+) -> None:
+    from boberagent_contracts import PreparationReasonCode, ResourceRef
+    from boberagent_execution_node.preparation.resources import ResourceOwnershipError
+
+    database = RuntimeDatabase(tmp_path / "bounded-control.sqlite3")
+    upgrade_database(database)
+    resources, repository = owned(database, **limits)
+    with database.transaction() as session:
+        resource = ResourceRef(
+            session.scalar(text("SELECT resource_id FROM python_resource_details"))
+        )
+    claim = resources.claim(
+        resource,
+        operation_id=DomainRef("inspect-bounded"),
+        operation=PythonProviderOperation.INSPECT_INTERPRETER,
+        owner_token=DomainRef("owner"),
+        lease_seconds=300,
+        principal_id="core-test",
+    )
+    backend = FakeIdentityBackend()
+    with pytest.raises(ResourceOwnershipError) as failure:
+        asyncio.run(
+            inspect_owned_interpreter(
+                configured,
+                backend,
+                runtime_binding_fixture().backend,
+                repository,
+                claim,
+                clock=lambda: NOW,
+            )
+        )
+    assert failure.value.code is PreparationReasonCode.WORKSPACE_LIMIT_EXCEEDED
+    assert backend.calls == [] and repository.history(resource) == ()
+    assert resources.load(resource).state is PythonResourceState.LOST
+    from boberagent_contracts import PythonProviderPhase
+
+    assert resources.load(resource).phase is PythonProviderPhase.QUARANTINED
+    database.close()
 
 
 def test_owned_inspection_restart_history_and_no_ready(

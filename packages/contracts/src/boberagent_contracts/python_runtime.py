@@ -204,10 +204,51 @@ class PythonRuntimeAuthorityProjection(PythonRuntimeModel):
         return self
 
 
-class PythonDistributionIdentity(PythonRuntimeModel):
+class PythonRuntimeProjectionProfile(PythonRuntimeModel):
+    """Closed initial executable view; not caller-provided exclusion rules."""
+
+    profile_id: Literal["m20-e5-python-runtime-profile"] = "m20-e5-python-runtime-profile"
+    profile_version: Literal["1"] = "1"
+    required: tuple[
+        Literal["INTERPRETER", "CORE_STDLIB", "STDLIB_EXTENSIONS", "VENV", "SHARED_CLOSURE"], ...
+    ] = ("INTERPRETER", "CORE_STDLIB", "STDLIB_EXTENSIONS", "VENV", "SHARED_CLOSURE")
+    supported_optional: tuple[Literal["NON_GUI_STDLIB"], ...] = ("NON_GUI_STDLIB",)
+    unsupported_optional: tuple[Literal["TKINTER_TCL_TK"], ...] = ("TKINTER_TCL_TK",)
+
+    @model_validator(mode="after")
+    def closed_features(self) -> Self:
+        if (
+            self.required
+            != ("INTERPRETER", "CORE_STDLIB", "STDLIB_EXTENSIONS", "VENV", "SHARED_CLOSURE")
+            or self.supported_optional != ("NON_GUI_STDLIB",)
+            or self.unsupported_optional != ("TKINTER_TCL_TK",)
+        ):
+            raise ValueError("unsupported Python projection feature selection")
+        return self
+
+
+class PythonRuntimeProjectionIdentity(PythonRuntimeModel):
+    profile: PythonRuntimeProjectionProfile
+    profile_sha256: Sha256Digest
+    base_manifest_sha256: Sha256Digest
+    selected_manifest_sha256: Sha256Digest
+    excluded_manifest_sha256: Sha256Digest
+    projection_sha256: Sha256Digest
+
+    @model_validator(mode="after")
+    def pinned_profile(self) -> Self:
+        if self.profile_sha256 != canonical_digest(
+            self.profile
+        ) or self.projection_sha256 != canonical_digest(
+            self, exclude=frozenset({"projection_sha256"})
+        ):
+            raise ValueError("Python projection identity mismatch")
+        return self
+
+
+class _PythonDistributionPins(PythonRuntimeModel):
     """Logical pins, not a host path, installer attestation, readiness or authority."""
 
-    manifest_version: Literal["m20-e5-python-distribution@1"]
     provisioning: Literal["OPERATOR_PREPROVISIONED_UV"]
     interpreter_relative_path: Literal["bin/python3.12"]
     manifest_sha256: Sha256Digest
@@ -216,6 +257,20 @@ class PythonDistributionIdentity(PythonRuntimeModel):
     metadata_sha256: Sha256Digest | None
     entry_count: Limit
     runtime_bytes: Limit
+
+
+class PythonDistributionIdentity(_PythonDistributionPins):
+    """Historical full-tree v1 evidence; never reinterpreted as a projection."""
+
+    manifest_version: Literal["m20-e5-python-distribution@1"]
+
+
+class PythonProjectedDistributionIdentity(_PythonDistributionPins):
+    manifest_version: Literal["m20-e5-python-distribution@2"]
+    projection: PythonRuntimeProjectionIdentity
+
+
+type PythonDistributionEvidence = PythonDistributionIdentity | PythonProjectedDistributionIdentity
 
 
 class PythonInterpreterIdentity(PythonRuntimeModel):
@@ -228,7 +283,7 @@ class PythonInterpreterIdentity(PythonRuntimeModel):
     base_layout: Literal["m20-e5-system-python@1", "m20-e5-uv-python@1"]
     stdlib_layout: Literal["m20-e5-system-stdlib@1", "m20-e5-uv-stdlib@1"]
     closure_sha256: Sha256Digest
-    distribution: PythonDistributionIdentity | None = None
+    distribution: PythonDistributionEvidence | None = None
 
     @model_validator(mode="after")
     def admitted_interpreter(self) -> Self:

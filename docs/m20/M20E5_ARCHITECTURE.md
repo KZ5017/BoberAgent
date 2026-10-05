@@ -129,5 +129,6 @@ and fixed confined identity over exactly that projection, with
 immutable Resource-bound PROVENANCE_VERIFIED evidence. It never constructs an environment
 or makes READY; the approved uv-source refinement and trust transition are recorded in
 ADRs 0021–0022 and [E5-D implementation](M20E5D_IMPLEMENTATION.md). E5-E must instantiate
-the same certified projection, never re-expose excluded optional Tcl/Tk bytes. General
+the same certified projection, never re-expose excluded optional Tcl/Tk or package-manager
+bytes (site-packages, ensurepip/wheels and dependent launchers). General
 environment construction remains unimplemented and real D acceptance remains required.

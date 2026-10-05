@@ -51,16 +51,42 @@ The third real-Kali finding localized absolute RPATHs to the optional Tcl/Tk bra
 `libtcl9.0.so` and `libtcl9tk9.0.so` use `/tools/deps/lib`; `_tkinter` needs them.
 The path's absence does not authorize it. [ADR 0022](../adr/0022-m20-e5-trusted-python-runtime-projection.md)
 defines `m20-e5-python-runtime-profile@1`, retaining interpreter/core stdlib/non-GUI
-extensions/venv/shared closure and excluding the explicit `TKINTER_TCL_TK` feature.
+extensions/venv/shared closure and excluding the explicit `TKINTER_TCL_TK` feature
+and, after the next real-Kali finding, `PACKAGE_MANAGER`.
 
 Selection uses the native exported `PyInit__tkinter` identity plus module/ABI location,
 DT_NEEDED graph, SONAME metadata and absence of retained consumers. It is not a broad
 filename denylist. `_tkinter`, the `tkinter` package/caches, feature-private libraries
 and SONAME-version/sentinel-matched Tcl/Tk data are excluded. Unrecognized data and
 unrelated stdlib remain selected; `turtle`/`idlelib` are not speculatively removed,
-but their GUI imports cannot work in this non-GUI profile. Nonempty third-party
-site-packages, alternative GUI module overlays and packed `python312.zip` layouts
-are rejected, not silently certified. Required venv/stdlib material cannot be removed.
+but their GUI imports cannot work in this non-GUI profile. Alternative GUI module
+overlays and packed `python312.zip` layouts remain rejected. Required venv/stdlib
+material cannot be removed.
+
+The next real-Kali finding was trusted uv provisioned pip 26.2.1 in nonempty
+site-packages. Base presence is no longer rejected: the complete
+`lib/python3.12/site-packages` namespace (directory, pip/other packages, dist-info,
+README, caches, native files) is excluded as `PACKAGE_MANAGER`. All excluded bytes
+remain bounded, trusted and hash-bound. They cannot contribute executable RPATH
+eligibility or support authority, and malformed ELF still rejects. The selected
+namespace has **zero site-packages entries**; the manifest validator enforces this.
+
+The complete stdlib `ensurepip` package, caches and bundled wheels are also excluded:
+static CPython 3.12 inspection confirms that it bootstraps pip from wheels. Required
+`venv` stays selected; its `with_pip=False` construction does not call `_setup_pip`.
+No venv, pip, installation or E5-E constructor is implemented by this refinement.
+Alternative ensurepip module overlays fail closed.
+
+Bounded Python-script/shebang and AST console-entry-point facts connect launchers
+to modules in the excluded namespace. pip, pip3, pip3.12 and renamed equivalent
+wrappers are excluded without a filename/version blacklist. Distribution metadata
+is hashed evidence, not executable discovery. Unknown/dependent wrappers reject;
+only proven launcher aliases under bin are deliberately excluded. Retained links
+cannot reach package-manager files. Static stdlib-family/Tk imports identify the
+idle launcher under the GUI feature. pydoc, 2to3 and python-config remain selected
+when they do not depend on excluded material. Launcher inspection is bounded to
+256 KiB per script, 20,000 AST nodes, 128 inspected records, 2 MiB cumulative reads
+and 64 dependency-family records; it is not arbitrary program analysis.
 
 All excluded base material still needs trusted owners/modes/parents, approved links,
 stable bounded reads and structurally valid ELF. Unknown/malformed ELF is not exempt.
@@ -71,10 +97,16 @@ and must pass that policy. Distribution bytes are never patched/deleted.
 
 Manifest `m20-e5-python-distribution@2` and `PythonProjectedDistributionIdentity`
 bind exact profile/base/selected+support/excluded hashes and a combined projection
-digest. Typed exclusions preserve feature and native/package/library/data roles.
+digest. Typed exclusions preserve feature and native/package/library/data roles,
+plus provisioning-namespace, stdlib-bootstrap and launcher roles.
 Old `@1` manifest/identity shapes and hashes remain immutable/readable; a v1 manifest
 cannot be reinterpreted as a v2 projection or reused against newly inventoried pins.
 Existing JSON evidence columns need no migration; schema exports are regenerated.
+The existing profile `@1` has an exact hash-bound feature list: fresh evidence always
+uses `(TKINTER_TCL_TK, PACKAGE_MANAGER)`. Historical explicit Tk-only v2 evidence
+keeps its exact bytes/hashes and remains readable, but is rejected for current
+exposure/repinning. Nothing silently reinterprets sealed history. The feature list
+and changed profile digest unambiguously bind this refinement within the v2 shape.
 
 D's fixed identity now uses a bounded Node-private read-only mount descriptor with
 exact selected membership. Complete selected subtrees may be bound; ancestors of
@@ -90,7 +122,9 @@ construction, workspace Resource or general-purpose command interface is introdu
 
 **E5-D certifies a versioned executable runtime projection. E5-E must instantiate
 exactly that certified projection.** `verify_exposure()` rejects extra, missing,
-excluded or changed selected entries. This is a future constructor obligation, not
+excluded or changed selected entries, including site-packages, pip wrappers,
+ensurepip/wheels and Tcl/Tk. Historical Tk-only profiles cannot authorize current
+exposure. This is a future constructor obligation, not
 a claim that E5-E exists. Whole-tree exposure is forbidden. Rebuild/repin the helper,
 review fresh v2 manifest/projection pins, then rerun real Kali provenance acceptance.
 The offline change does not close D or set READY.

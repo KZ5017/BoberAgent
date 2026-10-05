@@ -213,7 +213,10 @@ class PythonRuntimeProjectionProfile(PythonRuntimeModel):
         Literal["INTERPRETER", "CORE_STDLIB", "STDLIB_EXTENSIONS", "VENV", "SHARED_CLOSURE"], ...
     ] = ("INTERPRETER", "CORE_STDLIB", "STDLIB_EXTENSIONS", "VENV", "SHARED_CLOSURE")
     supported_optional: tuple[Literal["NON_GUI_STDLIB"], ...] = ("NON_GUI_STDLIB",)
-    unsupported_optional: tuple[Literal["TKINTER_TCL_TK"], ...] = ("TKINTER_TCL_TK",)
+    unsupported_optional: tuple[Literal["TKINTER_TCL_TK", "PACKAGE_MANAGER"], ...] = (
+        "TKINTER_TCL_TK",
+        "PACKAGE_MANAGER",
+    )
 
     @model_validator(mode="after")
     def closed_features(self) -> Self:
@@ -221,7 +224,11 @@ class PythonRuntimeProjectionProfile(PythonRuntimeModel):
             self.required
             != ("INTERPRETER", "CORE_STDLIB", "STDLIB_EXTENSIONS", "VENV", "SHARED_CLOSURE")
             or self.supported_optional != ("NON_GUI_STDLIB",)
-            or self.unsupported_optional != ("TKINTER_TCL_TK",)
+            # The explicit Tk-only shape remains decodable as historical evidence.
+            # Fresh inventory always emits both features. Their exact membership
+            # is hash-bound: old pins cannot authorize the refined executable view.
+            or self.unsupported_optional
+            not in {("TKINTER_TCL_TK",), ("TKINTER_TCL_TK", "PACKAGE_MANAGER")}
         ):
             raise ValueError("unsupported Python projection feature selection")
         return self

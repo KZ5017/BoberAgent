@@ -6,6 +6,7 @@ Nothing in this module executes the candidate, source, installer or ELF tooling.
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import os
@@ -140,8 +141,16 @@ class DistributionManifest(Record):
 
 class ExcludedRuntimeEntry(Record):
     entry: ManifestEntry
-    feature: Literal["TKINTER_TCL_TK"] = "TKINTER_TCL_TK"
-    role: Literal["NATIVE_MODULE", "PYTHON_PACKAGE", "EXCLUSIVE_LIBRARY", "FEATURE_DATA"]
+    feature: Literal["TKINTER_TCL_TK", "PACKAGE_MANAGER"] = "TKINTER_TCL_TK"
+    role: Literal[
+        "NATIVE_MODULE",
+        "PYTHON_PACKAGE",
+        "EXCLUSIVE_LIBRARY",
+        "FEATURE_DATA",
+        "PROVISIONING_NAMESPACE",
+        "STDLIB_BOOTSTRAP",
+        "LAUNCHER",
+    ]
 
 
 class ProjectedDistributionManifest(Record):
@@ -164,12 +173,20 @@ class ProjectedDistributionManifest(Record):
         )
         if (
             len({e.path for e in base}) != len(base)
+            or any(
+                e.feature not in self.projection.profile.unsupported_optional
+                for e in self.excluded_entries
+            )
             or self.projection.base_manifest_sha256 != digest_value(base)
             or self.projection.selected_manifest_sha256
             != digest_value((self.entries, self.support_entries))
             or self.projection.excluded_manifest_sha256 != digest_value(self.excluded_entries)
         ):
             raise ValueError("projection manifest mismatch")
+        if "PACKAGE_MANAGER" in self.projection.profile.unsupported_optional and any(
+            _package_manager_path(e.path) for e in self.entries
+        ):
+            raise ValueError("package-manager namespace in selected projection")
         return self
 
     @property
@@ -506,11 +523,205 @@ def _elf(
     return metadata.needed, metadata.interpreter
 
 
+def _package_manager_path(path: str) -> bool:
+    return any(
+        path == namespace or path.startswith(namespace + "/")
+        for namespace in ("lib/python3.12/site-packages", "lib/python3.12/ensurepip")
+    )
+
+
+class _ScriptFacts(NamedTuple):
+    modules: frozenset[str]
+    console_modules: frozenset[str]
+
+
+def _script_facts(data: bytes, *, launcher: bool) -> _ScriptFacts:
+    """Parse source as data, never import it. Closed, bounded console-wrapper facts."""
+    if len(data) > 256 * 1024:
+        raise ValueError("launcher source bound")
+    tree = ast.parse(data)
+    nodes = list(ast.walk(tree))
+    if len(nodes) > 20000:
+        raise ValueError("launcher syntax bound")
+    imports: dict[str, str] = {}
+    dynamic_names = {"__import__", "import_module", "run_module"}
+    modules: set[str] = set()
+    console: set[str] = set()
+    for node in nodes:
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                modules.add(alias.name)
+                imports[alias.asname or alias.name.split(".")[0]] = alias.name
+        elif isinstance(node, ast.ImportFrom) and node.module and not node.level:
+            modules.add(node.module)
+            for alias in node.names:
+                imports[alias.asname or alias.name] = node.module
+                if alias.name in {"__import__", "import_module", "run_module"}:
+                    dynamic_names.add(alias.asname or alias.name)
+
+    def referenced(call: ast.Call) -> str | None:
+        name = call.func
+        while isinstance(name, ast.Attribute):
+            name = name.value
+        return imports.get(name.id) if isinstance(name, ast.Name) else None
+
+    for node in nodes:
+        if not isinstance(node, ast.Call):
+            continue
+        # A literal dynamic module invocation is a dependency, not a certified
+        # console wrapper. Such a launcher must reject if that module is excluded.
+        function = node.func
+        if isinstance(function, ast.Name | ast.Attribute):
+            method = function.id if isinstance(function, ast.Name) else function.attr
+            if method == "load_entry_point" and launcher:
+                raise ValueError("unsupported metadata-based launcher")
+            if method in dynamic_names:
+                if not node.args or not isinstance(node.args[0], ast.Constant):
+                    if launcher:
+                        raise ValueError("unresolved launcher module")
+                    continue
+                value = node.args[0].value
+                if not isinstance(value, str):
+                    if launcher:
+                        raise ValueError("unresolved launcher module")
+                    continue
+                modules.add(value)
+        # Ordinary distlib/pip wrappers call a directly imported entry point
+        # through sys.exit(...). No launcher name or pip version is consulted.
+        if (
+            isinstance(function, ast.Attribute)
+            and function.attr == "exit"
+            and isinstance(function.value, ast.Name)
+            and imports.get(function.value.id) == "sys"
+            and len(node.args) == 1
+            and isinstance(node.args[0], ast.Call)
+            and (module := referenced(node.args[0])) is not None
+        ):
+            console.add(module)
+    for node in nodes:
+        if (
+            isinstance(node, ast.If)
+            and isinstance(node.test, ast.Compare)
+            and isinstance(node.test.left, ast.Name)
+            and node.test.left.id == "__name__"
+            and len(node.test.ops) == 1
+            and isinstance(node.test.ops[0], ast.Eq)
+            and len(node.test.comparators) == 1
+            and isinstance(node.test.comparators[0], ast.Constant)
+            and node.test.comparators[0].value == "__main__"
+        ):
+            for child in node.body:
+                if (
+                    isinstance(child, ast.Expr)
+                    and isinstance(child.value, ast.Call)
+                    and (module := referenced(child.value)) is not None
+                ):
+                    console.add(module)
+    return _ScriptFacts(frozenset(modules), frozenset(console))
+
+
+def _launcher_features(
+    root: Path, base: tuple[ManifestEntry, ...], excluded: set[str], native_files: set[Path]
+) -> dict[str, Literal["PACKAGE_MANAGER", "TKINTER_TCL_TK"]]:
+    """Bounded static launcher dependencies; no source execution/installer probing.
+
+    Module imports bind a wrapper to an inventoried excluded namespace. For GUI
+    stdlib entry points, follow only imports within that entry point's own family,
+    not a speculative whole-stdlib dependency graph. Unknown wrappers fail closed.
+    """
+    entries = {e.path: e for e in base}
+    cache: dict[str, _ScriptFacts] = {}
+    total = 0
+
+    def facts(path: str) -> _ScriptFacts:
+        nonlocal total
+        if path not in cache:
+            if len(cache) >= 128:
+                raise ValueError("launcher inspection record bound")
+            entry = entries[path]
+            data = _bytes(root / path, 256 * 1024)
+            total += len(data)
+            if total > 2 * 1024**2 or hashlib.sha256(data).hexdigest() != entry.sha256:
+                raise ValueError("launcher inspection content bound/binding")
+            cache[path] = _script_facts(data, launcher=path.startswith("bin/"))
+        return cache[path]
+
+    site = "lib/python3.12/site-packages/"
+    third_party = {
+        e.path.removeprefix(site).split("/")[0].split(".")[0]
+        for e in base
+        if e.path.startswith(site)
+        and (e.kind == "directory" or e.path.endswith((".py", ".pyc", ".so")))
+    }
+
+    def feature(module: str) -> Literal["PACKAGE_MANAGER", "TKINTER_TCL_TK"] | None:
+        family = module.split(".")[0]
+        if family in third_party or family == "ensurepip":
+            return "PACKAGE_MANAGER"
+        pending = [module]
+        seen: set[str] = set()
+        while pending:
+            current = pending.pop()
+            if current in seen:
+                continue
+            seen.add(current)
+            if len(seen) > 64:
+                raise ValueError("launcher dependency bound")
+            if current.split(".")[0] in third_party | {"ensurepip"}:
+                return "PACKAGE_MANAGER"
+            if current.split(".")[0] in {"tkinter", "_tkinter"}:
+                return "TKINTER_TCL_TK"
+            prefix = "lib/python3.12/" + current.replace(".", "/")
+            for path in (prefix + ".py", prefix + "/__init__.py"):
+                if path in excluded:
+                    return "TKINTER_TCL_TK"
+                if path in entries and entries[path].kind == "file":
+                    pending.extend(
+                        m
+                        for m in sorted(facts(path).modules)
+                        if m.split(".")[0]
+                        in third_party | {family, "tkinter", "_tkinter", "ensurepip"}
+                    )
+        return None
+
+    result: dict[str, Literal["PACKAGE_MANAGER", "TKINTER_TCL_TK"]] = {}
+    for entry in base:
+        if (
+            not entry.path.startswith("bin/")
+            or entry.kind != "file"
+            or root / entry.path in native_files
+        ):
+            continue
+        data = _bytes(root / entry.path, 256 * 1024)
+        total += len(data)
+        if total > 2 * 1024**2 or hashlib.sha256(data).hexdigest() != entry.sha256:
+            raise ValueError("launcher content binding")
+        if not data.startswith(b"#!"):
+            continue
+        if b"python" not in data.split(b"\n", 1)[0]:
+            # Shell config tooling is retained; literal references into excluded
+            # namespaces are not an alternative launcher/exposure escape hatch.
+            if any(p.encode() in data for p in (site.rstrip("/"), "ensurepip", "tkinter")):
+                raise ValueError("unsupported launcher into excluded namespace")
+            continue
+        script = facts(entry.path)
+        dependencies = {m: f for m in sorted(script.modules) if (f := feature(m)) is not None}
+        if dependencies:
+            if (
+                not set(dependencies) <= script.console_modules
+                or len(set(dependencies.values())) != 1
+            ):
+                raise ValueError("selected launcher depends on excluded feature")
+            result[entry.path] = next(iter(dependencies.values()))
+    return result
+
+
 def _project(
     root: Path,
     base: tuple[ManifestEntry, ...],
     metadata: dict[Path, _ELFMetadata],
     links: dict[Path, Path],
+    native_files: set[Path],
 ) -> tuple[tuple[ManifestEntry, ...], tuple[ExcludedRuntimeEntry, ...]]:
     """Closed feature selector: import identity + native dependency ownership.
 
@@ -518,9 +729,11 @@ def _project(
     native feature. Libraries with any retained consumer stay selected and must
     pass normal eligibility. Unknown native material is never silently removed.
     """
+    package_manager = {e.path for e in base if _package_manager_path(e.path)}
     native = {
         path
         for path, facts in metadata.items()
+        if path.relative_to(root).as_posix() not in package_manager
         if facts.python_exports == ("PyInit__tkinter",)
         and path.parent == root / "lib/python3.12/lib-dynload"
         and path.name
@@ -561,7 +774,7 @@ def _project(
     while shared := {
         target
         for path, targets in graph.items()
-        if path not in exclusive
+        if path not in exclusive and path.relative_to(root).as_posix() not in package_manager
         for target in targets
         if target in exclusive
     }:
@@ -569,7 +782,16 @@ def _project(
     if not native <= exclusive:
         raise ValueError("unsupported native feature has retained consumer")
     roles: dict[
-        str, Literal["NATIVE_MODULE", "PYTHON_PACKAGE", "EXCLUSIVE_LIBRARY", "FEATURE_DATA"]
+        str,
+        Literal[
+            "NATIVE_MODULE",
+            "PYTHON_PACKAGE",
+            "EXCLUSIVE_LIBRARY",
+            "FEATURE_DATA",
+            "PROVISIONING_NAMESPACE",
+            "STDLIB_BOOTSTRAP",
+            "LAUNCHER",
+        ],
     ] = {
         path.relative_to(root).as_posix(): "NATIVE_MODULE"
         if path in native
@@ -609,9 +831,31 @@ def _project(
             for entry in base:
                 if entry.path == directory or entry.path.startswith(directory + "/"):
                     roles[entry.path] = "FEATURE_DATA"
+    features: dict[str, Literal["TKINTER_TCL_TK", "PACKAGE_MANAGER"]] = {
+        path: "TKINTER_TCL_TK" for path in roles
+    }
+    for relative in package_manager:
+        roles[relative] = (
+            "PROVISIONING_NAMESPACE"
+            if relative.startswith("lib/python3.12/site-packages")
+            else "STDLIB_BOOTSTRAP"
+        )
+        features[relative] = "PACKAGE_MANAGER"
+    launchers = _launcher_features(root, base, set(roles), native_files)
+    for relative, feature in launchers.items():
+        roles[relative], features[relative] = "LAUNCHER", feature
+    # Only aliases of structurally identified unsupported launchers are excluded.
+    # An arbitrary retained alias into excluded package content must reject.
+    for alias, target in links.items():
+        target_name = target.relative_to(root).as_posix()
+        if target_name in launchers and alias.parent == root / "bin":
+            relative = alias.relative_to(root).as_posix()
+            roles[relative], features[relative] = "LAUNCHER", launchers[target_name]
     selected = tuple(e for e in base if e.path not in roles)
     excluded = tuple(
-        ExcludedRuntimeEntry(entry=e, role=roles[e.path]) for e in base if e.path in roles
+        ExcludedRuntimeEntry(entry=e, role=roles[e.path], feature=features[e.path])
+        for e in base
+        if e.path in roles
     )
     # Retained links must not reach excluded bytes through a different import path.
     for entry in selected:
@@ -627,13 +871,17 @@ def _project(
     ):
         if not any(e.path == required for e in selected):
             raise ValueError("required projection material removed")
-    # An optional GUI feature is the only exclusion. Unexpected third-party or
-    # alternative Python implementations of that feature are not silently pruned.
+    # Alternative import roots cannot reintroduce an excluded feature.
     for entry in selected:
         if (
-            entry.path.startswith("lib/python3.12/site-packages/")
-            or entry.path == "lib/python312.zip"
-            or entry.path in {"lib/python3.12/tkinter.py", "lib/python3.12/tkinter.pyc"}
+            entry.path == "lib/python312.zip"
+            or entry.path
+            in {
+                "lib/python3.12/tkinter.py",
+                "lib/python3.12/tkinter.pyc",
+                "lib/python3.12/ensurepip.py",
+                "lib/python3.12/ensurepip.pyc",
+            }
             or any(
                 entry.path.startswith(prefix) and entry.path.endswith((".py", ".pyc"))
                 for prefix in ("lib/python3.12/_tkinter", "lib/python3.12/lib-dynload/_tkinter")
@@ -652,7 +900,7 @@ def inventory(
         return _inventory(configuration, verify_pins=verify_pins)
     except ProvenanceFailure:
         raise
-    except (OSError, ValueError, UnicodeError, struct.error, RecursionError):
+    except (OSError, ValueError, SyntaxError, UnicodeError, struct.error, RecursionError):
         raise ProvenanceFailure(
             PythonRuntimeReason.RUNTIME_INTEGRITY_FAILURE, "distribution_inventory"
         ) from None
@@ -778,7 +1026,9 @@ def _inventory(
             if not any(e.path == target and e.kind == "file" for e in distribution_entries):
                 raise ValueError("symlink target not inventoried/mounted")
     base_entries = tuple(sorted(distribution_entries, key=lambda e: e.path))
-    distribution_entries, excluded_entries = _project(root, base_entries, elf_metadata, links)
+    distribution_entries, excluded_entries = _project(
+        root, base_entries, elf_metadata, links, elf_files
+    )
     selected_paths = {root / e.path for e in distribution_entries}
     regular_files &= selected_paths
     elf_files &= selected_paths

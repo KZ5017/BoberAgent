@@ -812,6 +812,11 @@ trusted distribution before approving its observed pins. Inventory is not vendor
 or a success/readiness result. It checks/hashes all base bin/lib bytes and bounded
 metadata, then selects the typed non-GUI projection and complete retained support closure.
 Optional Tkinter/Tcl/Tk is excluded structurally, not by accepting its external RPATH.
+The complete site-packages and ensurepip namespaces (including bundled wheels,
+metadata and caches) are excluded as PACKAGE_MANAGER. Structurally identified pip
+console launchers/aliases and Tk-dependent idle launchers are also absent; normal
+pydoc/2to3/config tooling remains selected. Excluded files still undergo full trust,
+bounded hashing and ELF validation. Do not delete or modify the provisioned base.
 Unknown/malformed native material remains fail-closed. Unsupported layout,
 unknown/missing library, metadata, mode or ownership fails closed. Do not chmod host-wide
 parents automatically; a provisioned runtime with unsafe modes needs explicit operator review.
@@ -832,6 +837,11 @@ profile/base/selected/excluded/projection digests, and an excluded-entry count. 
 pins with the acceptance record. Historical v1 pins are not v2 pins and must not be
 silently reused. [ADR 0022](../../docs/adr/0022-m20-e5-trusted-python-runtime-projection.md)
 explains the exact view; E5-E must later expose the same view, not the whole `lib` tree.
+Fresh profile `@1` pins bind both TKINTER_TCL_TK and PACKAGE_MANAGER. Historical
+Tk-only profile evidence remains readable unchanged, but cannot authorize the
+current view. Review fresh pins even when the interpreter hash is unchanged.
+This offline package-manager compatibility change is not real Kali acceptance,
+does not begin E5-E and does not make the runtime READY.
 Do not use the digest of bin/python alone as the distribution pin. Any runtime/owner/mode/
 parent-root drift after inventory causes check/revalidation to reject, not silently repin.
 

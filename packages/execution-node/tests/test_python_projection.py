@@ -245,7 +245,7 @@ def test_origin_interpreter_search_remains_confined(
     [
         "lib/python3.12/tkinter.py",
         "lib/python3.12/_tkinter.pyc",
-        "lib/python3.12/site-packages/third_party.py",
+        "lib/python3.12/ensurepip.py",
         "lib/python312.zip",
     ],
 )

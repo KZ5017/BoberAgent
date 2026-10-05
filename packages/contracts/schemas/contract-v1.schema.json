@@ -5069,10 +5069,14 @@
         },
         "unsupported_optional": {
           "default": [
-            "TKINTER_TCL_TK"
+            "TKINTER_TCL_TK",
+            "PACKAGE_MANAGER"
           ],
           "items": {
-            "const": "TKINTER_TCL_TK",
+            "enum": [
+              "TKINTER_TCL_TK",
+              "PACKAGE_MANAGER"
+            ],
             "type": "string"
           },
           "title": "Unsupported Optional",

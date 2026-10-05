@@ -36,6 +36,8 @@ def verify_exposure(
 ) -> None:
     """A future publisher cannot certify extra bytes or interpret v1 as v2."""
     manifest = ProjectedDistributionManifest.model_validate_json(manifest.model_dump_json())
+    if manifest.projection.profile.unsupported_optional != ("TKINTER_TCL_TK", "PACKAGE_MANAGER"):
+        raise ValueError("historical projection cannot authorize current exposure")
     if tuple(sorted(observed, key=lambda e: e.path)) != manifest.entries:
         raise ValueError("runtime projection exposure mismatch")
 

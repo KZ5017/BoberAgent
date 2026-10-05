@@ -24,8 +24,10 @@ The approved runtime closure includes the executable, loader/shared-library depe
 libpython if used, selected stdlib/extensions and venv templates. It is the explicit
 non-GUI `m20-e5-python-runtime-profile@1` projection, not the entire provisioned base.
 [ADR 0022](../adr/0022-m20-e5-trusted-python-runtime-projection.md) excludes the structurally
-identified Tkinter/Tcl/Tk feature while preserving trust/hash checks over excluded
-base bytes. Selected material still rejects absolute RPATH/RUNPATH. Record a deterministic
+identified Tkinter/Tcl/Tk and package-manager features while preserving trust/hash
+checks over excluded base bytes. The full site-packages and ensurepip namespaces,
+bundled wheels and structurally identified dependent console launchers are absent.
+Selected material still rejects absolute RPATH/RUNPATH. Record a deterministic
 bounded inventory fingerprint, not just the executable hash. Host third-party package trees,
 user files and startup customizations are excluded from the runtime view. Do not call `ldd`
 on acquired bytes or interpret source to discover this closure. The approved host layout is
@@ -52,6 +54,10 @@ E5-D certifies manifest `m20-e5-python-distribution@2` and its exact projection 
 operator `lib` tree. Fresh authority/rehashing and exact selected-entry comparison are
 mandatory; extra/excluded/missing bytes fail closed. The D fixed identity namespace
 already uses the certified read-only view. General E5-E construction is not implemented.
+Fresh profile `@1` evidence binds both unsupported features; historical Tk-only
+evidence is readable but cannot authorize current exposure. Reintroducing
+site-packages, pip wrappers, ensurepip or Tcl/Tk fails exact membership checks.
+The venv stdlib remains available, not its optional pip bootstrap.
 
 The baseline is a fresh environment constructed with semantics equivalent to:
 

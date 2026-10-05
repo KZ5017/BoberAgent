@@ -17,7 +17,8 @@ runtime and execute another. Removing or patching operator files is not acceptab
 `m20-e5-python-runtime-profile@1` defines the CPython 3.12 Linux x86_64,
 stdlib-oriented, dependency-empty, non-GUI executable view. Interpreter, core
 stdlib, non-GUI extensions, venv and retained shared closure are required/supported.
-`TKINTER_TCL_TK` is an explicitly unsupported optional feature, not a caller denylist.
+`TKINTER_TCL_TK` and `PACKAGE_MANAGER` are explicitly unsupported optional features,
+not a caller denylist.
 
 The static selector identifies the importable `_tkinter` extension using both its
 CPython module location/ABI and exported `PyInit__tkinter` dynamic-symbol identity.
@@ -27,9 +28,51 @@ retained: its absolute RPATH then fails normally. The `tkinter` Python package,
 including caches, is absent. Version-matched Tcl/Tk data trees are excluded only
 with an exclusive library's SONAME and the `init.tcl`/`tk.tcl` feature sentinel.
 Unrecognized data remains inventoried/selected; no speculative stdlib pruning.
-Alternative GUI Python modules, third-party site-packages content and an opaque
-import-visible `python312.zip` overlay are unsupported layouts, rejected rather
-than silently filtered. stdlib `ensurepip` data is not an installation permission.
+Alternative GUI Python modules and an opaque import-visible `python312.zip` overlay
+remain unsupported layouts, rejected rather than silently filtered.
+
+### Approved package-manager refinement (next real-Kali finding)
+
+The trusted uv base contains pip 26.2.1 and launchers. The former rejection of all
+nonempty site-packages was incompatible with a provisioning base; it is replaced
+by an explicit `PACKAGE_MANAGER` selection. The entire `lib/python3.12/site-packages`
+namespace, **including its directory**, packages, metadata, README, caches and any
+other contents is excluded, independent of package/version. Every byte still passes
+base trust, bounded stable hashing and structural ELF inspection. Excluded native
+dependencies/RPATHs supply no executable authority or retained support closure.
+A retained ELF depending on excluded material rejects. Malformed ELF still rejects.
+
+Static reading of CPython 3.12's `ensurepip` shows wheel-based pip bootstrapping;
+its complete package, `_bundled` wheels, caches and data are also excluded. `venv`
+remains required: CPython's construction guards `_setup_pip` with `with_pip`, so
+the future reviewed without-pip operation need not import ensurepip. This does not
+create an environment now or authorize dependency installation later.
+
+Python launchers are identified by shebang plus bounded AST imports and console
+entry-point calls (`sys.exit(imported_callable(...))` or an imported callable under
+the literal `__main__` guard). References to a module rooted in the inventoried
+excluded site namespace establish package-manager dependency, not executable
+filename or installed version. Installed distribution metadata is hash-bound as
+excluded evidence, never imported or executed. Recognized wrappers and their
+one-hop `bin` aliases are excluded; unresolved/dynamic or unsupported legacy
+metadata-based wrappers into excluded material reject rather than remain selected.
+Arbitrary retained aliases cannot reach excluded bytes. This is bounded static
+classification of trusted provisioning launchers, not a general script-safety proof.
+
+For stdlib GUI launchers, bounded reads follow the referenced module's own family
+to explicit Tk imports: the ordinary idle entry point into `idlelib.pyshell` is
+excluded under `TKINTER_TCL_TK`, regardless of launcher filename. No speculative
+removal of idlelib/turtle as library data. pydoc, 2to3 and shell config tooling remain
+selected absent an identified excluded dependency. No supplied source is imported.
+
+The v2 evidence shape already carries typed feature/role membership, so no v3 or
+database migration is needed. Profile `@1` now emits the closed feature tuple
+`(TKINTER_TCL_TK, PACKAGE_MANAGER)`; its **exact tuple and profile digest** distinguish
+it from historical Tk-only `@1` evidence. Old explicit feature tuples and their
+serialization/hashes remain readable unchanged, never upgraded. Fresh inventory
+always emits both features; exposure compilation rejects historical Tk-only
+profiles, and old pins fail current revalidation. New review/repinning is required
+even if the selected interpreter bytes did not change.
 
 Every base `bin`/`lib` entry still undergoes filesystem trust, stable bounded
 hashing and ELF-structure checks. Exclusion defers only executable RPATH eligibility,
@@ -61,7 +104,10 @@ separately verified empty venv. It must use current ownership/authority, fresh
 rehashing and exact membership/pin comparison; extra/excluded/changed material is
 a projection mismatch, never an automatic repair. `verify_exposure()` supplies
 that exact comparison boundary, not an E5-E constructor. Mounting a whole source
-`lib` tree or adding excluded GUI bytes under another import path is prohibited.
+`lib` tree or adding excluded GUI/package-manager bytes under another import path
+is prohibited. Exact exposure comparison rejects reintroduced site-packages,
+pip launchers, ensurepip/wheels, Tcl/Tk or any other excluded entry. No future
+constructor may treat the provisioned base as the certified executable view.
 
 ## Consequences and limits
 

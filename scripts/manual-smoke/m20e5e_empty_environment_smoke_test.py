@@ -15,10 +15,14 @@ from boberagent_contracts import (
     DomainRef,
     PreparationPermit,
     PythonBackendIdentity,
+    PythonProjectedDistributionIdentity,
     PythonProviderOperation,
+    PythonProviderPhase,
+    PythonResourceState,
     PythonRuntimeAuthorityProjection,
     PythonRuntimeProfileIdentity,
     PythonRuntimeRequestBinding,
+    PythonRuntimeValidity,
     preparation_permit_digest,
 )
 from boberagent_execution_node import ExecutionNode, NodeConfiguration
@@ -171,6 +175,7 @@ async def run(args: argparse.Namespace) -> int:
             repository=repository,
         )
         evidence = repository.history(reservation.resource_ref)
+        replay = evidence is not None
         if evidence is None:
             claim = resources.claim(
                 reservation.resource_ref,
@@ -183,6 +188,15 @@ async def run(args: argparse.Namespace) -> int:
             evidence = await provider.create_empty_environment(claim)
         assert repository.inspect_retained(reservation.resource_ref) == evidence
         assert repository.reconcile_retained() == 0
+        current = resources.load(reservation.resource_ref)
+        if (current.state, current.phase, current.validity) != (
+            PythonResourceState.CREATING,
+            PythonProviderPhase.VERIFYING,
+            PythonRuntimeValidity.UNCHECKED,
+        ):
+            raise ValueError("retained evidence does not imply current construction success")
+        selected_distribution = evidence.binding.interpreter.distribution
+        assert isinstance(selected_distribution, PythonProjectedDistributionIdentity)
         print(
             json.dumps(
                 {
@@ -191,15 +205,17 @@ async def run(args: argparse.Namespace) -> int:
                     "operation_id": str(evidence.operation_id),
                     "evidence_sha256": digest_value(evidence),
                     "manifest_sha256": args.manifest_sha256,
-                    "projection_sha256": evidence.binding.interpreter.distribution.projection.projection_sha256,
+                    "projection_sha256": selected_distribution.projection.projection_sha256,
                     "environment_inventory_sha256": evidence.environment.inventory_sha256,
                     "committed_environment_writes": evidence.committed_write_bytes,
                     "committed_environment_entries": evidence.committed_file_count,
                     "descendants_empty": evidence.construction.group_empty
                     and evidence.verification.group_empty,
-                    "state": evidence.state,
-                    "phase": evidence.phase,
-                    "validity": evidence.validity,
+                    "state": current.state.value,
+                    "phase": current.phase.value,
+                    "validity": current.validity.value,
+                    "runtime": "UNAVAILABLE",
+                    "inspection": "PASSIVE_RETAINED_HISTORY" if replay else "FRESH_CONSTRUCTION",
                     "ready": False,
                     "execution_authorized": False,
                     "checked_at": datetime.now(UTC).isoformat(),
@@ -217,14 +233,14 @@ def main() -> int:
     except RuntimeConfinementUnavailable as error:
         print(_failure_json(error))
     except (EnvironmentFailure, ProvenanceFailure, ResourceOwnershipError) as error:
-        failure = getattr(error, "failure", None)
+        reason = (
+            error.code if isinstance(error, ResourceOwnershipError) else error.failure.reason_code
+        )
         print(
             json.dumps(
                 {
                     "result": "FAIL",
-                    "reason": failure.reason_code.value
-                    if failure is not None
-                    else error.code.value,
+                    "reason": reason.value,
                     "ready": False,
                     "execution_authorized": False,
                 }

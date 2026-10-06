@@ -785,12 +785,16 @@ uv run pytest packages/execution-node/tests/test_runtime_confinement_linux.py
 Without opt-in delegation that test skips; a skip is not enforcement proof. Supplying an
 invalid/broken opt-in configuration fails, not skips. Do not run either real mode automatically
 during implementation. After even a successful check the runtime remains UNAVAILABLE / NOT READY;
-E5-D is now implemented offline, real provenance acceptance required; E5-E–H and M20-F
-have not begun. No production execute_plan() authorization is created.
+E5-D is CLOSED on operator real provenance acceptance; E5-E is implemented offline with
+real construction acceptance required. E5-F–H and M20-F have not begun.
+No production execute_plan() authorization is created.
 
 ## M20-E5-D trusted CPython provenance-only Kali preflight
 
-**IMPLEMENTED OFFLINE; real Kali acceptance REQUIRED.** Use the operator's already
+**CLOSED on operator-supplied real PASS/revalidation PASS.** The commands and compatibility
+findings below retain the D preflight procedure; pending-acceptance wording in that historical
+chronology is superseded by [D's recorded closure](../../docs/m20/M20E5D_IMPLEMENTATION.md#operator-supplied-real-d-acceptance).
+No real D smoke was rerun during E5-E implementation. Use the operator's already
 preprovisioned uv-managed CPython **3.12** distribution, not Kali's system 3.13 and not
 an install/download/discovery operation. No venv/source preparation, Secret, target access,
 Core/MCP traffic, new authority, Resource or READY state. This is manual-only; portable
@@ -906,7 +910,95 @@ copy**, pin it, then modify a stdlib file in that copy and rerun with the origin
 It must reject before candidate execution. Do not mutate the trusted installed distribution,
 system Python, live Resource or retained source. Ordinary CI already covers byte/mode/root
 substitution and identity mismatches. This task does not automatically run a Kali check.
-E5-E–H, E6–E9 and M20-F remain unimplemented; production execute_plan() stays denied.
+E5-E is implemented offline; E5-F–H, E6–E9 and M20-F remain unimplemented;
+production execute_plan() stays denied.
+
+## M20-E5-E empty environment construction (operator-only)
+
+**Offline implementation only; real Kali E construction acceptance pending.** This local
+harness constructs a dependency-empty environment from the exact accepted D projection and
+reports CREATING / VERIFYING / UNCHECKED, `runtime=UNAVAILABLE`, `ready=false` and
+`execution_authorized=false`. It never executes source, resolves Secrets, installs packages,
+contacts a target, issues authority or implements the E5-F transport pump.
+
+Prerequisites, in order:
+
+1. Use the ordinary Node user in the existing operator-provisioned delegated cgroup-v2 service.
+   Reuse the trusted CPython 3.12.14 distribution and canonical support root. D's accepted
+   manifest/interpreter pins below are exact, not permission to repin changed files.
+2. Obtain a **fresh current Core-admitted synthetic E3/E4 preparation** with adequate remaining
+   budgets, using the existing Core admission, Router, authenticated import and E4 publication
+   path. Record its permit ref and Node runtime directory. The Node Run must still be QUEUED
+   and E4 metadata PUBLISHED. Neither the D provenance-only DB nor a C probe-only DB qualifies.
+   The existing E3/E4 smoke's small default budget is not sufficient for E5; it is not an
+   automatic E5 admission command. Explicitly request appropriate budgets through Core's
+   existing admission API, never edit the Node/Core DB or extend an expired permit.
+3. Budget suggestions for a fresh admission: 1 GiB cumulative preparation writes, 256 MiB
+   temporary/memory ceilings, 15,000 entries, depth at least 4, 11 processes, 60 seconds per
+   process, 900 seconds total and 200,000 output bytes, with normal bounded synthetic source/
+   import ceilings. These are explicit operator/Core choices, not harness defaults or relaxed
+   policy. They must cover already spent E3/E4 usage, owned D inspection **and** E's reservations.
+   The fixed E reservation numbers are documented in
+   [E5-E accounting](../../docs/m20/M20E5E_IMPLEMENTATION.md#storage-export-and-ledger).
+4. Stop the Node using that DB before running this local harness. Keep the permit current:
+   E2's usual lifetime is 15 minutes; E needs at least 300 seconds remaining on its exclusive
+   claim. Rebuild/repin the reviewed native helper: the old D helper binary/hash is not the E
+   binary. All helper and installed Python-module ancestors must satisfy the unchanged trust
+   checks; no symlink or group/world-writable ancestor. Explicitly install with 0755, not umask.
+
+From the repository root on Kali, inside the already delegated service:
+
+```bash
+set -eu
+E5_RUNTIME=/absolute/operator-selected/current-admitted-node-runtime
+E5_PERMIT_REF=permit-ref-from-current-Core-admission
+E5_CGROUP_PARENT=/sys/fs/cgroup/explicitly-delegated-empty-parent
+E5_PYTHON_ROOT=/absolute/operator-selected/accepted-uv-cpython-3.12-distribution
+E5_LIBRARY_ROOT=/usr/lib/x86_64-linux-gnu
+E5_HELPER="$E5_RUNTIME/tools/e5-confinement-helper"
+install -d -m 0755 -- "$E5_RUNTIME/tools"
+E5_BUILD_DIR=$(mktemp -d)
+cc -static -O2 -Wall -Wextra -Werror \
+  -o "$E5_BUILD_DIR/e5-confinement-helper" \
+  packages/execution-node/src/boberagent_execution_node/preparation/native/e5_confinement.c
+install -m 0755 -- "$E5_BUILD_DIR/e5-confinement-helper" "$E5_HELPER"
+rm -- "$E5_BUILD_DIR/e5-confinement-helper"
+rmdir -- "$E5_BUILD_DIR"
+E5_HELPER_SHA256=$(sha256sum -- "$E5_HELPER" | cut -d ' ' -f 1)
+E5_BWRAP_SHA256=$(sha256sum -- /usr/bin/bwrap | cut -d ' ' -f 1)
+
+.venv/bin/python -B scripts/manual-smoke/m20e5e_empty_environment_smoke_test.py \
+  --construct-empty-environment \
+  --node-runtime-directory "$E5_RUNTIME" --permit-ref "$E5_PERMIT_REF" \
+  --distribution-root "$E5_PYTHON_ROOT" --system-library-root "$E5_LIBRARY_ROOT" \
+  --manifest-sha256 c06d42d636360299e253448ef32a58979fa04e544976e62937799a447774af9d \
+  --interpreter-sha256 f7c6210eb40fadcd3c2889dddd24a15fc2c9f926aec5a03bf9da66e12d581526 \
+  --delegated-cgroup-parent "$E5_CGROUP_PARENT" \
+  --trusted-helper "$E5_HELPER" --helper-sha256 "$E5_HELPER_SHA256" \
+  --bubblewrap /usr/bin/bwrap --bubblewrap-sha256 "$E5_BWRAP_SHA256"
+```
+
+Replace every placeholder. No host configuration, sudo, provisioning or package download is
+performed. The authenticated authority must already exist; the harness validates it and does
+not import an operator-supplied permit JSON. On its first run it reserves one Resource, obtains
+fresh owned D evidence under the new helper pin, runs fresh C controls, constructs/exports/
+publishes the empty environment, verifies it read-only at `/work/venv`, and records immutable
+evidence. Keep its bounded JSON and Node journal. It must report `inspection=FRESH_CONSTRUCTION`,
+descendants empty, exact accepted projection
+`5774a4271289da942385c19cdad6d0f120babd63bd018ea64e5153318107ef41`, environment inventory digest,
+actual committed environment writes/entries and the unready state. No contents/credentials
+are printed. Unsafe helper modes/parents produce bounded typed diagnostics.
+
+Rerun the **same command/runtime/permit** within its applicability window. The process reopens
+the DB and passively verifies retained history/bytes, with the same ResourceRef/evidence digest
+and `inspection=PASSIVE_RETAINED_HISTORY`. No duplicate constructor, ledger charge, new READY
+state or fresh confined validity is claimed. This is the E5-E restart/replay check, not E5-F
+revalidation. An interrupted/partial/mutated environment fails closed and is never repaired.
+Offline tests cover failure and cancellation cases without altering the real accepted runtime.
+
+Record both outputs as operator E5-E acceptance only after actual success. None of these real
+commands is run by pytest or automatically during implementation. E5-F still owns final evidence,
+fresh revalidation, narrow promotion and transport wiring; E6–E9 and M20-F remain untouched.
 
 ## M20-E3 authenticated opaque Artifact import (operator-only)
 

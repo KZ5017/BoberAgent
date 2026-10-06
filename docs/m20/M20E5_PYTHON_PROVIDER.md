@@ -1,6 +1,8 @@
 # M20-E5 trusted Python provider
 
-**E5-D implemented offline; real provenance acceptance required. E5-E–H not started.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-D CLOSED; E5-E implemented offline, real construction acceptance required; E5-F–H not started.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+The exact closed EnvBuilder, bounded export/publisher and unready lifecycle are documented
+in [E5-E implementation](M20E5E_IMPLEMENTATION.md). These are not E5-F promotion or dispatch.
 This is closed preparation of trusted runtime infrastructure, not execution of the plan.
 
 ## Interpreter admission and provenance
@@ -53,7 +55,8 @@ E5-D certifies manifest `m20-e5-python-distribution@2` and its exact projection 
 **E5-E must instantiate exactly that certified base projection**, not mount the complete
 operator `lib` tree. Fresh authority/rehashing and exact selected-entry comparison are
 mandatory; extra/excluded/missing bytes fail closed. The D fixed identity namespace
-already uses the certified read-only view. General E5-E construction is not implemented.
+already uses the certified read-only view. E5-E's fixed constructor now uses that same view;
+no general construction/argv API is implemented.
 Fresh profile `@1` evidence binds both unsupported features; historical Tk-only
 evidence is readable but cannot authorize current exposure. Reintroducing
 site-packages, pip wrappers, ensurepip or Tcl/Tk fails exact membership checks.

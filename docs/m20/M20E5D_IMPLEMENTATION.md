@@ -1,7 +1,23 @@
 # M20-E5-D — trusted CPython interpreter provenance
 
-**IMPLEMENTED OFFLINE; REAL KALI PROVENANCE ACCEPTANCE REQUIRED.** E5-C is CLOSED
-on operator-supplied real acceptance. E5-E–H, E6–E9 and M20-F have not begun.
+**CLOSED on operator-supplied real Kali provenance acceptance.** E5-C is CLOSED.
+E5-E is implemented offline with real construction acceptance required; E5-F–H, E6–E9
+and M20-F have not begun. The implementation/finding chronology below remains historical;
+its former pending-acceptance statements are superseded only by this explicit closure.
+
+## Operator-supplied real D acceptance
+
+The operator reports PASS and revalidation PASS for CPython 3.12.14 / Linux x86_64,
+manifest `m20-e5-python-distribution@2`, projection `m20-e5-python-runtime-profile@1`:
+
+- Manifest SHA-256: `c06d42d636360299e253448ef32a58979fa04e544976e62937799a447774af9d`.
+- Interpreter SHA-256: `f7c6210eb40fadcd3c2889dddd24a15fc2c9f926aec5a03bf9da66e12d581526`.
+- Projection SHA-256: `5774a4271289da942385c19cdad6d0f120babd63bd018ea64e5153318107ef41`.
+- Provenance evidence SHA-256: `53fdc371e36a2ea6760639dea4792b2fa6ea94bc38b56a87a65a71b05247e789`.
+
+`resource_created=false`, `runtime=UNAVAILABLE`, `ready=false`. No real check was rerun
+to record this supplied acceptance. Historical evidence/pins remain unchanged. D closure
+does not prove [E construction](M20E5E_IMPLEMENTATION.md), readiness or execution authority.
 Runtime remains UNAVAILABLE / NOT READY; production `execute_plan()` remains denied.
 
 ## Approved source and trust transition

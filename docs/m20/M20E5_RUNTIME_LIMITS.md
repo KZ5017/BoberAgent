@@ -1,6 +1,13 @@
 # M20-E5 enforcement and runtime confinement backend
 
-**E5-C CLOSED on real Kali acceptance; E5-D identity extension implemented offline / real acceptance required.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-C/D CLOSED; E5-E fixed construction/verification limits implemented offline, real acceptance required.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+
+The thirteen C controls and D identity limits remain unchanged. E has separate fixed
+32 MiB / 256-inode constructor scratch, 128 MiB memory, pids 8, 30-second / 4-KiB-output
+operations, a capped anonymous export and pre-write durable publication accounting.
+Actual environment usage and conservative control overhead are distinguished in
+[E5-E accounting](M20E5E_IMPLEMENTATION.md#storage-export-and-ledger). No RLIMIT-only fallback
+or automatic enlargement of permit ceilings is introduced.
 E4 acceptance remains four-feature source-materialization evidence, not full runtime proof.
 
 ## Mandatory gate

@@ -1,8 +1,9 @@
 # ADR 0021 — E5 prepared Python Resource and mandatory enforcement
 
 **Status:** Accepted architecture; E5-A typed boundary and E5-B durable metadata ownership COMPLETE.
-E5-C CLOSED on operator real acceptance; E5-D implemented offline, real acceptance required;
-E5-E–H NOT STARTED; E5 remains OPEN.
+E5-C/D CLOSED on operator real acceptance; E5-E implemented offline, real construction
+acceptance required; E5-F–H NOT STARTED; E5 remains OPEN. The existing decision is unchanged;
+[E5-E](../m20/M20E5E_IMPLEMENTATION.md) retains CREATING / VERIFYING / UNCHECKED, not READY.
 Refines ADRs 0018–0020 without changing E1 authority, E4 publication, or the E/F boundary.
 
 ## Context

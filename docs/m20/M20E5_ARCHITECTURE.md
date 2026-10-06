@@ -1,9 +1,11 @@
 # M20-E5 — Prepared Python runtime architecture
 
-**Status: E5-A–C COMPLETE/CLOSED; E5-D IMPLEMENTED OFFLINE / REAL ACCEPTANCE REQUIRED; E5-E–H NOT STARTED.** E1–E3 COMPLETE,
+**Status: E5-A–D COMPLETE/CLOSED; E5-E IMPLEMENTED OFFLINE / REAL CONSTRUCTION ACCEPTANCE REQUIRED; E5-F–H NOT STARTED.** E1–E3 COMPLETE,
 E4 COMPLETE/CLOSED with real Kali acceptance; E6–E9 NOT STARTED; M20-E OPEN;
 M20-F NOT STARTED. This package specifies future implementation, not a permission,
 host capability attestation, or claim that a usable Python runtime exists today.
+See [E5-E implementation](M20E5E_IMPLEMENTATION.md): retained construction ends
+CREATING / VERIFYING / UNCHECKED, not READY. E5-F owns promotion and fresh current validity.
 
 Read this with [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md),
 [ADR 0019](../adr/0019-m20-e-immutable-source-import-and-prepared-resource.md),
@@ -81,8 +83,9 @@ mechanism detail is not a widening of that profile's permitted actions.
 
 E5-A implements immutable Contracts and unwired neutral messages. E5-B adds Node-only
 durable Resource reservations, exclusive ownership, budget accounting and metadata recovery.
-The runtime remains UNAVAILABLE: a reserved Resource is not a constructed runtime. There is
-no Python provider operation, interpreter probe, venv, E5 dispatch or execution authorization.
+At that A/B boundary the runtime remains UNAVAILABLE: a reservation is not construction.
+C/D subsequently add confinement/provenance; E adds closed construction, not readiness,
+E5 dispatch or execution authorization.
 See [typed boundary](M20E5_RUNTIME_RESOURCE.md#e5-a-implemented-boundary) and
 [durable ownership](M20E5_RUNTIME_RESOURCE.md#e5-b-implemented-durable-ownership).
 
@@ -116,8 +119,9 @@ No E5 architecture choice remains delegated to an implementation shortcut. Suppl
 reconnaissance confirms namespace availability and delegated cgroup control-file writes,
 not active enforcement. System CPython 3.12 is absent; 3.13.7 is not an approved fallback.
 An explicit preprovisioned uv-managed CPython 3.12 distribution is approved for E5-D;
-its real provenance acceptance is still required. Trusted
-interpreter layout remains an **unverified real-host prerequisite**;
+its real provenance acceptance is now CLOSED on the operator's supplied D result.
+The exact accepted pins are in [D's closure record](M20E5D_IMPLEMENTATION.md#operator-supplied-real-d-acceptance).
+They do not attest E construction or readiness;
 see [acceptance](M20E5_ACCEPTANCE.md#operator-supplied-reconnaissance-e5-a). E4's CPython probe
 may use another host version; it is not E5 interpreter provenance. Do not install Python,
 change systemd configuration, grant root or weaken a limit to make acceptance pass.
@@ -130,5 +134,5 @@ immutable Resource-bound PROVENANCE_VERIFIED evidence. It never constructs an en
 or makes READY; the approved uv-source refinement and trust transition are recorded in
 ADRs 0021–0022 and [E5-D implementation](M20E5D_IMPLEMENTATION.md). E5-E must instantiate
 the same certified projection, never re-expose excluded optional Tcl/Tk or package-manager
-bytes (site-packages, ensurepip/wheels and dependent launchers). General
-environment construction remains unimplemented and real D acceptance remains required.
+bytes (site-packages, ensurepip/wheels and dependent launchers). Closed E construction is
+implemented offline, using the same projection; real E acceptance is still required.

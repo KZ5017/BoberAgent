@@ -1,7 +1,13 @@
 # M20-E5 recovery, expiry and failure classification
 
-**E5-B metadata recovery COMPLETE; E5-C CLOSED; E5-D full distribution revalidation implemented offline; constructed-runtime revalidation NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-B metadata recovery COMPLETE; E5-C/D CLOSED; E5-E retained construction/passive integrity recovery implemented offline; E5-F fresh constructed-runtime revalidation/promotion NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 Historical evidence, current integrity, authority and execution readiness are separate.
+
+Successful E5-E evidence survives reopen as CREATING / VERIFYING / UNCHECKED. Startup
+checks its inventory passively, creates no storage, launches no child and confers no usable
+lease. Interrupted BUILDING/active-owner state, orphan bytes, missing evidence and drift
+are quarantined; historical evidence is never rewritten. See
+[E5-E recovery](M20E5E_IMPLEMENTATION.md#lifecycle-immutable-evidence-and-recovery).
 
 ## Implemented E5-B recovery boundary
 
@@ -34,7 +40,8 @@ See [implemented boundary and pending real acceptance](M20E5C_IMPLEMENTATION.md)
 | Event | Required action before any reuse |
 | --- | --- |
 | Core restart | Existing attempt/permit/Run/Resource correlation; current applicability, then explicit status/revalidation. No redispatch/new identity on uncertain acknowledgement. |
-| Node restart with RESERVED/BUILDING/VERIFYING | Reconcile exact owned supervisor/cgroup, kill surviving descendants, quarantine partial files; interruption is terminal for this build. No constructor replay. |
+| Node restart with RESERVED/BUILDING/active VERIFYING | Reconcile exact owned supervisor/cgroup, kill surviving descendants, quarantine partial files; interruption is terminal for this build. No constructor replay. |
+| Node restart with completed E5-E VERIFYING evidence | Passive exact inventory inspection only, retain UNCHECKED/unready history. Missing/drifted bytes quarantine; no fresh proof inferred or constructor replay. |
 | Node restart with PUBLISHED/READY | UNCHECKED current validity; verify binding, exact source and environment inventories, trusted closure, backend profile/limits, empty old group and current authority. Only then current VALID. |
 | Host reboot | Old process handles invalid; identify changed boot, verify no surviving owned work; retained bytes may be revalidated with current authority. Never treat old probe timestamp as current proof. |
 | Interpreter/stdlib/loader or bwrap update | Fingerprint mismatch denies old Resource reuse. Preserve evidence; no in-place upgrade. New explicit attempt after safe cleanup. |

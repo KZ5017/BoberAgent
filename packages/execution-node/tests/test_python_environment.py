@@ -71,7 +71,7 @@ from plan_test_fixtures import NOW
 from python_runtime_test_fixtures import runtime_authority_fixture, runtime_binding_fixture
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
-from test_python_provenance import FakeIdentityBackend, identity_probe
+from test_python_provenance import FakeIdentityBackend, identity_probe, repin
 from test_python_provenance import configured as configured
 from test_python_resource_ownership import _seed
 
@@ -222,7 +222,17 @@ class Case:
 
 
 @pytest.fixture
-def case(configured: PythonDistributionConfiguration, tmp_path: Path) -> Iterator[Case]:
+def case(
+    configured: PythonDistributionConfiguration, tmp_path: Path, request: pytest.FixtureRequest
+) -> Iterator[Case]:
+    hook: object = getattr(request, "param", None)
+    if hook is not None:
+        assert isinstance(hook, str)
+        path = configured.distribution_root / "lib/python3.12" / hook
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"raise RuntimeError('startup hook must never execute')\n")
+        path.chmod(0o644)
+        configured = repin(configured)  # D intentionally permits -S static/provenance proof.
     database = RuntimeDatabase(tmp_path / "environment.sqlite3")
     upgrade_database(database, "0010_python_provenance")
     authority = runtime_authority_fixture()
@@ -562,6 +572,27 @@ def test_environment_identity_schema_rejects_arbitrary_inputs() -> None:
         EnvironmentIdentity.model_validate_json(
             '{"argv":["evil"],"environment":{"PYTHONPATH":"evil"}}'
         )
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "sitecustomize.py",
+        "usercustomize.py",
+        "sitecustomize/__init__.py",
+        "usercustomize.pyc",
+        "startup.pth",
+        "lib-dynload/sitecustomize.py",
+    ],
+    indirect=True,
+)
+def test_certified_base_startup_hooks_are_rejected_before_site_enabled_verifier(case: Case) -> None:
+    assert len(PythonProvenanceRepository(case.resources).history(case.claim.resource_ref)) == 1
+    with pytest.raises(EnvironmentFailure):
+        case.create()
+    assert case.backend.calls == []
+    assert case.repository.history(case.claim.resource_ref) is None
+    assert case.resources.load(case.claim.resource_ref).phase is PythonProviderPhase.QUARANTINED
 
 
 @pytest.mark.parametrize(

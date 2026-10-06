@@ -1,7 +1,8 @@
 # M20-E5-C — Full preparation confinement
 
 **CLOSED on operator-supplied real thirteen-probe Kali acceptance.** E5-A/B are COMPLETE.
-E5-D is implemented offline with real acceptance required; E5-E–H, E6–E9 and M20-F remain
+E5-D is CLOSED on operator real acceptance; E5-E is implemented offline, real construction
+acceptance required; E5-F–H, E6–E9 and M20-F remain
 NOT STARTED. Runtime remains UNAVAILABLE / NOT READY. Historical first-run failure and
 offline correction below remain retained, not rewritten as successful first acceptance.
 

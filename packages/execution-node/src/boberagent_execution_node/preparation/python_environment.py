@@ -67,6 +67,35 @@ class ConstructionInProgress(ResourceOwnershipError):
         super().__init__(PreparationReasonCode.RUNTIME_UNAVAILABLE, "construction already owned")
 
 
+def _environment_distribution(
+    configuration: PythonDistributionConfiguration,
+) -> ProjectedDistributionManifest:
+    """E's site-enabled verifier has a stricter admission than D's -S identity.
+
+    Reject startup customization; never filter or repin D's certified view.
+    The venv's separate closed inventory excludes all hooks/packages there.
+    """
+    manifest = inventory(configuration)
+    if not isinstance(
+        manifest, ProjectedDistributionManifest
+    ) or manifest.projection.profile.unsupported_optional != ("TKINTER_TCL_TK", "PACKAGE_MANAGER"):
+        raise EnvironmentFailure()
+    for entry in manifest.entries:
+        for root in ("lib/python3.12/", "lib/python3.12/lib-dynload/"):
+            if not entry.path.startswith(root):
+                continue
+            relative = entry.path[len(root) :]
+            if relative.startswith("__pycache__/"):
+                relative = relative.removeprefix("__pycache__/")
+            module = relative.split("/")[0]
+            if any(
+                module == name or module.startswith(name + ".")
+                for name in ("sitecustomize", "usercustomize")
+            ) or ("/" not in relative and relative.endswith(".pth")):
+                raise EnvironmentFailure()
+    return manifest
+
+
 class ConstructionSummary(Record):
     written_bytes: StrictInt = Field(ge=0, le=WRITE_LIMIT)
     created_entries: StrictInt = Field(ge=0, le=FILE_LIMIT)
@@ -266,7 +295,7 @@ class PythonEnvironmentProvider:
                     raise EnvironmentFailure()
                 if (
                     retained.helper_sha256 != self.helper_sha256
-                    or inventory(self.distribution).identity()
+                    or _environment_distribution(self.distribution).identity()
                     != retained.binding.interpreter.distribution
                 ):
                     raise EnvironmentFailure()
@@ -277,12 +306,9 @@ class PythonEnvironmentProvider:
             if not provenance:
                 raise EnvironmentFailure(PythonRuntimeReason.PYTHON_RUNTIME_UNAVAILABLE)
             prior = provenance[-1]
-            manifest = inventory(self.distribution)
+            manifest = _environment_distribution(self.distribution)
             if (
-                not isinstance(manifest, ProjectedDistributionManifest)
-                or manifest.projection.profile.unsupported_optional
-                != ("TKINTER_TCL_TK", "PACKAGE_MANAGER")
-                or prior.binding.interpreter.distribution != manifest.identity()
+                prior.binding.interpreter.distribution != manifest.identity()
                 or prior.binding.backend != self.backend_identity
                 or prior.binding.request != resources.load(claim.resource_ref).request
             ):

@@ -1,7 +1,7 @@
 # M20-E — Runtime Preparation implementation plan
 
 **Architecture status:** SPECIFIED. **Implementation status:** E1–E4 COMPLETE, including
-real Core↔Kali E4 acceptance; E5-A–C COMPLETE/CLOSED; E5-D IMPLEMENTED OFFLINE / REAL ACCEPTANCE REQUIRED; E5-E–H NOT STARTED;
+real Core↔Kali E4 acceptance; E5-A–D COMPLETE/CLOSED; E5-E IMPLEMENTED OFFLINE / REAL CONSTRUCTION ACCEPTANCE REQUIRED; E5-F–H NOT STARTED;
 E6–E9 NOT STARTED;
 M20-E remains OPEN. M20-D remains CLOSED; M20-F has NOT STARTED. This plan authorizes no
 preparation. The architectural
@@ -184,7 +184,7 @@ this acceptance.
 
 ## E5 — Trusted Python environment Resource provider (ARCHITECTURE SPECIFIED)
 
-**E5-A–C COMPLETE/CLOSED; E5-D IMPLEMENTED OFFLINE / REAL ACCEPTANCE REQUIRED; E5-E–H NOT STARTED.** Typed Resource/evidence models and unwired neutral
+**E5-A–D COMPLETE/CLOSED; E5-E IMPLEMENTED OFFLINE / REAL CONSTRUCTION ACCEPTANCE REQUIRED; E5-F–H NOT STARTED.** Typed Resource/evidence models and unwired neutral
 messages exist; runtime remains UNAVAILABLE. E5-A added no migration or Node runtime effect.
 Neither A nor B adds a runtime/venv, Python subprocess, E5 dispatch or execution authority.
 The authoritative package is
@@ -195,6 +195,12 @@ Resource reservation, exclusive operation generations, a durable preparation bud
 and metadata-only quarantine/cleanup/recovery. There is no Resource workspace allocation,
 interpreter inspection, runtime construction, READY, sealed evidence or E5 dispatch.
 See [implemented ownership](M20E5_RUNTIME_RESOURCE.md#e5-b-implemented-durable-ownership).
+
+E5-E reuses that ownership/ledger and C confinement with D's exact certified projection.
+Node migration 0011 retains immutable closed construction evidence and Resource-owned
+Workspace metadata. Successful state is CREATING / VERIFYING / UNCHECKED, not READY or
+current VALID. No E5 transport pump, final receipt, execution authorization or source
+execution is added. See [E5-E implementation](M20E5E_IMPLEMENTATION.md).
 
 Its [E5-A–E5-H slices](M20E5_ACCEPTANCE.md#e5-implementation-sequence) put full enforcement
 before construction. E4's four-feature probe is not full E5 proof. The Resource becomes

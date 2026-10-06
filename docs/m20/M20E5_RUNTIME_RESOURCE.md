@@ -1,6 +1,11 @@
 # M20-E5 Resource, evidence and typed boundary
 
-**E5-A–C COMPLETE/CLOSED; E5-D implemented offline / real acceptance required; E5-E–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-A–D COMPLETE/CLOSED; E5-E implemented offline / real construction acceptance required; E5-F–H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+
+E5-E adds Node migration 0011 and immutable Resource-owned construction evidence.
+Its successful state is CREATING / VERIFYING / UNCHECKED, never READY or current VALID.
+VERIFYING requires a retained evidence row; the existing READY prohibition remains.
+See [E5-E lifecycle and recovery](M20E5E_IMPLEMENTATION.md#lifecycle-immutable-evidence-and-recovery).
 
 ## Identity, ownership and storage roles
 

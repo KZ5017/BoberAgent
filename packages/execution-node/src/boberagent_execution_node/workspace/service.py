@@ -15,6 +15,8 @@ from boberagent_execution_node.persistence import (
     WorkspaceState,
 )
 
+from .directories import prepare_owned_directory
+
 
 class ManagedWorkspaceService:
     def __init__(
@@ -25,8 +27,7 @@ class ManagedWorkspaceService:
         run_ref: CapabilityRunRef,
         clock: Callable[[], datetime],
     ) -> None:
-        self._root = root.resolve()
-        self._root.mkdir(parents=True, exist_ok=True)
+        self._root = prepare_owned_directory(root)
         self._store = store
         self._run_ref = run_ref
         self._clock = clock

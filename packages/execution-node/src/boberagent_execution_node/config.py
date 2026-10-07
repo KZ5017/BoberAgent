@@ -6,6 +6,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from .workspace.directories import prepare_owned_directory
+
 
 class ToolConfiguration(BaseModel):
     """Explicit discovery hints for one logical tool."""
@@ -87,10 +89,10 @@ class NodeConfiguration(BaseModel):
     def prepare_directories(self) -> None:
         """Create only directories owned by this configured runtime."""
 
-        self.runtime_directory.mkdir(parents=True, exist_ok=True)
+        prepare_owned_directory(self.runtime_directory)
+        prepare_owned_directory(self.workspace_root)
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         self.identity_path.parent.mkdir(parents=True, exist_ok=True)
-        self.workspace_root.mkdir(parents=True, exist_ok=True)
         self.artifact_spool_root.mkdir(parents=True, exist_ok=True)
         self.process_output_root.mkdir(parents=True, exist_ok=True)
         self.imported_artifact_root.mkdir(parents=True, exist_ok=True)

@@ -185,6 +185,39 @@ runtime. It is not run automatically. E5-F and readiness promotion have not begu
 
 ## Lifecycle, immutable evidence and recovery
 
+### Real Kali v4 workspace-composition correction
+
+The operator's fresh `m20e5e-real-acceptance-v4` applied all exact E `@2` construction
+reservations, then failed before a `python_environment_create` confinement row or environment
+storage directory existed. `EnvironmentStorage.reserve()` correctly rejected a non-sticky
+0775 `workspaces` ancestor; its `ValueError` reached the generic interrupted-operation path
+(`PREPARATION_INTERRUPTED`, no runtime reason). This was not another capacity/helper failure.
+
+`NodeConfiguration.prepare_directories()` and the SDK workspace service's fallback root
+creation formerly used `mkdir(parents=True, exist_ok=True)` with default 0777. A normal
+0002 umask therefore created 0775 roots. E4's recursive child creation also implicitly made
+`preparation-source` with that default mode. The corrected production composition creates
+each missing runtime/workspace ancestor explicitly at **0700**, traverses without following
+symlinks, and checks existing ancestor ownership/non-writability. Sticky shared ancestors
+remain permitted under the existing storage rule; the owned leaf cannot be group/world
+writable. Existing trusted modes are preserved, never normalized. An untrusted existing
+chain fails with bounded `WorkspaceDirectoryError / WORKSPACE_STORAGE_UNTRUSTED`, with no
+chmod repair. An excessively restrictive umask can deny access, never broaden permissions.
+
+`preparation-source` is an E4 sibling, not an ancestor of `python-environments`. E4 now
+explicitly creates that missing intermediate root as 0700 at its existing materialization
+boundary; staging/published/quarantine policy is unchanged. Node startup still creates no
+environment store or Resource directory. Only the held, budget-reserved constructor creates
+those, with the unchanged `EnvironmentStorage` no-follow and permission checks. Regressions
+exercise 0000/0002/0022/0077 umasks, unsafe existing ancestors/symlinks/no-repair, and the
+complete synthetic budgeted E constructor under production-created workspace roots.
+
+No helper bytes, pin, compilation, limit profile, schema, migration or dependency changes
+are required for this correction. Keep v4 quarantined and untouched; the next operator test
+uses a fresh admission/runtime under a trust-compatible existing parent chain. No smoke-only
+chmod workaround or automatic Kali acceptance is added. E5-E remains implemented offline,
+not real-accepted/READY; E5-F remains unstarted.
+
 ```text
 CREATING / RESERVED / UNCHECKED
   -> exclusive CREATE_EMPTY_ENVIRONMENT + reserved ledger

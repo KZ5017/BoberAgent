@@ -47,6 +47,7 @@ from boberagent_execution_node.persistence.orm import (
     PreparationMaterializationRow,
     RunRow,
 )
+from boberagent_execution_node.workspace.directories import prepare_owned_directory
 
 from .confinement import (
     E4_REQUIRED_FEATURES,
@@ -661,6 +662,9 @@ class NodePreparationService:
             os.replace(path, destination)
 
     def _ensure_materialization_dirs(self) -> None:
+        # E4 owns this sibling of python-environments; mkdir(parents=True)
+        # would otherwise create its intermediate root with umask-dependent 0777.
+        prepare_owned_directory(self._materialization_root)
         for directory in (self._staging, self._published, self._quarantine):
             directory.mkdir(parents=True, exist_ok=True, mode=0o700)
 

@@ -3,6 +3,8 @@
 import asyncio
 import hashlib
 import json
+import os
+import stat
 import struct
 from collections.abc import Iterator
 from datetime import timedelta
@@ -17,9 +19,11 @@ from boberagent_contracts import (
     PythonResourceState,
     PythonRuntimeAuthorityProjection,
     PythonRuntimeValidity,
+    ResourceRef,
     preparation_permit_digest,
     preparation_spec_fingerprint,
 )
+from boberagent_execution_node import NodeConfiguration
 from boberagent_execution_node.persistence import RuntimeDatabase
 from boberagent_execution_node.persistence.migrations import current_revision, upgrade_database
 from boberagent_execution_node.persistence.orm import (
@@ -342,6 +346,60 @@ def test_success_bound_empty_inventory_and_not_ready(case: Case) -> None:
         row = session.get(RuntimeResourceRow, str(case.claim.resource_ref))
         assert row is not None
         row.state = "READY"
+
+
+@pytest.mark.parametrize("mask", [0o000, 0o002, 0o077])
+def test_constructor_uses_production_private_workspace_only_after_held_budget(
+    case: Case, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mask: int
+) -> None:
+    configuration = NodeConfiguration.for_runtime_directory(tmp_path / "fresh-runtime")
+    previous = os.umask(mask)
+    try:
+        configuration.prepare_directories()
+        storage = EnvironmentStorage(configuration.workspace_root / "python-environments")
+        case.repository.storage = storage
+        assert not storage.root.exists()
+        wrong = case.claim.model_copy(update={"owner_token": DomainRef("wrong-owner")})
+        with pytest.raises(ResourceOwnershipError):
+            asyncio.run(case.provider.create_empty_environment(wrong))
+        assert not storage.root.exists()
+        reserve = storage.reserve
+        calls = []
+
+        def held_reserve(ref: ResourceRef) -> Path:
+            assert not storage.root.exists()
+            balances = {entry.category: entry for entry in case.resources.budget(ref)}
+            for category, amount in _construction_reservations().items():
+                assert balances[category].held >= amount
+            assert case.resources.operations(ref)[-1].state is OperationState.ACTIVE
+            calls.append(ref)
+            return reserve(ref)
+
+        monkeypatch.setattr(storage, "reserve", held_reserve)
+        evidence = case.create()
+        assert calls == [case.claim.resource_ref]
+        assert evidence.construction.passed and evidence.verification.passed
+        assert (
+            case.resources.operations(case.claim.resource_ref)[-1].state is OperationState.COMPLETED
+        )
+        assert case.backend.calls == ["controls", "create", "verify"]
+        assert stat.S_IMODE(storage.root.stat().st_mode) == 0o700
+    finally:
+        os.umask(previous)
+
+
+@pytest.mark.parametrize("case", [{"max_memory_bytes": 256 * 1024**2}], indirect=True)
+def test_insufficient_budget_does_not_create_production_environment_storage(
+    case: Case, tmp_path: Path
+) -> None:
+    configuration = NodeConfiguration.for_runtime_directory(tmp_path / "denied-runtime")
+    configuration.prepare_directories()
+    storage = EnvironmentStorage(configuration.workspace_root / "python-environments")
+    case.repository.storage = storage
+    with pytest.raises(ResourceOwnershipError):
+        case.create()
+    assert not storage.root.exists()
+    assert case.backend.calls == []
 
 
 def test_same_operation_replay_does_not_build_or_spend_twice(case: Case) -> None:

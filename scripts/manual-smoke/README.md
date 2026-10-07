@@ -970,6 +970,16 @@ Prerequisites, in order:
    Core remains the admission authority. Do not reinterpret a historical permit or rerun an
    interrupted Resource. See the [v3 capacity correction](../../docs/m20/M20E5E_IMPLEMENTATION.md#real-kali-v3-fixed-capacity-correction).
 
+   The v4 workspace-composition correction creates fresh owned runtime/workspace ancestors
+   as 0700 even under normal 0002 umask; E4 explicitly creates `preparation-source` as 0700.
+   Existing ancestors must already satisfy storage trust (no symlinks or non-sticky
+   group/world-writable directories). Existing unsafe runtimes fail closed; neither startup
+   nor this smoke chmod-repairs them. Keep `m20e5e-real-acceptance-v4` quarantined; choose a
+   **fresh** runtime beneath an already trusted parent and obtain fresh Core admission.
+   This correction changes no native/Python helper bytes: **no helper repin/recompile is
+   required beyond the already installed v3 capacity-corrected helpers**. See the
+   [v4 correction](../../docs/m20/M20E5E_IMPLEMENTATION.md#real-kali-v4-workspace-composition-correction).
+
 From the repository root on Kali, inside the already delegated service:
 
 ```bash

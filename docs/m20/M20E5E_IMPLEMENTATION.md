@@ -29,6 +29,35 @@ construction: /runtime/bin/python3.12 -I -S -B /trusted/environment.py create
 verification: /work/venv/bin/python3.12 -I -B /trusted/environment.py verify
 ```
 
+### Installed trusted provider asset (real-host compatibility correction)
+
+The package's `_environment_helper.py` supplies the exact reviewed **bytes**, not the
+execution path. The operator explicitly installs those bytes as
+`environment-<SHA-256>.py` beside the configured pinned native confinement helper, with
+mode **0444** (native helper 0755; directories 0755). Every ancestor must be trusted,
+non-symlinked and non-group/world-writable. Production derives this path internally;
+there is no caller helper-path/code option, PATH search, automatic copy, installer,
+download or permission normalization. A normal group-writable Git checkout can remain
+unchanged: it is not mounted as trusted executable material.
+
+Both create and verify require exact agreement between the installed bounded regular
+file, the bundled reviewed bytes and the existing `helper_sha256` evidence binding.
+Checks use no-follow/stable reads and parent-chain checks before execution, again before
+journaling/launch and after completion. The namespace mounts only this installed asset
+read-only at `/trusted/environment.py`. No new identity, schema or migration is needed;
+historical evidence and passive replay semantics are unchanged. Missing/unsafe assets
+fail with `CONFINEMENT_UNAVAILABLE` and bounded helper trust diagnostics, not the unrelated
+prepared-content mismatch previously propagated from the distribution trust utility.
+The strict `_trust()` and native C/D `_trusted_tool()` checks remain unchanged.
+
+The first real Kali E attempt passed the C probes and D identity but failed before an
+environment-construction journal row: its former executable helper path was inside a
+664/775 checkout, correctly rejected by filesystem trust. This correction separates
+installation from source data; it does not weaken trust or change the accepted D pins.
+The quarantined runtime remains forensic history only: do not repair/reuse it. The next
+real attempt requires fresh E3/E4 admission and a fresh Node runtime. Real E acceptance
+is still pending; no readiness or acceptance status is promoted by this correction.
+
 The fixed builder uses CPython `venv.EnvBuilder(system_site_packages=False, with_pip=False,
 symlinks=False, upgrade=False, upgrade_deps=False)`. Its file/config/template copies are
 intercepted and charged **before** each write. An audit gate rejects unaccounted mutation,
@@ -144,7 +173,9 @@ are portable mechanics tests, **not real Kali confinement/provenance acceptance*
 
 The manual-only [E5-E procedure](../../scripts/manual-smoke/README.md#m20-e5-e-empty-environment-construction-operator-only)
 requires a stopped Node with an existing **current authenticated Core E3/E4 admission**,
-adequate remaining budgets and a fresh helper pin. It creates no permit, modifies no
+adequate remaining budgets, a fresh native helper pin and the explicitly installed Python
+helper asset. The harness checks that asset before Resource claims/budget spend.
+It creates no permit, modifies no
 authority and implements no E5-F transport pump. It has not been run automatically.
 Reopen/replay output is explicitly passive history, not fresh readiness proof. A small or
 expired historic permit must fail; creating eligible authority is an explicit Core/operator

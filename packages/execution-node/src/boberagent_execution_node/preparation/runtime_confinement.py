@@ -411,6 +411,7 @@ class LinuxRuntimeConfinementBackend:
         cancellation: CancellationService | None = None,
         environment_path: Path | None = None,
         export_fd: int | None = None,
+        environment_helper_sha256: str | None = None,
     ) -> ProbeEvidence:
         from .runtime_confinement_store import ConfinementJournal
 
@@ -435,6 +436,15 @@ class LinuxRuntimeConfinementBackend:
             self.configuration.bubblewrap_sha256,
             static_elf=False,
         )
+        environment_helper = None
+        if operation in {
+            TrustedPythonOperation.CREATE_ENVIRONMENT,
+            TrustedPythonOperation.VERIFY_ENVIRONMENT,
+        }:
+            if environment_helper_sha256 is None:
+                raise RuntimeConfinementUnavailable()
+            # Revalidate the installed asset immediately before journaling/launch.
+            environment_helper = self._environment_helper(environment_helper_sha256)
         previous = journal.begin(
             operation_id,
             operation,
@@ -510,7 +520,7 @@ class LinuxRuntimeConfinementBackend:
                         str(descriptor),
                         *(
                             (
-                                str(Path(__file__).with_name("_environment_helper.py")),
+                                str(environment_helper),
                                 str(environment_path) if environment_path is not None else "-",
                                 str(export_fd) if export_fd is not None else "-",
                             )
@@ -666,18 +676,46 @@ class LinuxRuntimeConfinementBackend:
                 raise RuntimeConfinementUnavailable()
         return bytes(data)
 
-    def _environment_helper(self, expected: str) -> None:
-        from .python_distribution import _parents, _trust
+    def _environment_helper(self, expected: str) -> Path:
+        """Exact provider asset installed beside the pinned native helper.
 
-        path = Path(__file__).with_name("_environment_helper.py")
-        _parents(path.parent)
-        _trust(path.lstat())
-        if (
-            not path.is_file()
-            or path.is_symlink()
-            or hashlib.sha256(path.read_bytes()).hexdigest() != expected
-        ):
-            raise RuntimeConfinementUnavailable()
+        Package bytes identify the reviewed program, but are never its execution
+        path. Installation is explicit/operator-owned, not a constructor side effect.
+        No caller path, PATH lookup, source-tree permission repair or download.
+        """
+        from .python_distribution import ProvenanceFailure, _bytes, _parents, _trust
+
+        stage = None
+        try:
+            bundled = Path(__file__).with_name("_environment_helper.py").read_bytes()
+            if hashlib.sha256(bundled).hexdigest() != expected:
+                raise RuntimeConfinementUnavailable()
+            stage = ConfinementFailureStage.HELPER_PARENT_TRUST
+            configured = Path(self._tools.get(self.configuration.helper_tool).configured_executable)
+            _parents(configured.parent)
+            stage = ConfinementFailureStage.HELPER_FILE_MODE
+            native = _trusted_tool(
+                self._tools,
+                self.configuration.helper_tool,
+                self.configuration.helper_sha256,
+                static_elf=True,
+            )
+            path = native.with_name(f"environment-{expected}.py")
+            stage = ConfinementFailureStage.HELPER_PARENT_TRUST
+            parents = _parents(path.parent)
+            stage = ConfinementFailureStage.HELPER_FILE_MODE
+            _trust(path.lstat())
+            data = _bytes(path, 65536)  # regular, no-follow, bounded, stable read
+            if data != bundled or hashlib.sha256(data).hexdigest() != expected:
+                raise RuntimeConfinementUnavailable()
+            stage = ConfinementFailureStage.HELPER_PARENT_TRUST
+            if _parents(path.parent) != parents:
+                raise RuntimeConfinementUnavailable()
+            return path
+        except (ProvenanceFailure, OSError, KeyError):
+            # A helper trust prerequisite is not prepared-content drift. Preserve
+            # the existing confinement failure vocabulary, without raw paths/errors.
+            raise RuntimeConfinementUnavailable(stage=stage) from None
 
     async def run_environment_create(
         self,
@@ -726,6 +764,7 @@ class LinuxRuntimeConfinementBackend:
                 distribution=distribution,
                 cancellation=cancellation,
                 export_fd=write_fd,
+                environment_helper_sha256=helper_sha256,
             )
             os.close(write_fd)
             write_fd = -1
@@ -766,6 +805,7 @@ class LinuxRuntimeConfinementBackend:
             distribution=distribution,
             cancellation=cancellation,
             environment_path=environment_path,
+            environment_helper_sha256=helper_sha256,
         )
         self._environment_helper(helper_sha256)
         if inventory(distribution) != before:

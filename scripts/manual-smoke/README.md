@@ -943,8 +943,13 @@ Prerequisites, in order:
 4. Stop the Node using that DB before running this local harness. Keep the permit current:
    E2's usual lifetime is 15 minutes; E needs at least 300 seconds remaining on its exclusive
    claim. Rebuild/repin the reviewed native helper: the old D helper binary/hash is not the E
-   binary. All helper and installed Python-module ancestors must satisfy the unchanged trust
-   checks; no symlink or group/world-writable ancestor. Explicitly install with 0755, not umask.
+   binary. Install the reviewed Python helper as a separate trusted runtime asset beside it,
+   never execute it directly from the Git checkout. Both installed helpers and every ancestor
+   must satisfy the unchanged trust checks: no symlink or group/world-writable ancestor.
+   Explicit native mode 0755 / Python asset mode 0444 / directory mode 0755, not umask.
+   Choose a trusted installation location outside any writable checkout parent chain.
+   Do not chmod the Git checkout. A quarantined failed real attempt is forensic history only:
+   use a fresh admission and Node runtime rather than repairing/reusing it.
 
 From the repository root on Kali, inside the already delegated service:
 
@@ -955,8 +960,9 @@ E5_PERMIT_REF=permit-ref-from-current-Core-admission
 E5_CGROUP_PARENT=/sys/fs/cgroup/explicitly-delegated-empty-parent
 E5_PYTHON_ROOT=/absolute/operator-selected/accepted-uv-cpython-3.12-distribution
 E5_LIBRARY_ROOT=/usr/lib/x86_64-linux-gnu
-E5_HELPER="$E5_RUNTIME/tools/e5-confinement-helper"
-install -d -m 0755 -- "$E5_RUNTIME/tools"
+E5_TRUSTED_TOOLS=/absolute/operator-selected/trusted-helper-directory
+E5_HELPER="$E5_TRUSTED_TOOLS/e5-confinement-helper"
+install -d -m 0755 -- "$E5_TRUSTED_TOOLS"
 E5_BUILD_DIR=$(mktemp -d)
 cc -static -O2 -Wall -Wextra -Werror \
   -o "$E5_BUILD_DIR/e5-confinement-helper" \
@@ -966,6 +972,11 @@ rm -- "$E5_BUILD_DIR/e5-confinement-helper"
 rmdir -- "$E5_BUILD_DIR"
 E5_HELPER_SHA256=$(sha256sum -- "$E5_HELPER" | cut -d ' ' -f 1)
 E5_BWRAP_SHA256=$(sha256sum -- /usr/bin/bwrap | cut -d ' ' -f 1)
+
+E5_ENVIRONMENT_SOURCE=packages/execution-node/src/boberagent_execution_node/preparation/_environment_helper.py
+E5_ENVIRONMENT_SHA256=$(sha256sum -- "$E5_ENVIRONMENT_SOURCE" | cut -d ' ' -f 1)
+install -m 0444 -- "$E5_ENVIRONMENT_SOURCE" \
+  "$E5_TRUSTED_TOOLS/environment-$E5_ENVIRONMENT_SHA256.py"
 
 .venv/bin/python -B scripts/manual-smoke/m20e5e_empty_environment_smoke_test.py \
   --construct-empty-environment \
@@ -988,6 +999,11 @@ descendants empty, exact accepted projection
 `5774a4271289da942385c19cdad6d0f120babd63bd018ea64e5153318107ef41`, environment inventory digest,
 actual committed environment writes/entries and the unready state. No contents/credentials
 are printed. Unsafe helper modes/parents produce bounded typed diagnostics.
+The harness checks the installed Python asset before any Resource claim or budget spend.
+Production derives its content-addressed name from the bundled reviewed bytes and requires
+exact byte/SHA equality; no path argument or source-tree chmod is needed. Install from the
+same reviewed package revision used by the Node. A missing asset, wrong hash, symlink, unsafe
+mode/ancestor or drift fails closed. Neither harness nor provider installs or repairs files.
 
 Rerun the **same command/runtime/permit** within its applicability window. The process reopens
 the DB and passively verifies retained history/bytes, with the same ResourceRef/evidence digest

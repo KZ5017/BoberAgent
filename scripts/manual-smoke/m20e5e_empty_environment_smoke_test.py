@@ -125,6 +125,24 @@ async def run(args: argparse.Namespace) -> int:
             expected_manifest_sha256=args.manifest_sha256,
             expected_interpreter_sha256=args.interpreter_sha256,
         )
+        provider = PythonEnvironmentProvider(
+            distribution=distribution,
+            backend=backend,
+            backend_identity=PythonBackendIdentity(
+                backend_id="linux-bwrap-cgroup",
+                backend_version="1",
+                profile_id="m20-e5-linux-bwrap-cgroup",
+                profile_version="1",
+                profile_sha256=digest_value({"profile": "m20-e5-linux-bwrap-cgroup@1"}),
+                binary_sha256=args.bubblewrap_sha256,
+                binary_version="0.11.0",
+                helper_sha256=args.helper_sha256,
+            ),
+            repository=repository,
+        )
+        # Explicitly installed provider asset; fail with closed diagnostics before
+        # any Resource claim/budget spend. Never chmod/install from this harness.
+        backend._environment_helper(provider.helper_sha256)
         request = PythonRuntimeRequestBinding(
             schema_version="python-runtime-request-binding-v1",
             spec=permit.spec,
@@ -147,16 +165,7 @@ async def run(args: argparse.Namespace) -> int:
             PythonRuntimeAuthorityProjection(permit=permit, binding=request),
             principal_id="boberagent-core",
         )
-        identity = PythonBackendIdentity(
-            backend_id="linux-bwrap-cgroup",
-            backend_version="1",
-            profile_id="m20-e5-linux-bwrap-cgroup",
-            profile_version="1",
-            profile_sha256=digest_value({"profile": "m20-e5-linux-bwrap-cgroup@1"}),
-            binary_sha256=args.bubblewrap_sha256,
-            binary_version="0.11.0",
-            helper_sha256=args.helper_sha256,
-        )
+        identity = provider.backend_identity
         provenance = PythonProvenanceRepository(resources)
         if not provenance.history(reservation.resource_ref):
             inspect = resources.claim(
@@ -168,12 +177,6 @@ async def run(args: argparse.Namespace) -> int:
                 principal_id="boberagent-core",
             )
             await inspect_owned_interpreter(distribution, backend, identity, provenance, inspect)
-        provider = PythonEnvironmentProvider(
-            distribution=distribution,
-            backend=backend,
-            backend_identity=identity,
-            repository=repository,
-        )
         evidence = repository.history(reservation.resource_ref)
         replay = evidence is not None
         if evidence is None:

@@ -84,6 +84,14 @@ hooks, subclass or post-setup script from the request/source. Pin/test the trust
 stdlib venv implementation; an unsupported implementation with unaccounted writes is denied.
 This is bounded trusted construction, not an arbitrary-Python endpoint.
 
+E5-E executes the exact provider helper bytes only from an explicitly installed trusted
+asset beside the pinned native helper: `environment-<helper_sha256>.py`. The package/source
+file identifies reviewed bytes but is never the child execution path. Operator installation
+uses explicit 0444 file / 0755 directory modes and trusted non-writable ancestors; no source
+checkout chmod or automatic production installation. Create/verify recheck bounded file
+bytes, SHA, no-follow trust and parent identity before/after work. Existing immutable
+`helper_sha256` evidence binds the asset; no extra domain identity or authority is created.
+
 Verify `pyvenv.cfg`, copied executable hash, entire bounded tree and package locations.
 `include-system-site-packages` must be false, external installed set empty, no pip executables,
 package metadata, wheel seed, `.pth`, `sitecustomize` or `usercustomize` introduced into the

@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 from boberagent_contracts import (
     DomainRef,
+    PreparationReasonCode,
     PythonProviderOperation,
     PythonProviderPhase,
     PythonResourceState,
@@ -135,6 +136,8 @@ class FakeEnvironmentBackend(FakeIdentityBackend):
         if self.failure == "cancel":
             raise asyncio.CancelledError()
         if self.failure == "create":
+            raise RuntimeConfinementUnavailable()
+        if self.failure == "helper_trust":
             raise RuntimeConfinementUnavailable()
         export_path.write_bytes(self.export)
         output = json.dumps(
@@ -425,6 +428,19 @@ def test_failed_or_cancelled_construction_retains_full_unsettled_reservation(
             owner_token=DomainRef("new-owner"),
             principal_id="core-test",
         )
+
+
+def test_helper_trust_failure_is_not_persisted_as_prepared_content_mismatch(case: Case) -> None:
+    case.backend.failure = "helper_trust"
+    with pytest.raises(RuntimeConfinementUnavailable):
+        case.create()
+    retained = case.resources.load(case.claim.resource_ref)
+    assert retained.phase is PythonProviderPhase.QUARANTINED
+    assert retained.failure is not None
+    assert retained.failure.reason_code is PreparationReasonCode.CONFINEMENT_UNAVAILABLE
+    assert retained.failure.runtime_reason is None
+    assert case.repository.history(case.claim.resource_ref) is None
+    assert all(balance.held == 0 for balance in case.resources.budget(case.claim.resource_ref))
 
 
 @pytest.mark.parametrize(

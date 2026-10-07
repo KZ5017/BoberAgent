@@ -5,6 +5,7 @@ import inspect
 from pathlib import Path
 
 from boberagent_execution_node.preparation.python_environment import PythonEnvironmentProvider
+from boberagent_execution_node.preparation.runtime_confinement import LinuxRuntimeConfinementBackend
 from boberagent_execution_node.preparation.runtime_confinement_models import (
     EnvironmentLimits,
     ProbeLimits,
@@ -74,3 +75,13 @@ def test_fixed_limits_do_not_enlarge_closed_c_d_probes() -> None:
     assert "export_environment(exported,destination,deadline)" in native
     assert "kill_empty(group)" in native
     assert "NOCHILD(SYS_fork),NOCHILD(SYS_vfork),NOCHILD(SYS_clone)" in native
+
+
+def test_environment_launch_uses_installed_asset_not_package_source() -> None:
+    launch = inspect.getsource(LinuxRuntimeConfinementBackend._run_operation)
+    assert "str(environment_helper)" in launch
+    assert 'with_name("_environment_helper.py")' not in launch
+    assert "self._environment_helper(environment_helper_sha256)" in launch
+    assert launch.index("self._environment_helper(environment_helper_sha256)") < launch.index(
+        "journal.begin("
+    )

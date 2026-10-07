@@ -951,6 +951,14 @@ Prerequisites, in order:
    Do not chmod the Git checkout. A quarantined failed real attempt is forensic history only:
    use a fresh admission and Node runtime rather than repairing/reusing it.
 
+   The reviewed FD handoff uses ordinary Bubblewrap inheritance, **not**
+   `--preserve-fds` (unsupported) or `--sync-fd` (lifetime synchronization).
+   The native constructor child exports only its private memfd at fixed FD 3;
+   all unrelated descriptors are closed. Rebuild and explicitly repin the native
+   helper after this correction. Python asset bytes and the D interpreter/projection
+   pins are unchanged. Keep `m20e5e-real-acceptance-v2` quarantined and untouched;
+   the next operator acceptance must use a fresh admission and fresh Node runtime.
+
 From the repository root on Kali, inside the already delegated service:
 
 ```bash

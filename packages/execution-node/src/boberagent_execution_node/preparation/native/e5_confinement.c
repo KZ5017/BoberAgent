@@ -104,6 +104,19 @@ static void close_extra(void) {
     /* close_range, not a finite fd scan, is the production default-deny rule. */
     if (syscall(SYS_close_range, 3U, ~0U, 0U)) _exit(90);
 }
+static void prepare_environment_export(int source) {
+    /* Only the supervisor-created memfd, only the fixed constructor, only fd 3.
+     * dup2 clears CLOEXEC except when source already is 3: clear explicitly in
+     * both cases. Bubblewrap passes ordinary inheritable fds to its command;
+     * --sync-fd is a lifetime control, not an export channel.
+     */
+    struct stat s;
+    if (fstat(source,&s) || !S_ISREG(s.st_mode) || fcntl(source,F_GET_SEALS)<0
+        || dup2(source,3)<0) _exit(90);
+    int flags=fcntl(3,F_GETFD);
+    if (flags<0 || fcntl(3,F_SETFD,flags & ~FD_CLOEXEC)<0
+        || syscall(SYS_close_range,4U,~0U,0U)) _exit(90);
+}
 static void sleep_fixture(void) {
     /* Finite even if all tested mechanisms unexpectedly fail. */
     struct timespec t = {10, 0}; nanosleep(&t, NULL); _exit(0);
@@ -175,6 +188,11 @@ static void setup_fixture(int op, unsigned port) {
     for (int fd = 0; fd < 1024; fd++) {
         struct stat s;
         if (!fstat(fd, &s) && (S_ISSOCK(s.st_mode) || (fd > 2 && !(op==14 && fd==3 && S_ISREG(s.st_mode))))) _exit(92);
+    }
+    if (op==14) {
+        struct stat s;
+        if (fstat(3,&s) || !S_ISREG(s.st_mode) || fcntl(3,F_GETFD)!=0
+            || fcntl(3,F_GET_SEALS)!=0) _exit(92);
     }
     if (op>=13) {
         /* Fixed BoberAgent identity, no source/venv/packages, site or env input.
@@ -417,7 +435,6 @@ static void identity_launch(int argc,char **argv,const char *bwrap,
     int op=probe_index(argv[5]), first=op>=14 ? 14 : 11;
     if (op>=14) {
         ARG("--ro-bind");ARG(argv[11]);ARG("/trusted/environment.py");
-        if (op==14) { ARG("--preserve-fds");ARG("1"); }
         if (op==15) { ARG("--ro-bind");ARG(argv[12]);ARG("/work/venv"); }
     }
     char destinations[32][256];
@@ -485,7 +502,7 @@ static void supervisor(int argc, char **argv) {
         || counter(group, "memory.swap.max", NULL)!=0
         || counter(group, "memory.oom.group", NULL)!=1) _exit(90);
     int life[2], gate[2], out[2], err[2], ready[2];
-    int exported=op==14 ? memfd_create("e5-environment-export",MFD_ALLOW_SEALING) : -1;
+    int exported=op==14 ? memfd_create("e5-environment-export",MFD_ALLOW_SEALING|MFD_CLOEXEC) : -1;
     int destination=op==14 ? (int)number(argv[13],3,1024) : -1;
     if (op==14 && exported<0) _exit(90);
     if (pipe2(life, O_CLOEXEC) || pipe2(gate, O_CLOEXEC)
@@ -533,7 +550,7 @@ static void supervisor(int argc, char **argv) {
         if (dup2(out[1], 1)<0 || dup2(err[1], 2)<0) _exit(90);
         int null=open("/dev/null", O_RDONLY); if (null<0 || dup2(null,0)<0) _exit(90);
         if (op==14) {
-            if (dup2(exported,3)<0 || syscall(SYS_close_range,4U,~0U,0U)) _exit(90);
+            prepare_environment_export(exported);
         } else close_extra();
         /* Static fixture only: no whole-/usr/root bind, no host user/control tree.
          * Retain just SYS_ADMIN for fixed mount setup, then drop before fixture.

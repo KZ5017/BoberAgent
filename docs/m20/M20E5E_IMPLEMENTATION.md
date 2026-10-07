@@ -95,6 +95,21 @@ and empty-group proof, the native supervisor seals and streams it through a boun
 with requester-liveness and deadline checks. A secondary `RLIMIT_FSIZE` bounds the anonymous
 export; it does not replace cgroup, tmpfs or pre-write accounting enforcement.
 
+The supervisor creates this export memfd with `MFD_CLOEXEC | MFD_ALLOW_SEALING`.
+Only the fixed construction child duplicates it to **FD 3**, explicitly clears
+`FD_CLOEXEC` (including the `dup2(3, 3)` case), and closes **all** FDs above 3 with
+`close_range`. Verification and C/D operations retain the original close-all rule.
+Bubblewrap inherits the ordinary non-CLOEXEC FD into its command; its separate sealed
+`--args` descriptor is consumed and closed before the command. The fixed native fixture
+checks FD 3 is an unsealed regular memfd with CLOEXEC clear, then the isolated Python
+constructor writes only to that FD. The Node destination pipe, cgroup/control descriptors
+and unrelated sockets do not enter the constructor. The supervisor's private copy remains
+available for the existing post-cleanup seal/bounded stream; no caller FD API is introduced.
+
+There is **no `--preserve-fds` option in Bubblewrap** and no `--sync-fd` substitution.
+The latter is a lifetime synchronization descriptor, not generic export preservation.
+This follows the [Bubblewrap 0.11 command/FD implementation](https://github.com/containers/bubblewrap/blob/v0.11.0/bubblewrap.c).
+
 `EnvironmentStorage` writes an exclusive export file, then publishes only a closed
 whitelist: six directories, three exact copied interpreter files, config, four activation
 templates and `lib64 -> lib`. No archive extraction or general path API. It checks framing,
@@ -170,6 +185,21 @@ all-proof enforcement negatives, metadata-backed construction/replay, wrong-owne
 duplicate protection, crash/reopen/quarantine, integrity/missing/extra-file cases, populated
 0010 upgrades, immutable evidence and readiness guards. Synthetic interpreter/probe fixtures
 are portable mechanics tests, **not real Kali confinement/provenance acceptance**.
+
+`test_python_projection_native.py` additionally validates generated C/D/E options with
+the real Bubblewrap parser (`--args` followed by `--help`), including an intentionally
+unsupported-option control. `test_environment_fd_native.py` exercises same/different-FD
+duplication, explicit CLOEXEC clearing, closure of unrelated sockets and high FDs, and
+close-all verification. Its real Bubblewrap case runs the reviewed constructor using a
+local test interpreter/read-only closure and private namespace scratch; it checks the
+sealed options FD is gone and only export FD 3 survives. This is FD/EnvBuilder mechanics,
+not production projection, cgroup, readiness or real Kali acceptance.
+
+These real CLI cases use installed `bwrap` or explicit `BOBERAGENT_E5_BWRAP`, with optional
+`BOBERAGENT_E5_BWRAP_SHA256` verification. They skip only when no binary is available;
+an explicitly configured missing/mismatched binary or namespace failure fails the test.
+Tests do not install/download tools. The compatibility fix does not change the required
+Bubblewrap version, Python helper bytes, D projection/pins or E5 acceptance/readiness.
 
 The manual-only [E5-E procedure](../../scripts/manual-smoke/README.md#m20-e5-e-empty-environment-construction-operator-only)
 requires a stopped Node with an existing **current authenticated Core E3/E4 admission**,

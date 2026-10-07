@@ -13,6 +13,7 @@ from boberagent_execution_node.preparation.python_projection import (
     projection_mounts,
     write_mount_descriptor,
 )
+from bubblewrap_contract import parse_options, real_bubblewrap
 from test_python_projection import install_feature
 from test_python_provenance import configured as configured
 from test_python_provenance import repin
@@ -147,7 +148,6 @@ def command_remainder(arguments: list[str], fd_options: list[str]) -> list[str]:
         "--ro-bind": 2,
         "--symlink": 2,
         "--chdir": 1,
-        "--preserve-fds": 1,
     }
     offset = 0
     while offset < len(arguments):
@@ -258,6 +258,7 @@ def test_environment_launch_preserves_projection_and_fixed_outer_command(
     ] == ["--ro-bind", "/trusted/provider/environment.py", "/trusted/environment.py"]
     assert "site-packages" not in fd_bytes.decode() and "tkinter" not in fd_bytes.decode()
     assert "--bind" not in options and "/source" not in options
+    assert "--preserve-fds" not in options and "--sync-fd" not in options
     if operation == "verify":
         index = options.index("/private/resource/venv")
         assert options[index - 1 : index + 2] == [
@@ -265,10 +266,38 @@ def test_environment_launch_preserves_projection_and_fixed_outer_command(
             "/private/resource/venv",
             "/work/venv",
         ]
-        assert "--preserve-fds" not in options
     else:
-        assert options[options.index("--preserve-fds") + 1] == "1"
         assert "/private/resource/venv" not in options
+
+
+@pytest.mark.parametrize("operation", ["identity", "create", "verify"])
+def test_native_options_are_accepted_by_real_bubblewrap_parser(
+    configured: PythonDistributionConfiguration,
+    descriptor_parser: Path,
+    tmp_path: Path,
+    operation: str,
+) -> None:
+    binary = real_bubblewrap()
+    install_feature(configured)
+    descriptor = tmp_path / "real-cli-mounts"
+    write_mount_descriptor(descriptor, inventory(repin(configured)))
+    arguments = [
+        str(descriptor),
+        str(configured.distribution_root),
+        str(configured.system_library_root / "ld-linux-x86-64.so.2"),
+    ]
+    if operation != "identity":
+        arguments = ["--environment-" + operation, *arguments, "/private/resource/venv"]
+    captured = subprocess.run(
+        [str(descriptor_parser), *arguments], check=True, capture_output=True, timeout=5
+    )
+    _, options = captured.stdout.split(b"\0\0", 1)
+    assert b"--preserve-fds\0" not in options and b"--sync-fd\0" not in options
+    parsed = parse_options(binary, options)
+    assert parsed.returncode == 0, parsed.stderr
+    # Prove this is the actual parser, not a mock silently accepting any argv.
+    invalid = parse_options(binary, b"--preserve-fds\0" + b"1\0" + options)
+    assert invalid.returncode != 0 and b"Unknown option --preserve-fds" in invalid.stderr
 
 
 @pytest.mark.parametrize("bound", ["count", "length", "byte"])

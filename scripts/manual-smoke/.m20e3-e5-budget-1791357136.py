@@ -16,7 +16,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from boberagent_cli.operator_env import operator_environment
-from boberagent_contracts import ExecutionPlanRef, PreparationPermit, RuntimePreparationRef
+from boberagent_contracts import (
+    ExecutionPlanRef,
+    PreparationBudgets,
+    PreparationPermit,
+    RuntimePreparationRef,
+)
 from boberagent_contracts.runtime_preparation import ConfinementFeature, PreparationAction
 from boberagent_core import (
     ArtifactStorageConfiguration,
@@ -49,7 +54,6 @@ sys.path.insert(0, str(_TEST_FIXTURES))
 from planning_construction_fixtures import prepared  # noqa: E402
 from test_core_poc_acquisition import NOW  # noqa: E402
 from test_planning_policy import _profile  # noqa: E402
-from boberagent_contracts import PreparationBudgets
 
 
 def _budgets() -> PreparationBudgets:
@@ -66,7 +70,6 @@ def _budgets() -> PreparationBudgets:
         max_captured_output_bytes=200_000,
         max_memory_bytes=256 * 1024 * 1024,
     )
-
 
 
 def _arguments() -> argparse.Namespace:

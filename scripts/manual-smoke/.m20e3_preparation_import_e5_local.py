@@ -62,13 +62,13 @@ def _budgets() -> PreparationBudgets:
         max_materialized_bytes=1_000_000,
         max_file_count=15_000,
         max_path_depth=16,
-        max_temporary_bytes=256 * 1024 * 1024,
-        max_preparation_write_bytes=1024 * 1024 * 1024,
+        max_temporary_bytes=1024 * 1024 * 1024,
+        max_preparation_write_bytes=2 * 1024 * 1024 * 1024,
         max_processes=11,
         max_process_runtime_seconds=60,
         max_total_runtime_seconds=900,
         max_captured_output_bytes=200_000,
-        max_memory_bytes=256 * 1024 * 1024,
+        max_memory_bytes=1024 * 1024 * 1024,
     )
 
 

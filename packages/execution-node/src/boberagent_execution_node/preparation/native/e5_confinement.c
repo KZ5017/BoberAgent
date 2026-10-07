@@ -34,7 +34,11 @@
 
 #define MiB (1024UL * 1024UL)
 #define MAX_OUTPUT 4096
-#define ENVIRONMENT_EXPORT_MAX (32UL*MiB+65536UL)
+#define ENVIRONMENT_WRITE_MAX (128UL*MiB)
+#define ENVIRONMENT_EXPORT_MAX (ENVIRONMENT_WRITE_MAX+65536UL)
+#define ENVIRONMENT_SCRATCH_MAX (144UL*MiB)
+#define ENVIRONMENT_MEMORY_MAX (512UL*MiB)
+#define ENVIRONMENT_INODES 256UL
 static int requester_ready = -1;
 static const char *names[] = {"isolation", "pids", "memory", "bytes", "inodes",
     "output", "deadline", "descendants", "setsid", "double_fork", "cancel",
@@ -175,11 +179,14 @@ static void setup_fixture(int op, unsigned port) {
         "size=4096,nr_inodes=8,mode=0700", "size=4096,nr_inodes=8,mode=0700"};
     for (int i = 0; i < 3; i++) {
         if (op==15 && i==0) continue; /* Already a read-only owned publication. */
-        const char *selected=op==14 && i==0 ? "size=33554432,nr_inodes=256,mode=0700" : options[i];
+        char environment_options[128];
+        snprintf(environment_options,sizeof(environment_options),"size=%lu,nr_inodes=%lu,mode=0700",
+            ENVIRONMENT_SCRATCH_MAX,ENVIRONMENT_INODES);
+        const char *selected=op==14 && i==0 ? environment_options : options[i];
         if (mount("tmpfs", mounts[i], "tmpfs", MS_NOSUID|MS_NODEV|MS_NOEXEC, selected)) _exit(91);
         struct statvfs v;
-        if (statvfs(mounts[i], &v) || v.f_blocks*v.f_frsize != (i ? 4096UL : (op==14 ? 32UL*MiB : MiB))
-            || v.f_files != (i ? 8UL : (op==14 ? 256UL : 32UL))) _exit(91);
+        if (statvfs(mounts[i], &v) || v.f_blocks*v.f_frsize != (i ? 4096UL : (op==14 ? ENVIRONMENT_SCRATCH_MAX : MiB))
+            || v.f_files != (i ? 8UL : (op==14 ? ENVIRONMENT_INODES : 32UL))) _exit(91);
     }
     /* Parent root, /proc and all non-scratch bindings are read-only. */
     if (mount(NULL, "/", NULL, MS_REMOUNT|MS_RDONLY|MS_NOSUID|MS_NODEV, NULL)) _exit(91);
@@ -498,7 +505,7 @@ static void supervisor(int argc, char **argv) {
     if (op>=14 && (seconds!=30 || cap!=8 || output!=4096)) _exit(90);
     int group=open(".", O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC);
     if (group<0 || counter(group, "pids.max", NULL)!=(long)cap
-        || counter(group, "memory.max", NULL)!=(op>=14 ? 128 : 64)*(long)MiB
+        || counter(group, "memory.max", NULL)!=(long)(op>=14 ? ENVIRONMENT_MEMORY_MAX : 64UL*MiB)
         || counter(group, "memory.swap.max", NULL)!=0
         || counter(group, "memory.oom.group", NULL)!=1) _exit(90);
     int life[2], gate[2], out[2], err[2], ready[2];

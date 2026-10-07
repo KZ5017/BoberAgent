@@ -11,6 +11,7 @@ from ..persistence.orm import RuntimeConfinementRow
 from .runtime_confinement_models import (
     ClosedProbe,
     EnvironmentLimits,
+    LegacyEnvironmentLimits,
     ProbeEvidence,
     ProbeLimits,
     TrustedPythonOperation,
@@ -25,7 +26,7 @@ class ConfinementJournal:
         self,
         operation_id: RuntimeCorrelation,
         probe: ClosedProbe | TrustedPythonOperation,
-        limits: ProbeLimits | EnvironmentLimits,
+        limits: ProbeLimits | EnvironmentLimits | LegacyEnvironmentLimits,
         boot: RuntimeCorrelation,
         host_boot: str,
         parent_sha256: str,
@@ -46,6 +47,8 @@ class ConfinementJournal:
                 if row.evidence_json is not None:
                     return ProbeEvidence.model_validate(row.evidence_json)
                 raise ValueError("operation already owned/interrupted; never replay")
+            if isinstance(limits, LegacyEnvironmentLimits):
+                raise ValueError("historical environment limits cannot start a new operation")
             session.add(
                 RuntimeConfinementRow(
                     operation_id=str(operation_id),

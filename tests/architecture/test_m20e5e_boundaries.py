@@ -65,11 +65,15 @@ def test_fixed_limits_do_not_enlarge_closed_c_d_probes() -> None:
     assert ProbeLimits().scratch_bytes == 1024**2
     assert ProbeLimits().memory_bytes == 64 * 1024**2
     assert ProbeLimits().seconds == 3
-    assert EnvironmentLimits().scratch_bytes == 32 * 1024**2
-    assert EnvironmentLimits().memory_bytes == 128 * 1024**2
+    assert EnvironmentLimits().profile == "m20-e5-empty-environment-limits@2"
+    assert EnvironmentLimits().scratch_bytes == 144 * 1024**2
+    assert EnvironmentLimits().memory_bytes == 512 * 1024**2
     assert EnvironmentLimits().seconds == 30
     native = (PREPARATION / "native/e5_confinement.c").read_text()
-    assert '"size=33554432,nr_inodes=256,mode=0700"' in native
+    assert '"size=%lu,nr_inodes=%lu,mode=0700"' in native
+    assert "ENVIRONMENT_SCRATCH_MAX,ENVIRONMENT_INODES" in native
+    assert "op==14 ? ENVIRONMENT_SCRATCH_MAX : MiB" in native
+    assert "op>=14 ? ENVIRONMENT_MEMORY_MAX : 64UL*MiB" in native
     assert '"-I","-S","-B","/trusted/environment.py","create"' in native
     assert '"-I","-B","/trusted/environment.py","verify"' in native
     assert "export_environment(exported,destination,deadline)" in native

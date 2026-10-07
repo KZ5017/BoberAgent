@@ -5,6 +5,11 @@
 
 int main(int argc, char **argv) {
     if (argc != 2) return 99;
+    if (!strcmp(argv[1],"limits")) {
+        printf("%lu %lu %lu %lu %lu\n",ENVIRONMENT_WRITE_MAX,ENVIRONMENT_EXPORT_MAX,
+            ENVIRONMENT_SCRATCH_MAX,ENVIRONMENT_MEMORY_MAX,ENVIRONMENT_INODES);
+        return 0;
+    }
     int source = memfd_create("test-export", MFD_ALLOW_SEALING);
     int sink[2], life[2];
     if (source < 0 || pipe(sink) || pipe(life) || dup2(life[0], 0) < 0) return 99;

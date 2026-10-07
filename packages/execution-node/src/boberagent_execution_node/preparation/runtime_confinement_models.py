@@ -77,13 +77,25 @@ class StopReason(StrEnum):
     CLEANUP_FAILED = "CLEANUP_FAILED"
 
 
-class EnvironmentLimits(Record):
-    """Fixed E5-E profile, separate from the unchanged tiny C/D probe caps."""
+class LegacyEnvironmentLimits(Record):
+    """Read-only @1 history; never selected for a new construction operation."""
 
     profile: Literal["m20-e5-empty-environment-limits@1"] = "m20-e5-empty-environment-limits@1"
     processes: Literal[8] = 8
     memory_bytes: Literal[134217728] = 134217728
     scratch_bytes: Literal[33554432] = 33554432
+    scratch_inodes: Literal[256] = 256
+    output_bytes: Literal[4096] = 4096
+    seconds: Literal[30] = 30
+
+
+class EnvironmentLimits(Record):
+    """Fixed E5-E @2, separate from immutable @1 and unchanged C/D caps."""
+
+    profile: Literal["m20-e5-empty-environment-limits@2"] = "m20-e5-empty-environment-limits@2"
+    processes: Literal[8] = 8
+    memory_bytes: Literal[536870912] = 536870912
+    scratch_bytes: Literal[150994944] = 150994944
     scratch_inodes: Literal[256] = 256
     output_bytes: Literal[4096] = 4096
     seconds: Literal[30] = 30
@@ -111,7 +123,7 @@ class ProbeEvidence(Record):
     helper_sha256: Sha256Digest
     bubblewrap_sha256: Sha256Digest
     kernel: str = Field(min_length=1, max_length=128)
-    limits: EnvironmentLimits | ProbeLimits
+    limits: EnvironmentLimits | LegacyEnvironmentLimits | ProbeLimits
     attached_before_exec: bool
     exit_code: int | None
     # Direct synthetic requester's wait status, distinct from the payload exit.

@@ -12,16 +12,16 @@ from boberagent_contracts import (
 from boberagent_contracts.python_runtime import RuntimeCorrelation
 from pydantic import AwareDatetime, Field, StrictInt, model_validator
 
+from .environment_limits import EXPORT_LIMIT as EXPORT_LIMIT
+from .environment_limits import FILE_LIMIT as FILE_LIMIT
+from .environment_limits import WRITE_LIMIT as WRITE_LIMIT
 from .runtime_confinement_models import (
     EnvironmentLimits,
+    LegacyEnvironmentLimits,
     ProbeEvidence,
     Record,
     TrustedPythonOperation,
 )
-
-EXPORT_LIMIT = 32 * 1024**2 + 65536
-WRITE_LIMIT = 32 * 1024**2
-FILE_LIMIT = 256
 
 
 class EnvironmentEntry(Record):
@@ -99,7 +99,7 @@ class EmptyEnvironmentEvidence(Record):
             raise ValueError("construction provenance/operation mismatch")
         for probe in (self.construction, self.verification):
             if (
-                not isinstance(probe.limits, EnvironmentLimits)
+                not isinstance(probe.limits, (EnvironmentLimits, LegacyEnvironmentLimits))
                 or not probe.passed
                 or not probe.group_empty
                 or not probe.attached_before_exec
@@ -115,4 +115,16 @@ class EmptyEnvironmentEvidence(Record):
                 raise ValueError("incomplete environment confinement proof")
         if self.construction.boot_generation != self.verification.boot_generation:
             raise ValueError("construction generation changed")
+        build_limits, verify_limits = self.construction.limits, self.verification.limits
+        if not isinstance(
+            build_limits, (EnvironmentLimits, LegacyEnvironmentLimits)
+        ) or not isinstance(verify_limits, (EnvironmentLimits, LegacyEnvironmentLimits)):
+            raise ValueError("environment limits required")
+        if build_limits.profile != verify_limits.profile:
+            raise ValueError("construction limit profile changed")
+        if isinstance(build_limits, LegacyEnvironmentLimits) and (
+            self.manifest.written_bytes > 32 * 1024**2
+            or any(entry.size > 32 * 1024**2 for entry in self.manifest.entries)
+        ):
+            raise ValueError("historical construction exceeds its original write limit")
         return self

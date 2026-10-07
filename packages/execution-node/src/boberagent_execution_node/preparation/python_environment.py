@@ -49,7 +49,7 @@ from .python_provenance import PythonProvenanceRepository, enforcement
 from .resource_models import BudgetAmount, BudgetCategory, OperationState, ResourceOperation
 from .resources import PythonResourceRepository, ResourceOwnershipError
 from .runtime_confinement import RuntimeConfinementUnavailable
-from .runtime_confinement_models import ConfinementCheck, ProbeEvidence, Record
+from .runtime_confinement_models import ConfinementCheck, EnvironmentLimits, ProbeEvidence, Record
 
 
 class EnvironmentFailure(RuntimeError):
@@ -100,6 +100,37 @@ class ConstructionSummary(Record):
     written_bytes: StrictInt = Field(ge=0, le=WRITE_LIMIT)
     created_entries: StrictInt = Field(ge=0, le=FILE_LIMIT)
     export_bytes: StrictInt = Field(ge=4, le=EXPORT_LIMIT)
+
+
+_CONTROL_WRITE_BYTES = 13 * (2 * 1024**2 + 8192) + 32 * 1024**2
+_CONTROL_ENTRIES = 13 * 65 + 2 * 2050
+
+
+def _construction_reservations() -> dict[BudgetCategory, int]:
+    """Fixed capacities, including both export copies and filesystem slack.
+
+    Reserve even non-overlapping phases conservatively: scratch, anonymous
+    export, Node export, publication, and the original 16 MiB control allowance.
+    Failed/unknown work retains this whole reservation; success settles measured
+    environment/export writes plus explicit conservative control/evidence cost.
+    """
+    limits = EnvironmentLimits()
+    return {
+        BudgetCategory.TEMPORARY_BYTES: (
+            limits.scratch_bytes + 2 * EXPORT_LIMIT + WRITE_LIMIT + 16 * 1024**2 + 8192
+        ),
+        BudgetCategory.WRITE_BYTES: _CONTROL_WRITE_BYTES
+        + 2 * WRITE_LIMIT
+        + 2 * EXPORT_LIMIT
+        + 65536,
+        BudgetCategory.FILE_COUNT: _CONTROL_ENTRIES + 2 * FILE_LIMIT + 8,
+        BudgetCategory.PATH_DEPTH: 4,
+        BudgetCategory.PROCESSES: limits.processes + 3,
+        BudgetCategory.MEMORY_BYTES: limits.memory_bytes + 8 * 1024**2,
+        BudgetCategory.PROCESS_SECONDS: limits.seconds + 8,
+        BudgetCategory.TOTAL_SECONDS: 300,
+        BudgetCategory.OUTPUT_BYTES: 15 * limits.output_bytes,
+    }
 
 
 class EnvironmentBackend(Protocol):
@@ -268,19 +299,7 @@ class PythonEnvironmentProvider:
             resources._matching(session, claim)
         started, monotonic = self._clock(), time.monotonic()
         # Conservative controls plus exact measured environment writes on success.
-        control_writes = 13 * (2 * 1024**2 + 8192) + 32 * 1024**2
-        control_entries = 13 * 65 + 2 * 2050
-        reservations = {
-            BudgetCategory.TEMPORARY_BYTES: 144 * 1024**2 + 65536 + 8192,
-            BudgetCategory.WRITE_BYTES: control_writes + 4 * WRITE_LIMIT + 2 * 65536 + 65536,
-            BudgetCategory.FILE_COUNT: control_entries + 2 * FILE_LIMIT + 8,
-            BudgetCategory.PATH_DEPTH: 4,
-            BudgetCategory.PROCESSES: 11,
-            BudgetCategory.MEMORY_BYTES: 136 * 1024**2,
-            BudgetCategory.PROCESS_SECONDS: 38,
-            BudgetCategory.TOTAL_SECONDS: 300,
-            BudgetCategory.OUTPUT_BYTES: 15 * 4096,
-        }
+        reservations = _construction_reservations()
         try:
             retained = self.repository.history(claim.resource_ref)
             if retained is not None:
@@ -333,6 +352,7 @@ class PythonEnvironmentProvider:
                 enforcement(check, construction)
                 if (
                     not construction.passed
+                    or construction.limits != EnvironmentLimits()
                     or not construction.group_empty
                     or construction.exit_code != 0
                     or construction.stderr_hex
@@ -359,6 +379,8 @@ class PythonEnvironmentProvider:
                     cancellation=cancellation,
                 )
                 enforcement(check, verification)
+                if verification.limits != EnvironmentLimits():
+                    raise EnvironmentFailure(PythonRuntimeReason.VENV_CREATION_FAILED)
                 identity = EnvironmentIdentity.model_validate_json(
                     bytes.fromhex(verification.stdout_hex)
                 )
@@ -406,8 +428,8 @@ class PythonEnvironmentProvider:
                 ) != python_runtime_binding_digest(evidence.binding):
                     raise EnvironmentFailure()
                 settled = dict(reservations)
-                settled[BudgetCategory.WRITE_BYTES] = control_writes + actual_writes + 65536
-                settled[BudgetCategory.FILE_COUNT] = control_entries + actual_files + 8
+                settled[BudgetCategory.WRITE_BYTES] = _CONTROL_WRITE_BYTES + actual_writes + 65536
+                settled[BudgetCategory.FILE_COUNT] = _CONTROL_ENTRIES + actual_files + 8
                 settled[BudgetCategory.TOTAL_SECONDS] = ceil(elapsed / 1000)
                 settled[BudgetCategory.OUTPUT_BYTES] = sum(
                     (len(p.stdout_hex) + len(p.stderr_hex)) // 2

@@ -3,11 +3,16 @@
 **E5-C/D CLOSED; E5-E fixed construction/verification limits implemented offline, real acceptance required.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 
 The thirteen C controls and D identity limits remain unchanged. E has separate fixed
-32 MiB / 256-inode constructor scratch, 128 MiB memory, pids 8, 30-second / 4-KiB-output
+144 MiB / 256-inode constructor scratch, 512 MiB memory, pids 8, 30-second / 4-KiB-output
 operations, a capped anonymous export and pre-write durable publication accounting.
 Actual environment usage and conservative control overhead are distinguished in
 [E5-E accounting](M20E5E_IMPLEMENTATION.md#storage-export-and-ledger). No RLIMIT-only fallback
 or automatic enlargement of permit ceilings is introduced.
+The E-only `m20-e5-empty-environment-limits@2` bounds cumulative logical writes at
+128 MiB and anonymous export at 128 MiB + 64 KiB. The additional scratch capacity
+allows allocation/metadata slack; it does not enlarge the logical write gate.
+Historical E `@1` evidence remains readable with its original limits, not usable
+for a new constructor. See the [v3 correction](M20E5E_IMPLEMENTATION.md#real-kali-v3-fixed-capacity-correction).
 E4 acceptance remains four-feature source-materialization evidence, not full runtime proof.
 
 ## Mandatory gate

@@ -25,6 +25,7 @@ from boberagent_execution_node.persistence.migrations import current_revision, u
 from boberagent_execution_node.persistence.orm import (
     PythonEnvironmentRow,
     PythonResourceRow,
+    RuntimeConfinementRow,
     RuntimeResourceRow,
 )
 from boberagent_execution_node.preparation.environment_models import (
@@ -47,6 +48,7 @@ from boberagent_execution_node.preparation.python_environment import (
     EnvironmentFailure,
     PythonEnvironmentProvider,
     PythonEnvironmentRepository,
+    _construction_reservations,
 )
 from boberagent_execution_node.preparation.python_provenance import (
     PythonProvenanceRepository,
@@ -65,9 +67,11 @@ from boberagent_execution_node.preparation.resources import (
 from boberagent_execution_node.preparation.runtime_confinement import RuntimeConfinementUnavailable
 from boberagent_execution_node.preparation.runtime_confinement_models import (
     EnvironmentLimits,
+    LegacyEnvironmentLimits,
     ProbeEvidence,
     TrustedPythonOperation,
 )
+from boberagent_execution_node.preparation.runtime_confinement_store import ConfinementJournal
 from plan_test_fixtures import NOW
 from python_runtime_test_fixtures import runtime_authority_fixture, runtime_binding_fixture
 from sqlalchemy import text
@@ -147,15 +151,15 @@ class FakeEnvironmentBackend(FakeIdentityBackend):
                 export_bytes=len(self.export),
             )
         )
-        return identity_probe().model_copy(
+        proof = identity_probe().model_copy(
             update=dict(
                 operation_id=operation_id,
                 probe=TrustedPythonOperation.CREATE_ENVIRONMENT,
                 limits=EnvironmentLimits(),
                 stdout_hex=output.encode().hex(),
-                **self.proof_updates,
             )
         )
+        return proof.model_copy(update=self.proof_updates)
 
     async def run_environment_verify(
         self,
@@ -229,6 +233,11 @@ def case(
     configured: PythonDistributionConfiguration, tmp_path: Path, request: pytest.FixtureRequest
 ) -> Iterator[Case]:
     hook: object = getattr(request, "param", None)
+    budget_overrides: dict[str, int] = {}
+    if isinstance(hook, dict):
+        assert all(isinstance(k, str) and type(v) is int for k, v in hook.items())
+        budget_overrides = {str(k): int(v) for k, v in hook.items()}
+        hook = None
     if hook is not None:
         assert isinstance(hook, str)
         path = configured.distribution_root / "lib/python3.12" / hook
@@ -245,12 +254,13 @@ def case(
             max_processes=11,
             max_total_runtime_seconds=1200,
             max_process_runtime_seconds=60,
-            max_memory_bytes=256 * 1024**2,
-            max_temporary_bytes=160 * 1024**2,
-            max_preparation_write_bytes=256 * 1024**2,
+            max_memory_bytes=1024**3,
+            max_temporary_bytes=1024**3,
+            max_preparation_write_bytes=1024**3,
             max_captured_output_bytes=200000,
         )
     )
+    budgets = budgets.model_copy(update=budget_overrides)
     spec = authority.permit.spec.model_copy(update={"budgets": budgets})
     permit = authority.permit.model_copy(
         update={"spec": spec, "spec_sha256": preparation_spec_fingerprint(spec)}
@@ -450,9 +460,10 @@ def test_helper_trust_failure_is_not_persisted_as_prepared_content_mismatch(case
         {"passed": False},
         {"pids_events": 1},
         {"oom_events": 1},
-        {"memory_peak": 200 * 1024**2},
+        {"memory_peak": EnvironmentLimits().memory_bytes + 1},
         {"stop_reason": "OUTPUT", "passed": False},
         {"helper_sha256": "f" * 64},
+        {"limits": LegacyEnvironmentLimits()},
     ],
 )
 def test_incomplete_confinement_proof_cannot_publish_success(
@@ -708,3 +719,94 @@ def test_source_and_secret_canaries_are_never_provider_inputs(
     assert secret not in evidence.model_dump_json()
     assert evidence.provenance.non_actions.source_imported is False
     assert evidence.provenance.non_actions.target_secret_grants == ()
+
+
+def test_current_reservation_and_settlement_cover_environment_and_both_exports(case: Case) -> None:
+    evidence = case.create()
+    with case.database.transaction() as session:
+        rows = session.execute(
+            text(
+                "SELECT category,reserved,spent FROM python_resource_budget_entries "
+                "WHERE operation_id=:operation"
+            ),
+            {"operation": str(case.claim.operation_id)},
+        ).all()
+    assert {
+        BudgetCategory(row.category): row.reserved for row in rows
+    } == _construction_reservations()
+    assert evidence.committed_write_bytes == (
+        2 * evidence.manifest.written_bytes + 2 * len(case.backend.export)
+    )
+    writes = next(row for row in rows if row.category == BudgetCategory.WRITE_BYTES.value)
+    assert evidence.committed_write_bytes <= writes.spent <= writes.reserved
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        {"max_memory_bytes": 256 * 1024**2},
+        {"max_temporary_bytes": 256 * 1024**2},
+        {"max_preparation_write_bytes": 256 * 1024**2},
+    ],
+    indirect=True,
+)
+def test_previous_small_permit_is_not_enlarged_and_denies_before_child(case: Case) -> None:
+    with pytest.raises(ResourceOwnershipError):
+        case.create()
+    assert case.backend.calls == []
+    assert case.repository.history(case.claim.resource_ref) is None
+
+
+def test_historical_limit_evidence_reads_without_reinterpretation_or_new_dispatch(
+    case: Case,
+) -> None:
+    current = case.create()
+    legacy = LegacyEnvironmentLimits()
+    data = current.model_dump(mode="json")
+    for name in ("construction", "verification"):
+        data[name]["limits"] = legacy.model_dump(mode="json")
+    historical = EmptyEnvironmentEvidence.model_validate_json(json.dumps(data))
+    assert historical.model_dump(mode="json") == data
+    assert isinstance(historical.construction.limits, LegacyEnvironmentLimits)
+    # Seed a synthetic historical @1 journal, not a real forensic runtime.
+    proof = historical.construction.model_copy(update={"operation_id": DomainRef("old-build")})
+    with case.database.transaction() as session:
+        session.add(
+            RuntimeConfinementRow(
+                operation_id="old-build",
+                probe=proof.probe.value,
+                limits_json=legacy.model_dump(mode="json"),
+                boot_generation=str(proof.boot_generation),
+                host_boot="old-host-boot",
+                parent_sha256="a" * 64,
+                input_sha256=None,
+                state="FINISHED",
+                started_at=NOW,
+                finished_at=NOW,
+                evidence_json=proof.model_dump(mode="json"),
+            )
+        )
+    journal = ConfinementJournal(case.database)
+    assert (
+        journal.begin(
+            proof.operation_id,
+            proof.probe,
+            legacy,
+            proof.boot_generation,
+            "old-host-boot",
+            "a" * 64,
+            NOW,
+        )
+        == proof
+    )
+    with pytest.raises(ValueError, match="historical environment limits"):
+        journal.begin(
+            DomainRef("new-build"),
+            proof.probe,
+            legacy,
+            proof.boot_generation,
+            "host",
+            "a" * 64,
+            NOW,
+        )
+    assert case.repository.history(case.claim.resource_ref) == current

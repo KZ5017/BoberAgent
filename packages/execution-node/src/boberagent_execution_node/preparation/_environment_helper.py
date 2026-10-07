@@ -18,7 +18,7 @@ import venv
 from typing import BinaryIO, cast
 
 PREFIX = "/work/venv"
-WRITE_CAP = 32 * 1024**2
+WRITE_CAP = 128 * 1024**2  # Standalone E5-E @2 literal; tested against provider contract.
 ENTRY_CAP = 256
 EXPORT_CAP = WRITE_CAP + 65536
 written_bytes = 0

@@ -933,7 +933,7 @@ Prerequisites, in order:
    The existing E3/E4 smoke's small default budget is not sufficient for E5; it is not an
    automatic E5 admission command. Explicitly request appropriate budgets through Core's
    existing admission API, never edit the Node/Core DB or extend an expired permit.
-3. Budget suggestions for a fresh admission: 1 GiB cumulative preparation writes, 256 MiB
+3. Budget suggestions for a fresh admission: 2 GiB cumulative preparation writes, 1 GiB
    temporary/memory ceilings, 15,000 entries, depth at least 4, 11 processes, 60 seconds per
    process, 900 seconds total and 200,000 output bytes, with normal bounded synthetic source/
    import ceilings. These are explicit operator/Core choices, not harness defaults or relaxed
@@ -955,9 +955,20 @@ Prerequisites, in order:
    `--preserve-fds` (unsupported) or `--sync-fd` (lifetime synchronization).
    The native constructor child exports only its private memfd at fixed FD 3;
    all unrelated descriptors are closed. Rebuild and explicitly repin the native
-   helper after this correction. Python asset bytes and the D interpreter/projection
-   pins are unchanged. Keep `m20e5e-real-acceptance-v2` quarantined and untouched;
+   helper after the FD correction. The subsequent v3 capacity correction also changes
+   Python asset bytes: install the newly hashed 0444 asset and repin the 0755 native
+   helper explicitly. D interpreter/projection pins are unchanged. Keep both
+   `m20e5e-real-acceptance-v2` and `m20e5e-real-acceptance-v3` quarantined and untouched;
    the next operator acceptance must use a fresh admission and fresh Node runtime.
+
+   E `m20-e5-empty-environment-limits@2` requires fixed 128 MiB cumulative logical writes,
+   144 MiB / 256-inode scratch, 128 MiB + 64 KiB export and 512 MiB zero-swap cgroup memory.
+   E alone reserves 570,564,608 temporary bytes, 520 MiB memory and 597,991,424 cumulative
+   writes, plus the unchanged file/process/time/output categories. Previous D/E3/E4 spending
+   must still fit. An old 256 MiB permit fails closed: the harness does not enlarge it.
+   The two local E5-budget E3 fixture scripts request the suggested fresh ceilings explicitly;
+   Core remains the admission authority. Do not reinterpret a historical permit or rerun an
+   interrupted Resource. See the [v3 capacity correction](../../docs/m20/M20E5E_IMPLEMENTATION.md#real-kali-v3-fixed-capacity-correction).
 
 From the repository root on Kali, inside the already delegated service:
 

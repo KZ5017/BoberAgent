@@ -85,12 +85,14 @@ through the unchanged D path, then prove E rejects it before invoking the backen
 
 Construction runs under the existing delegated cgroup-v2 + bubblewrap + static native
 supervisor/guardian. Both E operations have a **separate fixed** limit profile: pids 8,
-128 MiB cgroup memory with zero swap, 30 seconds and 4 KiB combined output. Construction
-uses a 32 MiB / 256-inode private `/work/venv` tmpfs; tmp/home each remain 4 KiB / 8 inodes.
+512 MiB cgroup memory with zero swap, 30 seconds and 4 KiB combined output. Construction
+uses a 144 MiB / 256-inode private `/work/venv` tmpfs; tmp/home each remain 4 KiB / 8 inodes.
+The E-only fixed limit profile is `m20-e5-empty-environment-limits@2`: cumulative logical
+writes remain bounded separately at 128 MiB, with 16 MiB filesystem-allocation slack.
 No child has a writable host bind. All twelve required controls still apply.
 
 The builder exports a length-framed, bounded typed manifest plus file bytes into an
-anonymous regular memfd (maximum 32 MiB + 64 KiB), not stdout. After child/guardian cleanup
+anonymous regular memfd (maximum 128 MiB + 64 KiB), not stdout. After child/guardian cleanup
 and empty-group proof, the native supervisor seals and streams it through a bounded pipe
 with requester-liveness and deadline checks. A secondary `RLIMIT_FSIZE` bounds the anonymous
 export; it does not replace cgroup, tmpfs or pre-write accounting enforcement.
@@ -127,9 +129,9 @@ may support isolated test storage, but the installed trusted helper/runtime chai
 subject to the unchanged stricter trust checks.
 
 E5-B reserves all categories before work. For E alone, minimum peak reservations are
-temporary `144 MiB + 73,728 bytes`, memory 136 MiB, processes 11, per-process envelope
+temporary `544 MiB + 139,264 bytes` (570,564,608 bytes), memory 520 MiB, processes 11, per-process envelope
 38 seconds and depth 4. Cumulative ceilings reserve 300 seconds, 61,440 output bytes,
-5,465 entries and 195,338,240 write bytes. These are **additional to existing D/E3/E4 spent
+5,465 entries and 597,991,424 write bytes. These are **additional to existing D/E3/E4 spent
 usage**, not a proposal to enlarge a permit. Successful environment accounting records
 `2 * actual environment bytes + 2 * actual export bytes` (scratch, anonymous export,
 Node export and publication), and twice the actual created entries. Control/descriptor/
@@ -137,6 +139,49 @@ evidence overhead is explicitly conservatively charged, not presented as measure
 Elapsed time and captured output are measured. Failed/interrupted reservations stay fully
 spent; no refund, reset, hidden repair or automatic rebuild. Retained export/partial bytes
 remain private and attributable; byte-retention cleanup is not implemented by this slice.
+
+The temporary reservation is `scratch + 2 * export_limit + write_limit + 16 MiB + 8 KiB`:
+private tmpfs, anonymous export, Node export, durable publication, retained conservative
+control allowance and the two small tmp/home mounts. It includes **both** 64 KiB export
+headers. The write reservation is `control_writes + 2 * write_limit + 2 * export_limit +
+64 KiB evidence`. Memory reserves the fixed 512 MiB group ceiling plus 8 MiB supervisor
+headroom. Capacities are never inferred from executable size or enlarged by caller input.
+
+### Real Kali v3 fixed-capacity correction
+
+The operator's fresh `m20e5e-real-acceptance-v3` passed owned interpreter inspection,
+fresh C controls, trusted helper checks and Bubblewrap launch. Construction finished with
+exit 95 / `EMPTY_ENVIRONMENT_OPERATION_FAILED`, memory peak 102,580,224 bytes and no
+OOM/pids-limit events; provider failure remained `RUNTIME_UNAVAILABLE / VENV_CREATION_FAILED`.
+The accepted uv CPython 3.12.14 executable is **30,913,848 bytes**. CPython's unchanged
+`symlinks=False` builder copies `python3.12`, `python`, and `python3`: **92,741,544 bytes**
+before config/activation templates. The former 32 MiB cumulative write gate rejected the
+second copy, and the former 32 MiB scratch could not hold the final tree either.
+
+The correction selects one fixed conservative E `@2` contract: 128 MiB logical writes,
+144 MiB physical scratch, 256 entries, 128 MiB + 64 KiB export, 512 MiB aggregate memory
+with zero swap; processes/time/output are unchanged. The supported three-copy workload
+leaves over 35 MiB for configuration/templates inside the logical bound. Memory also
+allows tmpfs, anonymous export and the trusted helper's copy/read buffers; this is still
+a hard cap, not a claim that all arbitrary bases fit or that real E acceptance has passed.
+
+Provider constants, summary/manifest validation, standalone helper literals, native tmpfs,
+native cgroup/RLIMIT checks and durable reservations agree. The standalone `-I -S` helper
+imports no provider module. Regressions exercise real EnvBuilder using a generated sparse
+30,913,848-byte test source copied three times (never executed), then fill the remaining
+write allowance through the production gate and reject the next byte. No large fixture is
+committed. Compiled native constants are checked against provider/helper capacities; a real
+Bubblewrap mechanical test invokes production mount setup and allocates all 128 MiB on its
+144 MiB tmpfs. These are mechanics checks, not cgroup/provenance/Kali acceptance.
+
+Historical `@1` reports remain immutable/readable at their original 32/128 MiB limits.
+No new operation may use that historical profile; current constructors require `@2` proof.
+No public Contract or SQLite schema change/migration is needed. Python helper bytes and
+native binary bytes change, so **both** require explicit fresh installation/SHA pins.
+D interpreter/distribution/projection pins, copy semantics and all security controls remain
+unchanged. The v3 runtime stays quarantined forensic evidence; no repair or reuse.
+The next real acceptance requires a fresh Core-approved budget/admission and fresh Node
+runtime. It is not run automatically. E5-F and readiness promotion have not begun.
 
 ## Lifecycle, immutable evidence and recovery
 
@@ -199,7 +244,8 @@ These real CLI cases use installed `bwrap` or explicit `BOBERAGENT_E5_BWRAP`, wi
 `BOBERAGENT_E5_BWRAP_SHA256` verification. They skip only when no binary is available;
 an explicitly configured missing/mismatched binary or namespace failure fails the test.
 Tests do not install/download tools. The compatibility fix does not change the required
-Bubblewrap version, Python helper bytes, D projection/pins or E5 acceptance/readiness.
+Bubblewrap version, D projection/pins or E5 acceptance/readiness. The later v3 capacity
+correction above does change Python helper bytes and the E-only fixed limit profile.
 
 The manual-only [E5-E procedure](../../scripts/manual-smoke/README.md#m20-e5-e-empty-environment-construction-operator-only)
 requires a stopped Node with an existing **current authenticated Core E3/E4 admission**,

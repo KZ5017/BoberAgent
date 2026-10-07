@@ -9,7 +9,10 @@ from pathlib import Path
 
 import pytest
 from boberagent_execution_node.preparation import _environment_helper
-from boberagent_execution_node.preparation.environment_models import EnvironmentManifest
+from boberagent_execution_node.preparation.environment_models import (
+    WRITE_LIMIT,
+    EnvironmentManifest,
+)
 from boberagent_execution_node.preparation.environment_storage import DIRECTORIES, FILES
 
 # This test-only driver relocates scratch and uses the local interpreter solely
@@ -25,6 +28,11 @@ fd=os.open(sys.argv[3],os.O_CREAT|os.O_EXCL|os.O_RDWR,0o600)
 os.dup2(fd,3)
 if fd!=3: os.close(fd)
 sys.prefix='/runtime'
+if sys.argv[4]=='large':
+    source=sys.argv[5]
+    fd=os.open(source,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o755)
+    os.ftruncate(fd,30913848);os.close(fd)
+    sys._base_executable=source
 if sys.argv[4]=='bytes': helper.WRITE_CAP=10
 if sys.argv[4]=='inodes': helper.ENTRY_CAP=2
 if sys.argv[4] in ('unaccounted','outside','socket','subprocess','fork','ensurepip'):
@@ -42,6 +50,21 @@ if sys.argv[4] in ('unaccounted','outside','socket','subprocess','fork','ensurep
 try: helper.create()
 except ValueError as error:
     print(str(error),file=sys.stderr); sys.exit(17)
+if sys.argv[4]=='large':
+    # Test the production write gate at its exact fixed bound after construction.
+    # No monkeypatch of charge()/WRITE_CAP/copy_file or byte accounting.
+    remaining=helper.WRITE_CAP-helper.written_bytes
+    block=b'x'*65536
+    with helper.accounted_open(helper.PREFIX+'/budget-tail','wb') as output:
+        while remaining:
+            part=block[:min(remaining,len(block))]
+            output.write(part);remaining-=len(part)
+        position=output.tell()
+        try: output.write(b'x')
+        except ValueError:
+            assert output.tell()==position
+            assert helper.written_bytes==helper.WRITE_CAP
+        else: raise AssertionError('over-limit write accepted')
 """
 
 
@@ -58,9 +81,10 @@ def run(tmp_path: Path, mode: str) -> subprocess.CompletedProcess[bytes]:
             str(tmp_path / "venv"),
             str(tmp_path / "export"),
             mode,
+            str(tmp_path / "python3.12"),
         ],
         capture_output=True,
-        timeout=10,
+        timeout=30,
         env={"LANG": "C", "PYTHONPATH": "/not-visible", "PYTHONUSERBASE": "/not-visible"},
     )
 
@@ -79,6 +103,29 @@ def test_actual_cpython_envbuilder_writes_are_accounted_without_pip(tmp_path: Pa
     assert list((tmp_path / "venv/lib/python3.12/site-packages").iterdir()) == []
     assert not any("pip" in entry.path or "ensurepip" in entry.path for entry in manifest.entries)
     assert not (tmp_path / "venv/__pycache__").exists()
+
+
+def test_real_envbuilder_accounts_three_supported_size_copies_and_fails_over_limit(
+    tmp_path: Path,
+) -> None:
+    # Sparse test source, deterministic size independent of the host launcher.
+    # EnvBuilder copies its contents but NEVER executes this synthetic file.
+    result = run(tmp_path, "large")
+    assert result.returncode == 0, result.stderr
+    data = (tmp_path / "export").read_bytes()
+    length = struct.unpack("!I", data[:4])[0]
+    manifest = EnvironmentManifest.model_validate_json(data[4 : 4 + length])
+    executables = {
+        entry.path: entry for entry in manifest.entries if entry.path.startswith("bin/python")
+    }
+    assert set(executables) == {"bin/python", "bin/python3", "bin/python3.12"}
+    assert {entry.size for entry in executables.values()} == {30_913_848}
+    assert len({entry.sha256 for entry in executables.values()}) == 1
+    assert manifest.written_bytes == sum(entry.size for entry in manifest.entries)
+    assert 3 * 30_913_848 < manifest.written_bytes < WRITE_LIMIT
+    assert json.loads(result.stdout)["written_bytes"] == manifest.written_bytes
+    assert len(data) == 4 + length + manifest.written_bytes
+    assert (tmp_path / "venv/budget-tail").stat().st_size == WRITE_LIMIT - manifest.written_bytes
 
 
 @pytest.mark.parametrize(

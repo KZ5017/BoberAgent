@@ -1,10 +1,35 @@
 # M20-E5-E — empty environment construction
 
-**IMPLEMENTED OFFLINE; real Kali construction acceptance remains required.** E5-D is
-CLOSED on the operator's real provenance acceptance. E5-F–H, E6–E9 and M20-F have not
-begun; M20-E remains OPEN. This implements the already approved
+**E5-E ACCEPTED on the supplied real Kali v7 construction and passive-replay evidence.**
+E5-D is CLOSED. E5-F is implemented offline with real revalidation acceptance pending;
+E5-G/H, E6–E9 and M20-F have not begun; M20-E remains OPEN. This implements the already approved
 [provider](M20E5_PYTHON_PROVIDER.md), [limits](M20E5_RUNTIME_LIMITS.md), and
 [Resource](M20E5_RUNTIME_RESOURCE.md) design, not a new execution architecture.
+
+## Operator-supplied real Kali v7 acceptance
+
+The operator confirmed fresh construction and immediate passive replay in
+`~/boberagent-runtimes/m20e5e-real-acceptance-v7`:
+
+| Retained identity | Exact value |
+| --- | --- |
+| ResourceRef | `resource-cea4471a-2115-448b-9046-b317bcd67d94` |
+| Construction operation | `construct-e5e-b709528d-21ae-4c0d-871a-82fc78721aff` |
+| Evidence SHA-256 | `ca826bcb9b6a7d9763ea1e8d9d4d826b3fe8b30b5ba90d4b644ac38864ca663e` |
+| Trusted D projection | `5774a4271289da942385c19cdad6d0f120babd63bd018ea64e5153318107ef41` |
+| Environment inventory | `44f1797c958dfca5030bcd82e65b708cf71b33a3a9ad91aa4b4a85fd9f885685` |
+| Trusted manifest | `c06d42d636360299e253448ef32a58979fa04e544976e62937799a447774af9d` |
+| Committed environment writes / entries | `371027902` / `30` |
+
+Fresh construction PASS ended at **CREATING / VERIFYING / UNCHECKED**, runtime UNAVAILABLE,
+ready=false, execution_authorized=false, descendants_empty=true. Immediate replay PASS
+returned the same Resource, operation, evidence and inventory as PASSIVE_RETAINED_HISTORY,
+without reconstruction or duplicate budget charge, still unready/unauthorized.
+This records operator evidence only: v7 was not opened, mutated, rerun or promoted.
+Historical failed runtimes remain forensic evidence. Earlier “acceptance pending” statements
+below describe those historical corrections and are superseded only as to current E5-E status.
+The successful chain used the existing E5-budget E3 fixture, not the tiny ordinary E3 permit;
+no old budget or permit is enlarged. E5-F requires a fresh chain/runtime and its own proof.
 
 ## Closed construction and verification
 

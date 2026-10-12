@@ -53,6 +53,22 @@ class PythonResourceRow(Base):
     generation: Mapped[int] = mapped_column(Integer)
     failure_json: Mapped[JsonObject | None] = mapped_column(JSON)
     cleanup_state: Mapped[str] = mapped_column(String(32))
+    checked_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    checked_boot: Mapped[str | None] = mapped_column(String(255))
+    verification_id: Mapped[str | None] = mapped_column(String(255))
+
+
+class PythonRevalidationRow(Base):
+    __tablename__ = "python_runtime_revalidations"
+    operation_id: Mapped[str] = mapped_column(
+        ForeignKey("python_resource_operations.operation_id", ondelete="RESTRICT"), primary_key=True
+    )
+    resource_id: Mapped[str] = mapped_column(
+        ForeignKey("python_resource_details.resource_id", ondelete="RESTRICT")
+    )
+    evidence_sha256: Mapped[str] = mapped_column(String(64))
+    evidence_json: Mapped[JsonObject] = mapped_column(JSON)
+    proof_json: Mapped[JsonObject] = mapped_column(JSON)
 
 
 class PythonResourceOperationRow(Base):

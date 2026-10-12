@@ -638,7 +638,10 @@ def test_ready_and_immutable_binding_database_guards(database: CrashDatabase) ->
         from boberagent_execution_node.persistence import ResourceRuntimeState
 
         RuntimeStore(database).update_resource_state(ref, ResourceRuntimeState.READY, NOW)
-    with pytest.raises(IntegrityError, match="cannot be READY"), database.transaction() as session:
+    with (
+        pytest.raises(IntegrityError, match="READY requires fresh runtime proof"),
+        database.transaction() as session,
+    ):
         resource = session.get(RuntimeResourceRow, str(ref))
         assert resource is not None
         resource.state = "READY"
@@ -660,7 +663,7 @@ def test_upgrade_e4_and_idempotent_head_preserve_metadata(tmp_path: Path) -> Non
             evidence = old.evidence_json
         upgrade_database(database)
         upgrade_database(database)
-        assert current_revision(database) == "0011_empty_python_environment"
+        assert current_revision(database) == "0012_python_revalidation"
         assert {
             "python_resource_details",
             "python_resource_operations",

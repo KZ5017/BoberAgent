@@ -1,6 +1,7 @@
 # M20-E5 recovery, expiry and failure classification
 
-**E5-B metadata recovery COMPLETE; E5-C/D CLOSED; E5-E retained construction/passive integrity recovery implemented offline; E5-F fresh constructed-runtime revalidation/promotion NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-B metadata recovery COMPLETE; E5-C/D CLOSED; E5-E real v7 ACCEPTED; E5-F revalidation/promotion implemented offline, real acceptance pending.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+See [E5-F](M20E5F_IMPLEMENTATION.md) for the current proof-backed projection and explicit pump.
 Historical evidence, current integrity, authority and execution readiness are separate.
 
 Successful E5-E evidence survives reopen as CREATING / VERIFYING / UNCHECKED. Startup
@@ -90,9 +91,9 @@ evidence/history persists after bytes are removed.
 
 ## Revalidation algorithm
 
-The following complete constructed-environment algorithm remains future E5 work. E5-D
-currently implements full fresh static distribution rehash/comparison only, with current
-root/trust/schema pins. It never marks a Resource VALID/READY. Immutable provenance survives
+E5-F implements the following constructed-environment algorithm through the narrow
+intermediate pump. E5-D supplies fresh static distribution rehash/comparison with current
+root/trust/schema pins; D alone never marks a Resource VALID/READY. Immutable provenance survives
 reopen; an interrupted inspect claim is quarantined, never completed by recovery. See
 [E5-D implementation](M20E5D_IMPLEMENTATION.md#evidence-accounting-and-durability).
 

@@ -65,6 +65,7 @@ _CORRELATION = TypeAdapter[RuntimeCorrelation](RuntimeCorrelation)
 _ACTIONS = {
     PythonProviderOperation.INSPECT_INTERPRETER: PreparationAction.INSPECT_TRUSTED_INTERPRETER,
     PythonProviderOperation.CREATE_EMPTY_ENVIRONMENT: PreparationAction.CREATE_EMPTY_PYTHON_ENVIRONMENT,
+    PythonProviderOperation.REVALIDATE: PreparationAction.VERIFY_PYTHON_ENVIRONMENT,
 }
 
 
@@ -244,10 +245,23 @@ class PythonResourceRepository:
                 if resource.state == PythonResourceState.CLOSED.value:
                     raise _conflict("closed Resource permits only identical cleanup replay")
             else:
-                if resource.state != PythonResourceState.CREATING.value or detail.phase not in {
-                    PythonProviderPhase.RESERVED.value,
-                    PythonProviderPhase.BUILDING.value,
-                }:
+                revalidation = operation is PythonProviderOperation.REVALIDATE
+                eligible = (
+                    (
+                        resource.state in {"CREATING", "READY"}
+                        and detail.phase in {"VERIFYING", "PUBLISHED"}
+                    )
+                    if revalidation
+                    else (
+                        resource.state == PythonResourceState.CREATING.value
+                        and detail.phase
+                        in {
+                            PythonProviderPhase.RESERVED.value,
+                            PythonProviderPhase.BUILDING.value,
+                        }
+                    )
+                )
+                if not eligible:
                     raise ResourceOwnershipError(
                         PreparationReasonCode.RUNTIME_UNAVAILABLE, "Resource unavailable"
                     )
@@ -270,6 +284,10 @@ class PythonResourceRepository:
             now = self._now()
             detail.generation += 1
             detail.active_operation_id = str(operation_id)
+            if operation in {PythonProviderOperation.REVALIDATE, PythonProviderOperation.RELEASE}:
+                detail.validity = PythonRuntimeValidity.UNCHECKED.value
+                detail.checked_at = None
+                detail.checked_boot = None
             row = PythonResourceOperationRow(
                 operation_id=str(operation_id),
                 resource_id=str(ref),
@@ -440,6 +458,10 @@ class PythonResourceRepository:
         count = 0
         with self._write() as session:
             for detail in session.scalars(select(PythonResourceRow)):
+                if detail.checked_boot != str(self._boot):
+                    detail.validity = PythonRuntimeValidity.UNCHECKED.value
+                    detail.checked_at = None
+                    detail.checked_boot = None
                 row = (
                     session.get(PythonResourceOperationRow, detail.active_operation_id)
                     if detail.active_operation_id
@@ -755,6 +777,9 @@ class PythonResourceRepository:
         if resource.state != PythonResourceState.CLOSING.value:
             resource.state = PythonResourceState.LOST.value
         detail.phase = PythonProviderPhase.QUARANTINED.value
+        detail.validity = PythonRuntimeValidity.UNCHECKED.value
+        detail.checked_at = None
+        detail.checked_boot = None
         if detail.failure_json is None:
             detail.failure_json = failure.model_dump(mode="json")
         self._touch(session, detail)

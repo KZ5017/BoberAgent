@@ -14,6 +14,7 @@ from boberagent_contracts import (
     CapabilityRunStatus,
     DomainRef,
     PreparationPermit,
+    PythonRuntimeRequestBinding,
     RuntimePreparationInput,
 )
 from boberagent_contracts.runtime_preparation import (
@@ -427,6 +428,58 @@ class NodePreparationService:
                 preparation_ref=request.preparation_ref,
                 code="STORAGE_UNAVAILABLE",
             )
+
+    def verify_retained_source(
+        self, binding: PythonRuntimeRequestBinding, *, principal: str
+    ) -> None:
+        """E5 passive exact verification only. Never create, extract or repair source."""
+        with self._database.transaction() as session:
+            authority = session.get(PreparationAuthorityRow, str(binding.permit_ref))
+            row = session.get(PreparationMaterializationRow, str(binding.spec.preparation_ref))
+            if (
+                authority is None
+                or authority.principal_id != principal
+                or row is None
+                or row.state != "PUBLISHED"
+            ):
+                raise PreparationAdmissionError("PREPARED_CONTENT_MISMATCH")
+            permit = PreparationPermit.model_validate(authority.permit_json)
+            if (
+                permit.spec != binding.spec
+                or permit.run_ref != binding.run_ref
+                or preparation_permit_digest(permit) != binding.permit_sha256
+                or permit.spec.node_id != self._node_id
+            ):
+                raise PreparationAdmissionError("PREPARATION_AUTHORITY_MISMATCH")
+            evidence = MaterializationEvidence.model_validate(row.evidence_json)
+        raw = binding.spec.source.plan_source
+        self._verify_file(self._object_path(raw.raw_sha256), raw.raw_sha256, raw.raw_size_bytes)
+        self._verify_file(
+            self._object_path(raw.manifest_sha256),
+            raw.manifest_sha256,
+            binding.spec.source.manifest_size_bytes,
+        )
+        if (
+            evidence.materialization_id != binding.materialization_id
+            or evidence.tree_sha256 != binding.source_tree_sha256
+        ):
+            raise PreparationAdmissionError("PREPARED_CONTENT_MISMATCH")
+        if binding.spec.source.manifest_size_bytes > 16 * 1024 * 1024:
+            raise PreparationAdmissionError("PREPARED_CONTENT_MISMATCH")
+        manifest = parse_manifest(
+            self._object_path(raw.manifest_sha256).read_bytes(),
+            raw.raw_sha256,
+            raw.raw_size_bytes,
+            str(raw.resolved_commit),
+            binding.spec.budgets,
+        )
+        verify_published(
+            self._published / evidence.materialization_id.removeprefix("materialization:"),
+            manifest,
+            MaterializedTree(
+                evidence.file_count, evidence.materialized_bytes, evidence.tree_sha256
+            ),
+        )
 
     def _materialize_checked(
         self, request: MaterializeSourceRequest, *, principal: str

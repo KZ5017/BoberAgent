@@ -1,11 +1,13 @@
 # M20-E5 — Prepared Python runtime architecture
 
-**Status: E5-A–D COMPLETE/CLOSED; E5-E IMPLEMENTED OFFLINE / REAL CONSTRUCTION ACCEPTANCE REQUIRED; E5-F–H NOT STARTED.** E1–E3 COMPLETE,
+**Status: E5-A–D COMPLETE/CLOSED; E5-E real Kali v7 ACCEPTED; E5-F IMPLEMENTED OFFLINE / REAL REVALIDATION ACCEPTANCE REQUIRED; E5-G/H NOT STARTED.** E1–E3 COMPLETE,
 E4 COMPLETE/CLOSED with real Kali acceptance; E6–E9 NOT STARTED; M20-E OPEN;
 M20-F NOT STARTED. This package specifies future implementation, not a permission,
 host capability attestation, or claim that a usable Python runtime exists today.
 See [E5-E implementation](M20E5E_IMPLEMENTATION.md): retained construction ends
 CREATING / VERIFYING / UNCHECKED, not READY. E5-F owns promotion and fresh current validity.
+See [E5-F implementation](M20E5F_IMPLEMENTATION.md). Terminal preparation Result and Core
+completion remain E6-owned, as explicitly confirmed by the operator for E5-F.
 
 Read this with [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md),
 [ADR 0019](../adr/0019-m20-e-immutable-source-import-and-prepared-resource.md),

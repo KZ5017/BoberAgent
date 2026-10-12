@@ -41,7 +41,12 @@ from boberagent_transport import (
     result_message_id,
     serialize_message,
 )
+from boberagent_transport.preparation_runtime import (
+    PYTHON_RUNTIME_PROTOCOL_VERSION,
+    parse_python_runtime_request,
+)
 
+from boberagent_execution_node.artifacts.spool import LocalArtifactSpool
 from boberagent_execution_node.node import ExecutionNode
 from boberagent_execution_node.persistence import RuntimeStore
 from boberagent_execution_node.preparation.metadata import admission_definition
@@ -105,6 +110,9 @@ class ExecutionNodeTransportEndpoint:
             capability_statuses=statuses,
             preparation_import_versions=(PREPARATION_IMPORT_PROTOCOL_VERSION,),
             preparation_materialization_versions=(MATERIALIZATION_PROTOCOL_VERSION,),
+            preparation_runtime_versions=(PYTHON_RUNTIME_PROTOCOL_VERSION,)
+            if self._node.python_runtime_service is not None
+            else (),
             degraded_reasons=health.degraded_reasons,
         )
         return serialize_message(response)
@@ -182,6 +190,24 @@ class ExecutionNodeTransportEndpoint:
         lock = self._locks.setdefault(str(envelope.correlation_id), asyncio.Lock())
         async with lock:
             self._node.preparation.admit(envelope, principal=principal)
+
+    async def accept_preparation_runtime(self, message: bytes, *, principal: str) -> bytes:
+        request = parse_python_runtime_request(message)
+        service = self._node.python_runtime_service
+        if service is None or request.node_id != self.node_id:
+            raise ProtocolError("prepared Python provider unavailable")
+        store = self._node.store
+        assert store is not None
+        artifacts = LocalArtifactSpool(
+            root=self._node.configuration.artifact_spool_root,
+            allowed_source_roots=(),
+            store=store,
+            run_ref=request.run_ref,
+            clock=self._node._clock.now,
+        )
+        return serialize_message(
+            await service.handle(request, principal=principal, artifacts=artifacts)
+        )
 
     async def accept_preparation_import(self, message: bytes, *, principal: str) -> bytes:
         request = parse_import_request(message)

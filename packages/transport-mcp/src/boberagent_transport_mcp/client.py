@@ -62,6 +62,11 @@ from boberagent_transport import (
     parse_run_status_response,
     serialize_message,
 )
+from boberagent_transport.preparation_runtime import (
+    PythonRuntimeRequest,
+    PythonRuntimeResponse,
+    parse_python_runtime_response,
+)
 from mcp import Client
 from mcp.client import Transport
 from mcp.client.streamable_http import streamable_http_client
@@ -218,6 +223,26 @@ class McpTransport:
             or response.preparation_ref != request.preparation_ref
         ):
             raise ProtocolError("MCP materialization response identity mismatch")
+        return response
+
+    async def exchange_preparation_runtime(
+        self, request: PythonRuntimeRequest
+    ) -> PythonRuntimeResponse:
+        self._validate_target(request.node_id)
+        raw = await self._call_text(
+            "boberagent.preparation.runtime",
+            {"payload": serialize_message(request).decode("utf-8")},
+        )
+        response = parse_python_runtime_response(raw.encode("utf-8"))
+        if (
+            response.request_message_id != request.message_id
+            or response.node_id != request.node_id
+            or response.preparation_ref != request.preparation_ref
+            or response.run_ref != request.run_ref
+            or response.permit_ref != request.permit_ref
+            or response.permit_sha256 != request.permit_sha256
+        ):
+            raise ProtocolError("MCP runtime response identity mismatch")
         return response
 
     async def send_serialized_invocation(self, node_id: str, message: bytes) -> str:

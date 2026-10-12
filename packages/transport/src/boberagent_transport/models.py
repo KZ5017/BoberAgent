@@ -244,6 +244,7 @@ class NodeAdvertisement(TransportModel):
     capability_statuses: tuple[CapabilityStatusAdvertisement, ...]
     preparation_import_versions: tuple[str, ...] = ()
     preparation_materialization_versions: tuple[str, ...] = ()
+    preparation_runtime_versions: tuple[str, ...] = ()
     degraded_reasons: tuple[str, ...] = ()
 
     @model_validator(mode="after")

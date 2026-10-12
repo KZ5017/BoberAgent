@@ -6,7 +6,13 @@ import asyncio
 import os
 from uuid import uuid4
 
-from boberagent_contracts import CapabilityInvocation, CapabilityResult, DomainRef, JsonObject
+from boberagent_contracts import (
+    CapabilityInvocation,
+    CapabilityResult,
+    DomainRef,
+    JsonObject,
+    PythonBackendIdentity,
+)
 from boberagent_sdk import UtcClock
 
 from .browser import BrowserBackend, BrowserRuntimeManager, PlaywrightBrowserBackend
@@ -29,11 +35,13 @@ from .persistence.migrations import upgrade_database
 from .preparation import NodePreparationService, PreparationAdmissionError
 from .preparation.confinement import ConfinementBackend
 from .preparation.environment_storage import EnvironmentStorage
-from .preparation.python_environment import PythonEnvironmentRepository
+from .preparation.python_distribution import PythonDistributionConfiguration, digest_value
+from .preparation.python_environment import PythonEnvironmentProvider, PythonEnvironmentRepository
 from .preparation.resources import PythonResourceRepository
 from .preparation.runtime_confinement import LinuxRuntimeConfinementBackend
 from .preparation.runtime_confinement_models import RuntimeConfinementConfiguration
 from .preparation.runtime_confinement_store import ConfinementJournal
+from .preparation.runtime_service import NodePythonRuntimeService
 from .results import ResultOutbox
 from .services import ExecutionContextFactory, LocalInvocationEnvironment
 from .tools import DependencyResolver, ToolAvailability, ToolRegistry
@@ -49,6 +57,7 @@ class ExecutionNode:
         browser_backend: BrowserBackend | None = None,
         preparation_confinement: ConfinementBackend | None = None,
         runtime_confinement_configuration: RuntimeConfinementConfiguration | None = None,
+        python_distribution_configuration: PythonDistributionConfiguration | None = None,
     ) -> None:
         self.configuration = configuration
         self.lifecycle = NodeLifecycle()
@@ -67,6 +76,8 @@ class ExecutionNode:
         self.python_resources: PythonResourceRepository | None = None
         self.python_environments: PythonEnvironmentRepository | None = None
         self.runtime_confinement: LinuxRuntimeConfinementBackend | None = None
+        self.python_runtime_service: NodePythonRuntimeService | None = None
+        self._python_distribution_configuration = python_distribution_configuration
         self._runtime_confinement_configuration = runtime_confinement_configuration
         self._browser_backend = browser_backend
         self._preparation_confinement = preparation_confinement
@@ -187,6 +198,30 @@ class ExecutionNode:
             )
             if self.python_environments.reconcile_retained():
                 self._degraded_reasons.append("retained Python environment integrity failed")
+            if (
+                self._python_distribution_configuration is not None
+                and self.runtime_confinement is not None
+            ):
+                config = self.runtime_confinement.configuration
+                python_provider = PythonEnvironmentProvider(
+                    distribution=self._python_distribution_configuration,
+                    backend=self.runtime_confinement,
+                    backend_identity=PythonBackendIdentity(
+                        backend_id="linux-bwrap-cgroup",
+                        backend_version="1",
+                        profile_id="m20-e5-linux-bwrap-cgroup",
+                        profile_version="1",
+                        profile_sha256=digest_value({"profile": "m20-e5-linux-bwrap-cgroup@1"}),
+                        binary_sha256=config.bubblewrap_sha256,
+                        binary_version="0.11.0",
+                        helper_sha256=config.helper_sha256,
+                    ),
+                    repository=self.python_environments,
+                    clock=self._clock.now,
+                )
+                self.python_runtime_service = NodePythonRuntimeService(
+                    python_provider, self.preparation
+                )
             self.browser_runtime = BrowserRuntimeManager(
                 store=self.store,
                 tools=self.tools,
@@ -325,6 +360,8 @@ class ExecutionNode:
         )
 
     async def shutdown(self) -> None:
+        if self.python_runtime_service is not None:
+            await self.python_runtime_service.shutdown()
         if self.lifecycle.state in {
             NodeLifecycleState.READY,
             NodeLifecycleState.DEGRADED,

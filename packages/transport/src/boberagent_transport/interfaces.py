@@ -15,6 +15,7 @@ from .models import (
 )
 from .preparation_import import ImportRequest, ImportResponse
 from .preparation_materialization import MaterializationResponse, MaterializeSourceRequest
+from .preparation_runtime import PythonRuntimeRequest, PythonRuntimeResponse
 
 
 class TransportNodeEndpoint(Protocol):
@@ -50,6 +51,8 @@ class TransportPreparationEndpoint(Protocol):
     async def accept_preparation_materialization(
         self, message: bytes, *, principal: str
     ) -> bytes: ...
+
+    async def accept_preparation_runtime(self, message: bytes, *, principal: str) -> bytes: ...
 
 
 class PreparationImportTransport(Protocol):
@@ -111,3 +114,7 @@ class PreparationTransport(
     CapabilityTransport, PreparationImportTransport, PreparationMaterializationTransport, Protocol
 ):
     """Normal capability routing plus distinct authorized import infrastructure."""
+
+    async def exchange_preparation_runtime(
+        self, request: PythonRuntimeRequest
+    ) -> PythonRuntimeResponse: ...

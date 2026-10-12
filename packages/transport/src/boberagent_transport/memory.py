@@ -60,6 +60,11 @@ from .preparation_materialization import (
     MaterializeSourceRequest,
     parse_materialization_response,
 )
+from .preparation_runtime import (
+    PythonRuntimeRequest,
+    PythonRuntimeResponse,
+    parse_python_runtime_response,
+)
 
 
 class InMemoryTransport:
@@ -189,6 +194,29 @@ class InMemoryTransport:
             or response.preparation_ref != request.preparation_ref
         ):
             raise ProtocolError("preparation materialization response identity mismatch")
+        return response
+
+    async def exchange_preparation_runtime(
+        self, request: PythonRuntimeRequest
+    ) -> PythonRuntimeResponse:
+        self._require_connected()
+        if self._trusted_core_principal is None:
+            raise ProtocolError("runtime revalidation requires authenticated Core")
+        endpoint = cast(TransportPreparationEndpoint, self._endpoint(request.node_id))
+        response = parse_python_runtime_response(
+            await endpoint.accept_preparation_runtime(
+                serialize_message(request), principal=self._trusted_core_principal
+            )
+        )
+        if (
+            response.request_message_id != request.message_id
+            or response.node_id != request.node_id
+            or response.preparation_ref != request.preparation_ref
+            or response.run_ref != request.run_ref
+            or response.permit_ref != request.permit_ref
+            or response.permit_sha256 != request.permit_sha256
+        ):
+            raise ProtocolError("runtime response identity mismatch")
         return response
 
     async def send_serialized_invocation(self, node_id: str, message: bytes) -> None:

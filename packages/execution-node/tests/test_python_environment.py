@@ -250,7 +250,7 @@ def case(
         path.chmod(0o644)
         configured = repin(configured)  # D intentionally permits -S static/provenance proof.
     database = RuntimeDatabase(tmp_path / "environment.sqlite3")
-    upgrade_database(database, "0010_python_provenance")
+    upgrade_database(database)
     authority = runtime_authority_fixture()
     budgets = authority.permit.spec.budgets.model_copy(
         update=dict(
@@ -635,7 +635,7 @@ def test_budget_exhaustion_denied_before_child(case: Case) -> None:
 
 
 def test_upgrade_preserves_populated_d_history(case: Case, tmp_path: Path) -> None:
-    assert current_revision(case.database) == "0011_empty_python_environment"
+    assert current_revision(case.database) == "0012_python_revalidation"
     assert len(PythonProvenanceRepository(case.resources).history(case.claim.resource_ref)) == 1
     with case.database.transaction() as session:
         assert session.execute(text("PRAGMA foreign_key_check")).first() is None
@@ -645,7 +645,7 @@ def test_upgrade_preserves_populated_d_history(case: Case, tmp_path: Path) -> No
     with database.transaction() as session:
         assert session.scalar(text("PRAGMA foreign_keys")) == 1
     upgrade_database(database)
-    assert current_revision(database) == "0011_empty_python_environment"
+    assert current_revision(database) == "0012_python_revalidation"
     with database.transaction() as session:
         assert session.execute(text("PRAGMA foreign_key_check")).first() is None
         assert session.scalar(text("PRAGMA foreign_keys")) == 1

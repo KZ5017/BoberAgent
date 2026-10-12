@@ -10,10 +10,12 @@ from .models import (
     PreparationLifecycle,
     PreparationRequest,
 )
+from .runtime import CorePythonRuntimeService
 from .service import CoreRuntimePreparationAdmissionService
 
 __all__ = [
     "CorePreparationDispatchService",
+    "CorePythonRuntimeService",
     "CoreRuntimePreparationAdmissionService",
     "ImportProgressState",
     "PreparationAdmission",

@@ -1,4 +1,4 @@
-"""E5-A stays unwired; E5-B may consume its models in Node-owned bookkeeping only."""
+"""E5 data stays infrastructure-free; production wiring is restricted to reviewed F adapters."""
 
 import ast
 from pathlib import Path
@@ -78,25 +78,38 @@ def test_new_shared_state_matches_existing_node_vocabulary() -> None:
     }
 
 
-def test_new_protocol_is_not_wired_to_runtime_or_adapters() -> None:
+def test_runtime_wiring_is_confined_to_reviewed_e5f_modules() -> None:
     ownership = ROOT / "packages/execution-node/src/boberagent_execution_node/preparation"
+    wiring = {
+        ownership / "runtime_service.py",
+        ROOT / "packages/core/src/boberagent_core/preparation/runtime.py",
+        ROOT / "packages/execution-node/src/boberagent_execution_node/transport/endpoint.py",
+        ROOT / "packages/transport-mcp/src/boberagent_transport_mcp/client.py",
+    }
     for package in ("core", "execution-node", "transport-mcp"):
         for source in (ROOT / "packages" / package / "src").rglob("*.py"):
             tree = ast.parse(source.read_text(encoding="utf-8"))
             for node in ast.walk(tree):
                 if isinstance(node, ast.ImportFrom) and node.module:
-                    assert not node.module.endswith("preparation_runtime"), source
-                    if source not in {
-                        ownership / "resources.py",
-                        ownership / "resource_models.py",
-                        ownership / "runtime_confinement.py",
-                        ownership / "runtime_confinement_budget.py",
-                        ownership / "python_distribution.py",
-                        ownership / "python_provenance.py",
-                        ownership / "python_environment.py",
-                        ownership / "environment_storage.py",
-                        ownership / "environment_models.py",
-                    }:
+                    if node.module.endswith("preparation_runtime"):
+                        assert source in wiring, source
+                    if (
+                        source
+                        not in {
+                            ownership / "resources.py",
+                            ownership / "resource_models.py",
+                            ownership / "runtime_confinement.py",
+                            ownership / "runtime_confinement_budget.py",
+                            ownership / "python_distribution.py",
+                            ownership / "python_provenance.py",
+                            ownership / "python_environment.py",
+                            ownership / "environment_storage.py",
+                            ownership / "environment_models.py",
+                            ownership / "python_revalidation.py",
+                            ownership / "service.py",
+                        }
+                        | wiring
+                    ):
                         assert not any(
                             alias.name.startswith("PythonRuntime") for alias in node.names
                         ), source

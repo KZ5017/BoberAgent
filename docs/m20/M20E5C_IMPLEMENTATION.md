@@ -1,9 +1,9 @@
 # M20-E5-C — Full preparation confinement
 
 **CLOSED on operator-supplied real thirteen-probe Kali acceptance.** E5-A/B are COMPLETE.
-E5-D is CLOSED on operator real acceptance; E5-E is implemented offline, real construction
-acceptance required; E5-F–H, E6–E9 and M20-F remain
-NOT STARTED. Runtime remains UNAVAILABLE / NOT READY. Historical first-run failure and
+E5-D is CLOSED on operator real acceptance; E5-E real v7 acceptance passed;
+E5-F is implemented offline, real acceptance pending; E5-G/H, E6–E9 and M20-F remain
+NOT STARTED. C alone establishes no runtime availability. Historical first-run failure and
 offline correction below remain retained, not rewritten as successful first acceptance.
 
 The accepted E5-C rerun reported `profile=m20-e5-linux-bwrap-cgroup@1`, `probe_count=13`,

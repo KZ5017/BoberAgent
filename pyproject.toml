@@ -21,7 +21,7 @@ package = false
 members = ["packages/*", "capabilities/*"]
 
 [tool.pytest.ini_options]
-pythonpath = ["tests"]
+pythonpath = ["tests", "packages/execution-node/tests", "packages/core/tests"]
 addopts = ["--strict-config", "--strict-markers"]
 testpaths = [
     "packages/contracts/tests",

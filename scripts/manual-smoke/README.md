@@ -694,6 +694,72 @@ for exact C2/C3 refs and digests. This negative result is neither safety nor aut
 **M20-D CLOSED. M20-E1–E3 COMPLETE; real E3 acceptance PASSED.** Production
 `execute_plan()` remains denied.
 
+## M20-E5-F — fresh runtime revalidation (manual-only; acceptance pending)
+
+E5-E v7 is accepted and retained untouched. **Do not use v7 or any quarantined runtime.**
+Use a fresh Node runtime and fresh E5-budget Core admission. This proves preparation
+availability only, not source execution, execution authorization or E6 completion.
+
+On Kali, retain the existing reviewed native/environment helper installation and trusted
+CPython pins. **Helper bytes did not change: no repin/recompile required.** Run as the ordinary
+Node user inside the already provisioned delegated service. Prepare operator-owned JSON files
+with the actual accepted pins (replace placeholders, no credentials):
+
+`confinement.json`:
+```json
+{"delegated_parent":"/sys/fs/cgroup/EXPLICIT_EMPTY_DELEGATED_PARENT","helper_sha256":"EXACT_64_HEX","bubblewrap_sha256":"EXACT_64_HEX"}
+```
+`python-distribution.json`:
+```json
+{"distribution_root":"/opt/boberagent/trusted-python/DISTRIBUTION","system_library_root":"/usr/lib/x86_64-linux-gnu","expected_manifest_sha256":"EXACT_64_HEX","expected_interpreter_sha256":"EXACT_64_HEX"}
+```
+
+Set the following variables to explicit operator paths/configuration and start a **fresh** Node:
+```bash
+uv run boberagent-node-mcp \
+  --runtime-directory "$E5F_NODE_RUNTIME" \
+  --bind-host "$NODE_BIND_HOST" --port "$NODE_PORT" \
+  --tls-certificate "$NODE_TLS_CERT" --tls-private-key "$NODE_TLS_KEY" \
+  --tool "runtime-confinement-helper=$E5_TRUSTED_HELPER" \
+  --tool "runtime-confinement-bwrap=$E5_BUBBLEWRAP" \
+  --runtime-confinement-config "$E5_CONFINEMENT_JSON" \
+  --python-distribution-config "$E5_DISTRIBUTION_JSON"
+```
+Reuse `BOBERAGENT_MCP_TOKEN`; never put its value into arguments. Existing trust/mode and
+controller prerequisites remain mandatory. The harness installs/repairs/delegates nothing.
+
+On WSL, first use the **existing E5-budget** E3 fixture, not the tiny ordinary E3 smoke:
+```bash
+uv run python scripts/manual-smoke/.m20e3_preparation_import_e5_local.py \
+  --real-artifact-import --core-runtime-directory "$E5F_CORE_RUNTIME" \
+  --endpoint "$MCP_ENDPOINT" --node-id "$NODE_ID" --ca-file "$NODE_CA_FILE"
+
+uv run python scripts/manual-smoke/m20e5f_runtime_revalidation_smoke_test.py \
+  --core-runtime-directory "$E5F_CORE_RUNTIME" \
+  --endpoint "$MCP_ENDPOINT" --node-id "$NODE_ID" --ca-file "$NODE_CA_FILE" \
+  --operation prepare --attempt-id e5f-prepare-1 --expect-validity UNCHECKED
+```
+Repeat the identical prepare command to prove passive retained construction reuse. Then:
+```bash
+uv run python scripts/manual-smoke/m20e5f_runtime_revalidation_smoke_test.py \
+  --core-runtime-directory "$E5F_CORE_RUNTIME" \
+  --endpoint "$MCP_ENDPOINT" --node-id "$NODE_ID" --ca-file "$NODE_CA_FILE" \
+  --operation revalidate --attempt-id e5f-validation-1 --expect-validity VALID
+```
+Repeat the identical revalidate command to prove acknowledgement replay without new charges.
+Stop/restart the Node with the **same E5-F directory/configuration/Node ID**. Run the script
+with the same connection/runtime options and `--operation status --expect-validity UNCHECKED`:
+historical proof must not restore current validity. Then explicitly run
+`--operation revalidate --attempt-id e5f-validation-2 --expect-validity VALID`.
+All calls must remain within original permit time and remaining cumulative budgets. Expiry or
+exhaustion is a stop; do not alter/extend retained authority.
+
+The script reopens Core each time, reuses E4 publication, prints typed Resource/Run/binding/
+construction/evidence identities and synchronizes ordinary evidence Artifacts. It reports
+execution_authorized=false and preparation_terminal=false. No source import/entrypoint, package
+manager, target connection, Secret resolution, terminal Result or Core completion occurs.
+Real E5-F acceptance is **not claimed** until the operator supplies fresh-chain evidence.
+
 ## M20-E5-C confinement-only Kali preflight
 
 **E5-C CLOSED on operator real thirteen-probe acceptance.** The first failed run and

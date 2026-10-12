@@ -1,4 +1,4 @@
-"""Unwired E5-A serialization boundary. No endpoint, dispatch or provider implementation."""
+"""Intermediate E5 runtime boundary; never terminal E6 completion or authority."""
 
 from enum import StrEnum
 from typing import Annotated, Literal, Self
@@ -15,6 +15,7 @@ from boberagent_contracts.python_runtime import (
     PythonRuntimeCurrentState,
     PythonRuntimeEvidence,
     PythonRuntimeFailure,
+    RuntimeCorrelation,
     RuntimeResourceRef,
     python_runtime_binding_digest,
     python_runtime_request_digest,
@@ -42,6 +43,7 @@ class _OperationIdentity(TransportModel):
     operation: RuntimePreparationOperation
     resource_ref: RuntimeResourceRef | None
     binding_sha256: Sha256Digest | None
+    attempt_id: RuntimeCorrelation | None = None
 
 
 class PythonRuntimeRequest(TransportModel):
@@ -58,6 +60,7 @@ class PythonRuntimeRequest(TransportModel):
     resource_ref: RuntimeResourceRef | None = None
     binding_sha256: Sha256Digest | None = None
     timestamp: AwareDatetime
+    attempt_id: RuntimeCorrelation | None = None
 
     @model_validator(mode="after")
     def matching_claims(self) -> Self:
@@ -86,7 +89,7 @@ class PythonRuntimeRequest(TransportModel):
         ):
             raise ValueError("check/prepare bind the request, not a caller-selected Resource")
         if self.message_id != runtime_message_id(
-            self.authority, self.operation, self.resource_ref, self.binding_sha256
+            self.authority, self.operation, self.resource_ref, self.binding_sha256, self.attempt_id
         ):
             raise ValueError("runtime message identity mismatch")
         return self
@@ -97,6 +100,7 @@ def runtime_message_id(
     operation: RuntimePreparationOperation,
     resource_ref: RuntimeResourceRef | None = None,
     binding_sha256: Sha256Digest | None = None,
+    attempt_id: RuntimeCorrelation | None = None,
 ) -> TransportMessageId:
     # Timestamp is delivery metadata, not semantic operation identity.
     digest = canonical_digest(
@@ -105,7 +109,9 @@ def runtime_message_id(
             operation=operation,
             resource_ref=resource_ref,
             binding_sha256=binding_sha256,
-        )
+            attempt_id=attempt_id,
+        ),
+        exclude=frozenset({"attempt_id"}) if attempt_id is None else frozenset(),
     )
     return TransportMessageId(f"preparation-runtime:{digest}")
 
@@ -129,6 +135,9 @@ class PythonRuntimeAccepted(PythonRuntimeResponseBase):
     resource_ref: RuntimeResourceRef | None
     current: PythonRuntimeCurrentState | None
     evidence: PythonRuntimeEvidence | None
+    operation_id: RuntimeCorrelation | None = None
+    operation_state: Literal["ACTIVE", "COMPLETED", "FAILED", "INTERRUPTED"] | None = None
+    construction_sha256: Sha256Digest | None = None
 
     @model_validator(mode="after")
     def consistent_resource(self) -> Self:

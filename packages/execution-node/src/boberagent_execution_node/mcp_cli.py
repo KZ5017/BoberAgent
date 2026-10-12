@@ -13,6 +13,8 @@ from pydantic import SecretStr
 
 from .config import NodeConfiguration, ToolConfiguration
 from .node import ExecutionNode
+from .preparation.python_distribution import PythonDistributionConfiguration
+from .preparation.runtime_confinement_models import RuntimeConfinementConfiguration
 from .transport import ExecutionNodeTransportEndpoint, NodeMcpArtifactSource
 
 
@@ -43,6 +45,14 @@ def _parser() -> argparse.ArgumentParser:
         help="configure one version-probe argument for a registered tool",
     )
     parser.add_argument("--tls-certificate", type=Path)
+    parser.add_argument(
+        "--runtime-confinement-config", type=Path, help="explicit Node-owned JSON configuration"
+    )
+    parser.add_argument(
+        "--python-distribution-config",
+        type=Path,
+        help="explicit pinned Node-owned Python JSON configuration",
+    )
     parser.add_argument("--tls-private-key", type=Path)
     parser.add_argument("--allow-insecure-remote-transport", action="store_true")
     parser.add_argument(
@@ -87,7 +97,19 @@ async def _run(arguments: argparse.Namespace) -> None:
         capability_paths=tuple(arguments.capability_path),
         tools=_tools(arguments.tool, arguments.tool_version_arg),
     )
-    node = ExecutionNode(node_configuration)
+    node = ExecutionNode(
+        node_configuration,
+        runtime_confinement_configuration=None
+        if arguments.runtime_confinement_config is None
+        else RuntimeConfinementConfiguration.model_validate_json(
+            arguments.runtime_confinement_config.read_bytes()
+        ),
+        python_distribution_configuration=None
+        if arguments.python_distribution_config is None
+        else PythonDistributionConfiguration.model_validate_json(
+            arguments.python_distribution_config.read_bytes()
+        ),
+    )
     await node.initialize()
     if node.store is None:
         raise RuntimeError("Execution Node runtime store was not initialized")

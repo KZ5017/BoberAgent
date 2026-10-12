@@ -1,0 +1,82 @@
+# M20-E5-F — Fresh runtime revalidation and intermediate pump
+
+**Implemented offline; real Kali acceptance REQUIRED, not claimed.** E5-E is accepted on
+the [operator-supplied v7 record](M20E5E_IMPLEMENTATION.md#operator-supplied-real-kali-v7-acceptance).
+That runtime remains untouched. E5-G/H, E6–E9 and M20-F are not implemented. M20-E stays OPEN.
+
+## Boundary and call flow
+
+The operator confirmed the E5/E6 distinction: Core current admission and Router → neutral
+typed exchange → authenticated Node provider → intermediate response and ordinary evidence
+Artifact. **No terminal CapabilityResult, final preparation manifest, Core completion or
+execution authorization.** The existing preparation Run stays QUEUED on Node and preparation
+stays DISPATCHED in Core. Production execute_plan() remains denied.
+
+`CorePythonRuntimeService.exchange()` composes existing preparation dispatch, refreshes Node
+registration, validates current D applicability, explicit provider/version, same queued Run
+and E4 receipt pins, and rechecks applicability after delivery. Node independently checks
+authenticated principal, exact admitted permit/Mission/plan/Run/Node/actions/time and immutable
+Resource/request binding. No Core interpreter/helper/storage paths exist.
+
+Preparation-runtime-v1 gains optional logical `attempt_id` and bounded progress/construction
+digest. Legacy absent-attempt message hashes remain unchanged; active production requests
+require an attempt ID. The same ID denotes acknowledgement replay; a new ID is required for
+new explicit revalidation. This is correlation, not authority. PREPARE_RUNTIME delegates
+to existing D inspect/E construction on the one Resource; retained construction is passive
+reuse. RUNTIME_STATUS is passive. REVALIDATE_RUNTIME performs fresh work. CHECK_RUNTIME and
+RELEASE_RUNTIME remain explicitly unsupported by this pump; Node safety cleanup is unchanged.
+
+In-memory and MCP implement the same exchange; MCP only carries JSON/authenticated identity.
+Node tasks survive disconnect. Exclusive claims precede acceptance; restart interrupts active
+ownership rather than automatically continuing/rebuilding. Explicit Node JSON configuration
+selects pinned distribution/confinement assets; no per-request code/path/config authority.
+
+## Fresh proof and promotion
+
+Acquire exclusive generation and reserve remaining budgets before active work. Verify retained
+source Artifact hashes and exact read-only E4 tree without extraction. Verify E5-E inventory
+(no extra files/packages/.pth/hooks/links), ownership/modes/ancestor trust and construction.
+Re-inventory D's projection and compare helper/backend pins. Run all thirteen C controls and
+the fixed read-only E verifier; require current Node generation, version/ABI/base-prefix/import
+paths/isolation, empty packages, zero OOM/pids events, bounded output/time/memory and empty
+descendants. Repeat source/distribution/environment checks before committing evidence.
+
+Only the trusted verifier executes; source is absent from its namespace. No rebuild, package
+manager/install/network/Secret/Session/PoC launch. Native and standalone Python helper bytes
+are unchanged: **no repin/recompile required**.
+
+Conservative reservations: temporary 160 MiB, writes control allowance + 128 MiB + 256 KiB,
+entries 13 × 65 + 2050 + 8 (one verifier, not E's two operations), depth 4,
+processes 11, memory 520 MiB, process envelope 38 s,
+total 250 s, output 14 × 4096 B. Fixed E @2 limits and C controls are unchanged. Write allowance
+is conservative accounting, not a claim to rewrite the environment. Elapsed/output are measured;
+unknown failed work stays fully charged. Permits/budgets are never enlarged or reset.
+
+Seal bounded PythonRuntimeEvidence-v1 and ordinary spool Artifact; persist immutable full
+control/verification proof and digest; commit completed ownership and availability atomically.
+Identity/binding/construction remain unchanged. The guarded transition is
+**CREATING / VERIFYING / UNCHECKED → READY / PUBLISHED / VALID**. READY is prepared-runtime
+availability only, not generic acquisition/argv execution or execution authorization.
+
+## Persistence and recovery
+
+Forward Node `0012_python_revalidation` follows 0011; no Core migration or new dependency.
+It adds immutable python_runtime_revalidations and checked-time/boot/proof pointer. SQLite
+guards deny READY without construction/proof and VALID without completed current-generation
+ownership. Immutable reservation and VERIFYING guards remain. Upgrades preserve history/FKs.
+
+Restart clears validity to UNCHECKED without rewriting READY history or construction.
+Passive history/replay cannot promote. New validation requires current authority/fresh controls.
+Replay cannot duplicate Resource/build/charges. Drift, interruption, expiry, exhausted budgets
+and failed controls fail closed with bounded typed diagnostics; no repair/chmod/new permit/fallback.
+
+## Acceptance
+
+Portable tests exercise real Core admission/Router/neutral serialization with synthetic
+proofs, promotion, replay, disconnect, restart, drift and migration guards. They are not Linux
+enforcement attestation. Existing C/D/E/native tests remain required. Manual F uses a fresh
+E5-budget E3 import → E4 → E5-E construction/passive replay → F → restart/status UNCHECKED →
+new F validation, with ordinary evidence sync only. See scripts/manual-smoke/README.md.
+
+Real Kali F acceptance remains operator-run. E5-G synthetic vertical and E5-H broader real
+acceptance logically follow; no later slice is started automatically.

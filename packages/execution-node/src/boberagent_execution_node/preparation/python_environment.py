@@ -136,6 +136,10 @@ def _construction_reservations() -> dict[BudgetCategory, int]:
 class EnvironmentBackend(Protocol):
     async def check(self, requirements: tuple[ConfinementFeature, ...]) -> ConfinementCheck: ...
 
+    async def run_identity(
+        self, distribution: PythonDistributionConfiguration, operation_id: RuntimeCorrelation
+    ) -> ProbeEvidence: ...
+
     async def run_environment_create(
         self,
         distribution: PythonDistributionConfiguration,

@@ -2,9 +2,11 @@
 
 **Status:** Accepted architecture; E5-A typed boundary and E5-B durable metadata ownership COMPLETE.
 E5-C/D CLOSED on operator real acceptance; E5-E ACCEPTED on retained real v7 evidence;
-E5-F real v9/v10 revalidation acceptance passed; E5-G coverage implemented with
-configured-host positive acceptance pending; E5-H NOT STARTED;
-E5 remains OPEN. The existing decision is unchanged;
+E5-F real v9/v10 revalidation acceptance passed; E5-G CLOSED on operator real Kali
+configured-host positive acceptance (2026-10-19); E5-H NOT STARTED;
+E5 remains OPEN. The existing decision is unchanged.
+[G's acceptance record](../m20/M20E5G_IMPLEMENTATION.md#operator-supplied-real-kali-configured-host-acceptance)
+adds validation evidence only, not execution authority or an architecture change.
 [E5-E](../m20/M20E5E_IMPLEMENTATION.md) retains CREATING / VERIFYING / UNCHECKED, not READY.
 Refines ADRs 0018–0020 without changing E1 authority, E4 publication, or the E/F boundary.
 

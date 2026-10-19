@@ -2,7 +2,7 @@
 
 **CLOSED on operator-supplied real thirteen-probe Kali acceptance.** E5-A/B are COMPLETE.
 E5-D is CLOSED on operator real acceptance; E5-E real v7 acceptance passed;
-E5-F real v9/v10 acceptance passed; E5-G configured-host positive acceptance is pending;
+E5-F real v9/v10 acceptance passed; E5-G CLOSED on real Kali positive acceptance (2026-10-19);
 E5-H, E6–E9 and M20-F remain NOT STARTED. C alone establishes no runtime availability. Historical first-run failure and
 offline correction below remain retained, not rewritten as successful first acceptance.
 

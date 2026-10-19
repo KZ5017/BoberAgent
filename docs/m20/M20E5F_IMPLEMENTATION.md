@@ -2,8 +2,9 @@
 
 **COMPLETE; operator-supplied real Core↔Kali v9/v10 acceptance PASSED.** E5-E is accepted on
 the [operator-supplied v7 record](M20E5E_IMPLEMENTATION.md#operator-supplied-real-kali-v7-acceptance).
-That runtime remains untouched. [E5-G coverage](M20E5G_IMPLEMENTATION.md) now exists;
-its configured-host positive acceptance is pending. E5-H, E6–E9 and M20-F have not begun.
+That runtime remains untouched. [E5-G](M20E5G_IMPLEMENTATION.md) is CLOSED on
+operator real Kali configured-host positive acceptance (2026-10-19).
+E5-H, E6–E9 and M20-F have not begun.
 M20-E stays OPEN.
 
 ## Operator-supplied real v9/v10 acceptance
@@ -111,5 +112,5 @@ enforcement attestation. Existing C/D/E/native tests remain required. Manual F u
 E5-budget E3 import → E4 → E5-E construction/passive replay → F → restart/status UNCHECKED →
 new F validation, with ordinary evidence sync only. See scripts/manual-smoke/README.md.
 
-Real Kali F acceptance passed as recorded above. E5-G's host-configured synthetic vertical
-is the current acceptance boundary; E5-H broader real acceptance remains deferred.
+Real Kali F acceptance passed as recorded above. E5-G's configured-host synthetic vertical
+subsequently passed and is CLOSED; E5-H broader real acceptance is next, not started.

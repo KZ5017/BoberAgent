@@ -2,8 +2,8 @@
 
 **Architecture status:** SPECIFIED. **Implementation status:** E1–E4 COMPLETE, including
 real Core↔Kali E4 acceptance; E5-A–D COMPLETE/CLOSED; E5-E real v7 ACCEPTED;
-E5-F real v9/v10 ACCEPTED; E5-G coverage implemented / configured-host positive acceptance PENDING;
-E5-H NOT STARTED;
+E5-F real v9/v10 ACCEPTED; E5-G CLOSED on operator real Kali positive acceptance (2026-10-19);
+E5-H is the next planned slice, NOT STARTED;
 E6–E9 NOT STARTED;
 M20-E remains OPEN. M20-D remains CLOSED; M20-F has NOT STARTED. This plan authorizes no
 preparation. The architectural
@@ -187,7 +187,8 @@ this acceptance.
 ## E5 — Trusted Python environment Resource provider (ARCHITECTURE SPECIFIED)
 
 **E5-A–D COMPLETE/CLOSED; E5-E real v7 ACCEPTED; E5-F real v9/v10 ACCEPTED;
-E5-G coverage implemented / configured-host positive acceptance PENDING; E5-H NOT STARTED.**
+E5-G CLOSED on operator real Kali positive acceptance (2026-10-19); E5-H NOT STARTED.**
+See [G's configured synthetic acceptance record](M20E5G_IMPLEMENTATION.md#operator-supplied-real-kali-configured-host-acceptance).
 E5-A's typed Resource/evidence models and neutral messages alone did not make a runtime
 available. E5-A added no migration or Node runtime effect.
 Neither A nor B adds a runtime/venv, Python subprocess, E5 dispatch or execution authority.

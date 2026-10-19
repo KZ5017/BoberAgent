@@ -2,17 +2,18 @@
 
 **Status:** E1–E4 COMPLETE; real Core↔Kali E3 and E4 acceptance PASSED.
 E5 architecture is SPECIFIED; E5-A–D COMPLETE/CLOSED; E5-E real Kali v7 ACCEPTED;
-E5-F real v9/v10 revalidation acceptance passed; E5-G coverage exists, configured-host positive
-acceptance pending; E5-H and E6–E9 have not begun.
+E5-F real v9/v10 revalidation acceptance passed; E5-G CLOSED on operator real Kali
+configured-host positive acceptance (2026-10-19); E5-H and E6–E9 have not begun.
 **M20-E4 CLOSED. M20-E remains OPEN.** See [F's supplied evidence](M20E5F_IMPLEMENTATION.md)
-and [G's pending positive acceptance](M20E5G_IMPLEMENTATION.md).
+and [G's real configured-host acceptance](M20E5G_IMPLEMENTATION.md#operator-supplied-real-kali-configured-host-acceptance).
 See [E5-E implementation](M20E5E_IMPLEMENTATION.md) and the operator-supplied
 [D closure](M20E5D_IMPLEMENTATION.md#operator-supplied-real-d-acceptance).
 M20-F has not begun. See [slice plan](M20E_IMPLEMENTATION.md).
 
-[E5 acceptance and preflight](M20E5_ACCEPTANCE.md) specifies future Python Resource and
-full-enforcement proof, not an extension of the historical E4 acceptance below. No venv,
-cgroup delegation or general subprocess-limit success is claimed by this documentation.
+[E5 acceptance and preflight](M20E5_ACCEPTANCE.md) records separate Python Resource and
+enforcement acceptance, not an extension of the historical E4 acceptance below.
+G's real configured synthetic PASS is not E5-H, execution authorization, a reusable
+production Resource or terminal Core completion. E5-H is next; M20-E stays OPEN.
 
 E4's synthetic E2→E3→E4 test uses a controlled confinement proof and therefore does not
 substitute for the real Kali bubblewrap check. The Linux integration test skips explicitly

@@ -763,17 +763,30 @@ The script reopens Core each time, reuses E4 publication, prints typed Resource/
 construction/evidence identities and synchronizes ordinary evidence Artifacts. It reports
 execution_authorized=false and preparation_terminal=false. No source import/entrypoint, package
 manager, target connection, Secret resolution, terminal Result or Core completion occurs.
-The supplied v9/v10 evidence accepts E5-F only. It does not close E5-G/H, authorize
-execution or complete Core preparation.
+The supplied v9/v10 evidence accepts E5-F only. Separate operator real Kali acceptance
+subsequently closed E5-G as recorded below; neither accepts E5-H, authorizes execution
+nor completes Core preparation.
 
 ## M20-E5-G — configured production synthetic vertical
 
-**Positive configured-host acceptance is pending; G is not CLOSED.** The portable
-suite tests selection and fail-closed denial, never a fake positive Linux backend.
+**M20-E5-G CLOSED on operator real Kali configured-host positive acceptance, 2026-10-19.**
+At commit `e2a5855`, the ordinary Node user ran the selected opt-in test inside fresh
+delegated service `boberagent-m20e5g-v1.service`: **1 passed, 5 deselected in 60.81s**;
+service Result=success / ExecMainStatus=0. No helper rebuild or repin was performed.
+The [acceptance record](../../docs/m20/M20E5G_IMPLEMENTATION.md#operator-supplied-real-kali-configured-host-acceptance)
+retains exact delegation/assets/pins, usage and all four observed OOM messages. The code
+runs four intentional bounded memory probes that require OOM events; the reported count
+matches that pattern, without independently mapping the service messages to child cgroups.
+Earlier development-host skips remain separate historical evidence, not Linux PASS claims.
+The portable suite tests selection and fail-closed denial, never a fake positive Linux backend.
 The opt-in integration test composes the actual configured Node, Core admission,
 Router, serialized authenticated in-memory transport, E3/E4 and E5. It closes/reopens
 Core and Node and requires fresh positive controls for READY / PUBLISHED / VALID.
-This is not an E5-H real MCP/Kali harness; H has not begun.
+This in-memory synthetic acceptance on Kali is not E5-H real MCP acceptance.
+H is the next planned slice and has not begun. No accepted E5-E/E5-F runtime was reused;
+the transient pytest-managed G Resource is not a reusable production runtime.
+
+The commands below document the procedure, not a request to rerun the accepted test.
 
 Run only on an already provisioned supported Linux host, as the ordinary Node user
 inside its existing delegated service. Mandatory helper/ancestor modes, trusted CPython
@@ -815,7 +828,7 @@ evidence. A skip is not positive G acceptance. The test performs no acquired-sou
 import/entrypoint, installation, target/public network/DNS, Secret resolution, Session,
 terminal CapabilityResult or Core completion. Fixed trusted C/D/E helpers/probes run
 under the production controls. `execute_plan()` remains denied. See
-[G implementation and pending acceptance](../../docs/m20/M20E5G_IMPLEMENTATION.md).
+[G implementation and accepted scope](../../docs/m20/M20E5G_IMPLEMENTATION.md).
 
 ## M20-E5-C confinement-only Kali preflight
 
@@ -909,8 +922,8 @@ Without opt-in delegation that test skips; a skip is not enforcement proof. Supp
 invalid/broken opt-in configuration fails, not skips. Do not run either real mode automatically
 during implementation. After even a successful check the runtime remains UNAVAILABLE / NOT READY;
 E5-D is CLOSED on operator real provenance acceptance; E5-E v7 construction and
-E5-F v9/v10 revalidation acceptance passed. E5-G configured-host positive acceptance
-is pending; E5-H and M20-F have not begun.
+E5-F v9/v10 revalidation acceptance passed; E5-G CLOSED on operator real Kali positive
+acceptance (2026-10-19). E5-H is next, not started; M20-F has not begun.
 No production execute_plan() authorization is created.
 
 ## M20-E5-D trusted CPython provenance-only Kali preflight

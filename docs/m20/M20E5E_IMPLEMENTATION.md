@@ -2,7 +2,8 @@
 
 **E5-E ACCEPTED on the supplied real Kali v7 construction and passive-replay evidence.**
 E5-D is CLOSED. E5-F real v9/v10 revalidation acceptance passed;
-E5-G CLOSED on real Kali configured-host positive acceptance (2026-10-19); E5-H, E6–E9 and
+E5-G CLOSED on real Kali configured-host positive acceptance (2026-10-19);
+E5-H manual tooling is implemented with real acceptance pending. E6–E9 and
 M20-F have not begun; M20-E remains OPEN. This implements the already approved
 [provider](M20E5_PYTHON_PROVIDER.md), [limits](M20E5_RUNTIME_LIMITS.md), and
 [Resource](M20E5_RUNTIME_RESOURCE.md) design, not a new execution architecture.

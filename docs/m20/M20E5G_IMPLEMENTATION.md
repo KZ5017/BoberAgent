@@ -5,7 +5,7 @@
 than skipping. The earlier development-host skips remain historical evidence below;
 they are not rewritten as Linux acceptance. E5-F's
 [operator v9/v10 acceptance](M20E5F_IMPLEMENTATION.md#operator-supplied-real-v9v10-acceptance)
-remains separate. E5-H is the next planned slice and has NOT STARTED. E6–E9 and
+remains separate. E5-H manual tooling is now implemented with real acceptance PENDING. E6–E9 and
 M20-F remain unstarted. M20-E remains OPEN.
 
 ## Operator-supplied real Kali configured-host acceptance
@@ -100,8 +100,9 @@ reusable production runtime or execution authorization.
 Throughout: `execution_authorized=false`; acquired source unexecuted; no package
 installation, Secret delivery or target activity; no terminal CapabilityResult;
 Core preparation remains DISPATCHED, not COMPLETED. E6 alone owns terminal preparation
-Result/Core completion. Production `execute_plan()` remains denied. E5-H has not begun;
-E6–E9 and M20-F remain untouched.
+Result/Core completion. Production `execute_plan()` remains denied. At G closure E5-H
+had not begun; its [manual tooling](M20E5H_IMPLEMENTATION.md) was subsequently implemented
+without claiming H acceptance. E6–E9 and M20-F remain untouched.
 
 ## Existing path, unchanged production behavior
 
@@ -175,7 +176,7 @@ The positive test passed on the configured Kali host recorded above; future runs
 require a supported configured host. Not every matrix row has a new G end-to-end test.
 Do not claim those additional composed cases from unit coverage alone.
 
-E5-H is now the next planned slice, not started here.
+E5-H manual tooling is now implemented; real H acceptance remains operator-run and pending.
 E6 exclusively owns terminal CapabilityResult/final manifest/Core completion. Generic
 execute_plan remains denied; prepared-runtime availability cannot execute acquired code.
 

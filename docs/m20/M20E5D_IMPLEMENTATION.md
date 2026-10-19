@@ -2,7 +2,8 @@
 
 **CLOSED on operator-supplied real Kali provenance acceptance.** E5-C is CLOSED.
 E5-E real v7 and E5-F real v9/v10 acceptance passed; E5-G CLOSED on real Kali positive acceptance (2026-10-19);
-E5-H, E6–E9 and M20-F have not begun. The implementation/finding chronology below remains historical;
+E5-H manual tooling is implemented with real acceptance pending; E6–E9 and M20-F
+have not begun. The implementation/finding chronology below remains historical;
 its former pending-acceptance statements are superseded only by this explicit closure.
 
 ## Operator-supplied real D acceptance

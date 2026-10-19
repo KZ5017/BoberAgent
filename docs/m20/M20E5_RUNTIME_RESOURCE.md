@@ -1,7 +1,8 @@
 # M20-E5 Resource, evidence and typed boundary
 
 **E5-A–D COMPLETE/CLOSED; E5-E real v7 ACCEPTED; E5-F real v9/v10 ACCEPTED;
-E5-G CLOSED on operator real Kali positive acceptance (2026-10-19); E5-H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+E5-G CLOSED on operator real Kali positive acceptance (2026-10-19);
+E5-H IMPLEMENTED / REAL ACCEPTANCE PENDING.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 
 E5-E adds Node migration 0011 and immutable Resource-owned construction evidence.
 Its successful state is CREATING / VERIFYING / UNCHECKED, never READY or current VALID.

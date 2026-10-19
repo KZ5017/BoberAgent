@@ -2,7 +2,7 @@
 
 **E5-A–D COMPLETE/CLOSED; E5-E real v7 ACCEPTED; E5-F real v9/v10 ACCEPTED;
 E5-G CLOSED on operator real Kali configured-host positive acceptance (2026-10-19);
-E5-H is next, NOT STARTED.**
+E5-H IMPLEMENTED / REAL ACCEPTANCE PENDING. E5 remains OPEN.**
 See [F acceptance](M20E5F_IMPLEMENTATION.md#operator-supplied-real-v9v10-acceptance) and
 [G's real configured-host acceptance](M20E5G_IMPLEMENTATION.md#operator-supplied-real-kali-configured-host-acceptance).
 At commit `e2a5855`, the positive opt-in executed: **1 passed, 5 deselected in 60.81s**;
@@ -80,7 +80,8 @@ That first-run failure remains historical. The operator subsequently passed all 
 probes under `m20-e5-linux-bwrap-cgroup@1`, result PASS, runtime UNAVAILABLE, ready=false,
 digest `3f01339cf9c473004d1b038fa3b6afe9427897d06ec096f354450b4257ce08b8`.
 E5-C/D are CLOSED; E5-E real v7 and E5-F real v9/v10 acceptance passed.
-E5-G is CLOSED on operator real Kali positive acceptance (2026-10-19); E5-H has not begun.
+E5-G is CLOSED on operator real Kali positive acceptance (2026-10-19);
+E5-H manual tooling is implemented with real acceptance pending.
 
 ### Read-only host reconnaissance
 
@@ -182,8 +183,8 @@ it must not try a fork/memory bomb if it could not first establish the controlle
 | Venv verification | Only in explicit runtime-preparation mode: fresh empty environment, no pip/site contamination or source import; published same-path verification succeeds. |
 
 Read-only reconnaissance can precede implementation. Full active backend proof is required
-before E5 construction acceptance, not deferred to F. No current script claims to implement
-these probes on Kali; E5-C's operator-only harness must establish that evidence. A failed property blocks positive E5
+before E5 construction acceptance, not deferred to F. E5-C's accepted operator harness
+established that evidence; H reuses the same backend/probes in its final procedure. A failed property blocks positive E5
 closure, never just sets a warning or authorizes a weaker runtime.
 
 ## Future synthetic vertical and architecture guards
@@ -223,18 +224,27 @@ must report prerequisites honestly and skip unsupported CI hosts explicitly; moc
 controls cannot count as positive Kali acceptance. Never require real PoC execution or a
 public target. Run normal repository quality gates when implementing each slice.
 
-## Future real Kali workflow
+## Final real Kali workflow — H implemented, real acceptance pending
 
-The future manual harness should separate these **planned, not currently available** modes:
+The [H manual harness](M20E5H_IMPLEMENTATION.md) and
+[operator commands](../../scripts/manual-smoke/README.md#m20-e5-h--final-real-corekali-acceptance)
+implement the three planned modes without new production semantics:
 
 1. `--check-config`: explicit Node/runtime/tool/delegated-parent configuration; read-only
    inspection and opt-in bounded disposable backend probes, no Resource/venv/source run.
 2. `--real-runtime-preparation`: fresh synthetic eligible E2/E3/E4 chain through existing
    Router/neutral MCP transport, explicit current permit, real E5 provider; compare exact
    source and runtime evidence. No target/package network, pip, source import or entrypoint.
-3. Restart/revalidation: same persistent Node ID and DB; same Resource, source and environment
+3. `--restart-revalidation`: same persistent Node ID and DB; same Resource, source and environment
    digests, immutable construction evidence; append current proof within the permit window.
    Expired permit is expected denial, not grounds to change its timestamps.
+
+Paired `--node-report` calls are passive companion evidence collection, not a fourth
+preparation phase: SQLite query-only, no startup recovery, exact source/environment
+verification, one Resource/constructor and full ledger comparison with Core's evidence.
+The operator keeps the already delegated service/parent alive while restarting only
+the Node process. Do not rerun preflight on that admitted runtime. H portable tests
+use synthetic enforcement; real H PASS is still required before E5 can close.
 
 Acceptance report includes interpreter closure/backend/kernel identities, delegation/effective
 limits, all probe outcomes, ResourceRef, E4 identity, runtime inventory/evidence hashes,
@@ -247,7 +257,7 @@ E5-H real runtime acceptance supplements E4; E9 remains the later full E real ac
 E5-A–D are **COMPLETE/CLOSED**; E5-E is **ACCEPTED on operator real Kali v7 evidence**;
 E5-F is **ACCEPTED on operator real v9/v10 evidence**;
 E5-G is **CLOSED on operator real Kali configured-host positive acceptance (2026-10-19)**;
-E5-H is **NOT STARTED**. Their letter order deliberately puts enforcement
+E5-H is **IMPLEMENTED / REAL ACCEPTANCE PENDING**. Their letter order deliberately puts enforcement
 before construction. No slice may claim the next one's acceptance.
 
 | Slice | Goal / production behavior added | Contracts and persistence | Tests / acceptance | Explicit non-goals |
@@ -259,7 +269,7 @@ before construction. No slice may claim the next one's acceptance.
 | E5-E — Empty environment construction (ACCEPTED, real v7) | Closed accounted fresh venv, bounded publication and read-only same-path verification | Node migration 0011, existing ownership/ledger, immutable inventory; no new domain ID | Real construction and same-identity passive replay PASS, still UNCHECKED/unready | Runtime execution, READY promotion, dynamic source imports |
 | E5-F — Evidence/revalidation + narrow pump | Seal evidence, READY/current validity, typed same-Run prepare/status/revalidate through existing Core admission/neutral adapters | E5 evidence Artifact; append verification; existing Run/preparation refs; no final manifest/result acceptance | Replay/conflict/expiry/disconnect/Node restart/drift/cleanup tests; current proof required | E6 terminal Result/Core COMPLETED, F authorization |
 | E5-G — Synthetic vertical (CLOSED, real Kali 2026-10-19) | D→E2→E3→E4→E5 through configured production composition, no provider substitution | Migration-backed isolated Core/Node stores; no new schema | Opt-in Linux positive PASSED: one Resource, replay/accounting, reopen/revalidation, immutable source and non-execution assertions; historical portable results retained separately | Real target, reusable production runtime, execution authorization, full E6–E9 acceptance |
-| E5-H — Real Kali acceptance | Manual-only preflight/preparation/restart harness and operator record | No new authority or persistence semantics | Actual 3.12/delegation/limits and same-Resource revalidation proven; fail-closed report if host lacks any requirement | PoC entrypoint, host configuration automation, M20-F |
+| E5-H — Real Kali acceptance (IMPLEMENTED; real PASS pending) | One manual harness: resource-free preflight, Core/Router/MCP preparation, restart/fresh revalidation; paired passive Node reports | No new authority/persistence/schema/provider semantics | Portable config/error/MCP-driver/readonly-audit tests; operator must still prove actual 3.12/delegation/limits, same Resource and accounting over real Core↔Kali | PoC entrypoint, host provisioning, execution authorization, E6 terminal completion, M20-F |
 
 Before each implementation, read this package and existing E1–E4 code. If a platform fact
 invalidates a chosen mechanism, stop positive implementation and review the smallest

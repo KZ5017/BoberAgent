@@ -4,7 +4,7 @@
 the [operator-supplied v7 record](M20E5E_IMPLEMENTATION.md#operator-supplied-real-kali-v7-acceptance).
 That runtime remains untouched. [E5-G](M20E5G_IMPLEMENTATION.md) is CLOSED on
 operator real Kali configured-host positive acceptance (2026-10-19).
-E5-H, E6–E9 and M20-F have not begun.
+E5-H manual tooling is implemented with real acceptance pending; E6–E9 and M20-F have not begun.
 M20-E stays OPEN.
 
 ## Operator-supplied real v9/v10 acceptance
@@ -113,4 +113,5 @@ E5-budget E3 import → E4 → E5-E construction/passive replay → F → restar
 new F validation, with ordinary evidence sync only. See scripts/manual-smoke/README.md.
 
 Real Kali F acceptance passed as recorded above. E5-G's configured-host synthetic vertical
-subsequently passed and is CLOSED; E5-H broader real acceptance is next, not started.
+subsequently passed and is CLOSED. [E5-H's final manual tooling](M20E5H_IMPLEMENTATION.md)
+is implemented; its real acceptance remains pending, not inferred from F/G.

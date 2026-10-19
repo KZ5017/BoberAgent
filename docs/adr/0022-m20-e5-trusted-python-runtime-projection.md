@@ -3,7 +3,8 @@
 Status: accepted by the operator's E5-D refinement request; real D provenance acceptance CLOSED.
 E5-E real v7 construction and E5-F real v9/v10 revalidation acceptance passed.
 E5-G CLOSED on operator real Kali configured-host positive acceptance (2026-10-19);
-E5-H is next, not started; M20-F has not begun. See [G's unchanged-pin acceptance](../m20/M20E5G_IMPLEMENTATION.md#operator-supplied-real-kali-configured-host-acceptance).
+E5-H manual tooling is implemented with real acceptance pending; M20-F has not begun.
+See [G's unchanged-pin acceptance](../m20/M20E5G_IMPLEMENTATION.md#operator-supplied-real-kali-configured-host-acceptance).
 Historical refinement descriptions remain unchanged;
 the [D closure](../m20/M20E5D_IMPLEMENTATION.md#operator-supplied-real-d-acceptance) and
 [E implementation](../m20/M20E5E_IMPLEMENTATION.md) supersede their former status only.

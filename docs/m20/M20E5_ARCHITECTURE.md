@@ -1,7 +1,8 @@
 # M20-E5 — Prepared Python runtime architecture
 
 **Status: E5-A–D COMPLETE/CLOSED; E5-E real Kali v7 ACCEPTED; E5-F real v9/v10 ACCEPTED;
-E5-G CLOSED on operator real Kali positive acceptance (2026-10-19); E5-H NOT STARTED.** E1–E3 COMPLETE,
+E5-G CLOSED on operator real Kali positive acceptance (2026-10-19);
+E5-H IMPLEMENTED / REAL ACCEPTANCE PENDING.** E1–E3 COMPLETE,
 E4 COMPLETE/CLOSED with real Kali acceptance; E6–E9 NOT STARTED; M20-E OPEN;
 M20-F NOT STARTED. This package defines the preparation boundary, not permission,
 blanket host capability attestation or execution authorization. The bounded G synthetic
@@ -10,6 +11,8 @@ See [E5-E implementation](M20E5E_IMPLEMENTATION.md): retained construction ends
 CREATING / VERIFYING / UNCHECKED, not READY. E5-F owns promotion and fresh current validity.
 See [E5-F implementation](M20E5F_IMPLEMENTATION.md). Terminal preparation Result and Core
 completion remain E6-owned, as explicitly confirmed by the operator for E5-F.
+See [H's manual final acceptance tooling](M20E5H_IMPLEMENTATION.md); portable tests
+are not its real Kali acceptance. E5 remains OPEN until the operator supplies H PASS.
 
 Read this with [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md),
 [ADR 0019](../adr/0019-m20-e-immutable-source-import-and-prepared-resource.md),

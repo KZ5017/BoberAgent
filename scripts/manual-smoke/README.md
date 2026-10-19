@@ -694,6 +694,156 @@ for exact C2/C3 refs and digests. This negative result is neither safety nor aut
 **M20-D CLOSED. M20-E1–E3 COMPLETE; real E3 acceptance PASSED.** Production
 `execute_plan()` remains denied.
 
+## M20-E5-H — final real Core↔Kali acceptance
+
+**H implemented; real operator acceptance PENDING. E5 remains OPEN.** E5-G's real
+configured-host synthetic PASS is separate, not H. Do not reuse accepted E5-E v7,
+E5-F v9/v10, G pytest state or quarantined attempts. No helper/native bytes changed;
+no rebuild or repin is required. Reuse reviewed assets only while their hashes remain
+exact. This tooling installs/repairs/delegates nothing and does not begin E6.
+
+Use the same repository revision on WSL and Kali. Choose **nonexistent final runtime
+directories** under existing operator-owned parents. The harness creates private owned
+state and rejects existing directories rather than repairing/adopting them. Prepare
+the same explicit `confinement.json` / `python-distribution.json` schemas shown in F
+below, using actual accepted pins and the new already provisioned delegated parent.
+
+All active Kali steps run as the ordinary Node user inside the operator's **existing
+delegated service**, with the caller/Node in its supervisor child and the delegated
+parent's direct task list empty. Required memory/pids controls, helper/ancestor modes
+and trusted installed `environment-<SHA>.py` remain mandatory. **Keep this service and
+delegated parent alive across the Node process restart.** Do not stop/recreate the
+service, move to another parent, guess delegation, run sudo or alter host configuration
+from these scripts. If the prerequisite is absent, stop.
+
+### 1. Kali preflight: no Resource, venv or readiness
+
+Set `E5H_NODE_RUNTIME` to the new absolute directory, plus the same explicit asset
+and config variables used below. Run once before starting the MCP Node:
+
+```bash
+uv run python scripts/manual-smoke/m20e5h_acceptance_smoke_test.py \
+  --check-config --node-runtime-directory "$E5H_NODE_RUNTIME" \
+  --runtime-confinement-config "$E5_CONFINEMENT_JSON" \
+  --python-distribution-config "$E5_DISTRIBUTION_JSON" \
+  --trusted-helper "$E5_TRUSTED_HELPER" --bubblewrap "$E5_BUBBLEWRAP"
+```
+
+Require JSON `result=PASS`, `resource_created=false`, `ready=false`. Retain
+`$E5H_NODE_RUNTIME/e5h-preflight.json` and the printed Node ID as `NODE_ID`.
+This runs only disposable C controls and D's fixed trusted identity under bounded
+confinement, not acquired code. Start the actual Node with **that same runtime**:
+
+```bash
+uv run boberagent-node-mcp \
+  --runtime-directory "$E5H_NODE_RUNTIME" \
+  --bind-host "$NODE_BIND_HOST" --port "$NODE_PORT" \
+  --tls-certificate "$NODE_TLS_CERT" --tls-private-key "$NODE_TLS_KEY" \
+  --tool "runtime-confinement-helper=$E5_TRUSTED_HELPER" \
+  --tool "runtime-confinement-bwrap=$E5_BUBBLEWRAP" \
+  --runtime-confinement-config "$E5_CONFINEMENT_JSON" \
+  --python-distribution-config "$E5_DISTRIBUTION_JSON"
+```
+
+Reuse the existing `BOBERAGENT_MCP_TOKEN` environment/local-secret convention on both
+machines; never put the value in argv. Use real TLS/CA configuration. No endpoint,
+Node identity, token or lab path is hard-coded. Core supports the existing explicit
+`--allow-insecure-remote-transport` option only for an intentional operator exception;
+TLS is the normal acceptance procedure.
+
+### 2. WSL fresh eligible Core → actual MCP → Kali preparation
+
+Copy the **metadata-only** preflight to an explicit WSL config path outside the new
+Core runtime, using the operator's normal file-copy channel, for example:
+
+```bash
+scp "$KALI_SSH_HOST:$E5H_NODE_RUNTIME/e5h-preflight.json" "$E5H_PREFLIGHT_COPY"
+
+uv run python scripts/manual-smoke/m20e5h_acceptance_smoke_test.py \
+  --real-runtime-preparation --core-runtime-directory "$E5H_CORE_RUNTIME" \
+  --node-preflight "$E5H_PREFLIGHT_COPY" \
+  --endpoint "$MCP_ENDPOINT" --node-id "$NODE_ID" --ca-file "$NODE_CA_FILE"
+```
+
+`E5H_CORE_RUNTIME` must be a new absolute directory. This creates the existing G
+sentinel-bearing offline C/D fixture and current E2 permit, then uses actual Registry/
+Router/MCP, E3 exact import/reconnect/replay, E4 publication, E5 construction/replay
+and fresh revalidation/replay. No hidden E3 script or budget edits are needed.
+Require `result=PASS`, runtime `READY / PUBLISHED / VALID`, all non-action flags false.
+Copy the ResourceRef from the report into `RESOURCE_REF`. Retain the JSON files.
+
+The permit starts here, **not** during preflight. Finish the remaining steps within
+its original fifteen-minute window and remaining cumulative budget. Expiry/staleness
+must deny; never alter a timestamp or issue replacement authority for retained state.
+
+Copy the bounded Core runtime response to Kali for the companion passive audit:
+
+```bash
+scp "$E5H_CORE_RUNTIME/e5h-first-runtime.json" \
+  "$KALI_SSH_HOST:$E5H_NODE_RUNTIME/e5h-core-first-runtime.json"
+```
+
+On Kali, while the Node remains running:
+
+```bash
+uv run python scripts/manual-smoke/m20e5h_acceptance_smoke_test.py \
+  --node-report --node-runtime-directory "$E5H_NODE_RUNTIME" \
+  --resource-ref "$RESOURCE_REF" --stage before-restart \
+  --expected-runtime "$E5H_NODE_RUNTIME/e5h-core-first-runtime.json"
+```
+
+Require PASS. This is read-only Node DB/source/environment inspection, not another
+preparation operation or fourth acceptance phase. It proves one Resource, one
+construction and actual ledger agreement with Core's evidence. It does not initialize
+Node/recover/quarantine/repair anything. Reports omit raw output and lease-owner tokens.
+
+### 3. Explicit Node restart and WSL fresh revalidation
+
+Stop **only** the Node process cleanly (for example Ctrl-C in its terminal), retaining
+the service/delegated parent and complete runtime. Restart with the **identical Node
+command above**, same DB/identity/configuration/assets. Do not rerun preflight.
+Then, on WSL:
+
+```bash
+uv run python scripts/manual-smoke/m20e5h_acceptance_smoke_test.py \
+  --restart-revalidation --core-runtime-directory "$E5H_CORE_RUNTIME" \
+  --node-preflight "$E5H_PREFLIGHT_COPY" \
+  --endpoint "$MCP_ENDPOINT" --node-id "$NODE_ID" --ca-file "$NODE_CA_FILE"
+
+scp "$E5H_CORE_RUNTIME/e5h-second.json" \
+  "$KALI_SSH_HOST:$E5H_NODE_RUNTIME/e5h-core-second-runtime.json"
+```
+
+This reopens Core, requires current UNCHECKED with the original historical evidence,
+proves old-ID replay cannot restore validity, then uses a new explicit ID to restore
+VALID with a different Node generation and evidence on the same Resource/construction.
+Not actually restarting fails; failed/expired state is never repaired or renewed.
+On Kali, collect the second passive comparison:
+
+```bash
+uv run python scripts/manual-smoke/m20e5h_acceptance_smoke_test.py \
+  --node-report --node-runtime-directory "$E5H_NODE_RUNTIME" \
+  --resource-ref "$RESOURCE_REF" --stage after-revalidation \
+  --expected-runtime "$E5H_NODE_RUNTIME/e5h-core-second-runtime.json"
+```
+
+Require PASS, same identities, unchanged budget ceilings, cumulative spending never
+reset and a new legitimate verification charge. Read-only audits may inspect retained
+history after expiry; that does not authorize fresh work or extend the permit.
+
+Retain preflight, both Core reports/runtime responses, `e5h-restart-status.json`, both
+Node reports and the ledger baseline, plus service/exit/OOM observations. Memory
+controls intentionally induce bounded child OOMs; report them with the actual probe
+outcomes rather than suppressing them or treating unit-level logs alone as success.
+Never reuse a failed fresh attempt; preserve it and choose new acceptance state.
+
+All stages keep `execution_authorized=false`, source unexecuted, no package install,
+Secret/target/Session, terminal CapabilityResult or Core COMPLETED. Evidence Artifacts
+use ordinary M6 synchronization, not E6 finalization. Full report inventory, limits and
+closure criteria: [H implementation](../../docs/m20/M20E5H_IMPLEMENTATION.md).
+Automated tests use synthetic enforcement/local MCP fixtures; they are **not** real H
+acceptance. H/E5 closure requires the operator's real paired PASS evidence. E6 is not begun.
+
 ## M20-E5-F — fresh runtime revalidation (manual-only; real acceptance passed)
 
 The operator's retained Node v9 / Core v10 acceptance passed, including exact replay,
@@ -783,7 +933,7 @@ The opt-in integration test composes the actual configured Node, Core admission,
 Router, serialized authenticated in-memory transport, E3/E4 and E5. It closes/reopens
 Core and Node and requires fresh positive controls for READY / PUBLISHED / VALID.
 This in-memory synthetic acceptance on Kali is not E5-H real MCP acceptance.
-H is the next planned slice and has not begun. No accepted E5-E/E5-F runtime was reused;
+H manual tooling is now implemented; its real acceptance remains pending. No accepted E5-E/E5-F runtime was reused;
 the transient pytest-managed G Resource is not a reusable production runtime.
 
 The commands below document the procedure, not a request to rerun the accepted test.
@@ -923,7 +1073,8 @@ invalid/broken opt-in configuration fails, not skips. Do not run either real mod
 during implementation. After even a successful check the runtime remains UNAVAILABLE / NOT READY;
 E5-D is CLOSED on operator real provenance acceptance; E5-E v7 construction and
 E5-F v9/v10 revalidation acceptance passed; E5-G CLOSED on operator real Kali positive
-acceptance (2026-10-19). E5-H is next, not started; M20-F has not begun.
+acceptance (2026-10-19). E5-H manual tooling is implemented with real acceptance pending;
+M20-F has not begun.
 No production execute_plan() authorization is created.
 
 ## M20-E5-D trusted CPython provenance-only Kali preflight

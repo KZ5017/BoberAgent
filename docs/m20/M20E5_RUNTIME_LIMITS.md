@@ -1,6 +1,7 @@
 # M20-E5 enforcement and runtime confinement backend
 
-**E5-C/D CLOSED; E5-E limits accepted on real v7; E5-F fresh verification implemented offline, real acceptance pending.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-C/D CLOSED; E5-E limits accepted on real v7; E5-F fresh verification accepted on real v9/v10.
+E5-G configured-host positive acceptance remains pending.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 
 The thirteen C controls and D identity limits remain unchanged. E has separate fixed
 144 MiB / 256-inode constructor scratch, 512 MiB memory, pids 8, 30-second / 4-KiB-output

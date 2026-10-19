@@ -1,6 +1,7 @@
 # M20-E5 — Prepared Python runtime architecture
 
-**Status: E5-A–D COMPLETE/CLOSED; E5-E real Kali v7 ACCEPTED; E5-F IMPLEMENTED OFFLINE / REAL REVALIDATION ACCEPTANCE REQUIRED; E5-G/H NOT STARTED.** E1–E3 COMPLETE,
+**Status: E5-A–D COMPLETE/CLOSED; E5-E real Kali v7 ACCEPTED; E5-F real v9/v10 ACCEPTED;
+E5-G coverage implemented, configured-host positive acceptance PENDING; E5-H NOT STARTED.** E1–E3 COMPLETE,
 E4 COMPLETE/CLOSED with real Kali acceptance; E6–E9 NOT STARTED; M20-E OPEN;
 M20-F NOT STARTED. This package specifies future implementation, not a permission,
 host capability attestation, or claim that a usable Python runtime exists today.

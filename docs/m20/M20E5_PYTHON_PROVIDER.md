@@ -1,6 +1,7 @@
 # M20-E5 trusted Python provider
 
-**E5-D CLOSED; E5-E real v7 ACCEPTED; E5-F implemented offline / real acceptance pending; E5-G/H not started.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-D CLOSED; E5-E real v7 ACCEPTED; E5-F real v9/v10 ACCEPTED;
+E5-G configured-host positive acceptance PENDING; E5-H not started.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 The exact closed EnvBuilder, bounded export/publisher and unready lifecycle are documented
 in [E5-E implementation](M20E5E_IMPLEMENTATION.md). These are not E5-F promotion or dispatch.
 This is closed preparation of trusted runtime infrastructure, not execution of the plan.

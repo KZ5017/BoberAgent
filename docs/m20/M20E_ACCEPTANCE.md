@@ -2,8 +2,10 @@
 
 **Status:** E1–E4 COMPLETE; real Core↔Kali E3 and E4 acceptance PASSED.
 E5 architecture is SPECIFIED; E5-A–D COMPLETE/CLOSED; E5-E real Kali v7 ACCEPTED;
-E5-F implemented offline with real revalidation acceptance pending; E5-G/H and E6–E9 have not begun.
-**M20-E4 CLOSED. M20-E remains OPEN. E5-F real availability acceptance is not claimed.**
+E5-F real v9/v10 revalidation acceptance passed; E5-G coverage exists, configured-host positive
+acceptance pending; E5-H and E6–E9 have not begun.
+**M20-E4 CLOSED. M20-E remains OPEN.** See [F's supplied evidence](M20E5F_IMPLEMENTATION.md)
+and [G's pending positive acceptance](M20E5G_IMPLEMENTATION.md).
 See [E5-E implementation](M20E5E_IMPLEMENTATION.md) and the operator-supplied
 [D closure](M20E5D_IMPLEMENTATION.md#operator-supplied-real-d-acceptance).
 M20-F has not begun. See [slice plan](M20E_IMPLEMENTATION.md).

@@ -1,6 +1,7 @@
 # M20-E5 recovery, expiry and failure classification
 
-**E5-B metadata recovery COMPLETE; E5-C/D CLOSED; E5-E real v7 ACCEPTED; E5-F revalidation/promotion implemented offline, real acceptance pending.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-B metadata recovery COMPLETE; E5-C/D CLOSED; E5-E real v7 ACCEPTED;
+E5-F revalidation/promotion accepted on real v9/v10; E5-G configured-host positive acceptance pending.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 See [E5-F](M20E5F_IMPLEMENTATION.md) for the current proof-backed projection and explicit pump.
 Historical evidence, current integrity, authority and execution readiness are separate.
 

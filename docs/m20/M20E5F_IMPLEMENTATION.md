@@ -1,8 +1,41 @@
 # M20-E5-F — Fresh runtime revalidation and intermediate pump
 
-**Implemented offline; real Kali acceptance REQUIRED, not claimed.** E5-E is accepted on
+**COMPLETE; operator-supplied real Core↔Kali v9/v10 acceptance PASSED.** E5-E is accepted on
 the [operator-supplied v7 record](M20E5E_IMPLEMENTATION.md#operator-supplied-real-kali-v7-acceptance).
-That runtime remains untouched. E5-G/H, E6–E9 and M20-F are not implemented. M20-E stays OPEN.
+That runtime remains untouched. [E5-G coverage](M20E5G_IMPLEMENTATION.md) now exists;
+its configured-host positive acceptance is pending. E5-H, E6–E9 and M20-F have not begun.
+M20-E stays OPEN.
+
+## Operator-supplied real v9/v10 acceptance
+
+Recorded from the operator's report, without opening, changing, reusing or rerunning
+the accepted Node v9 or Core v10 runtime. Historical failures and E5-E v7 evidence
+remain untouched.
+
+| Retained identity | Exact value |
+| --- | --- |
+| Node runtime | `~/boberagent-runtimes/m20e5f-real-acceptance-v9` |
+| Core runtime | `~/boberagent-data/m20e5f-core-acceptance-v10` |
+| Node | `node-6202a4f9-9088-46db-bad8-648be5a37218` |
+| Preparation | `preparation-8aba221120b84095b55a4a9b637c6953` |
+| Run | `run-preparation-4a13d3bed48644aeb891009498dac8bf` |
+| Permit | `preparation-permit-6447d15fc3d849da9034a4148a8f8d39` |
+| Resource | `resource-13f75c06-8a65-4fe8-87b8-64584896e587` |
+| Binding SHA-256 | `f1acdf4034f79450abcb964b66aacce050c23cfe25fdf58582132ee92fd21739` |
+| Construction SHA-256 | `b09d84c414acecd8f4c2876f3f9fbc7966caab4e0bee837a0bce6becf84b3baa` |
+| Initial fresh evidence | `5522ae51bdb37b18871401b7695f286c4239ce5f5e8b28f7cb4379d9a3f733ec` |
+| Initial evidence Artifact | `artifact-8d1e94c5-aa6a-4373-9f19-002075ac2688` |
+| Post-restart fresh evidence | `bea84fdf1b63080b2da818bf4025a840e03eb21034acfb730011ea8ba71f2fec` |
+| Post-restart evidence Artifact | `artifact-f98df0be-5b40-4b99-a547-9a4ac48f956d` |
+
+Initial revalidation reached READY / PUBLISHED / VALID. Exact acknowledgement replay
+preserved Resource, binding, construction, operation and evidence. Restart under the
+same persistent Node identity retained READY / PUBLISHED history but reset current
+validity to UNCHECKED. A new explicit attempt created a new operation and fresh proof,
+restoring VALID on the same Resource/binding/construction. Historical proof was not
+treated as current validity. Throughout: execution_authorized=false,
+preparation_terminal=false, acquired_source_executed=false. This accepts F, not E6
+completion, execution permission or E5-H's broader acceptance.
 
 ## Boundary and call flow
 
@@ -78,5 +111,5 @@ enforcement attestation. Existing C/D/E/native tests remain required. Manual F u
 E5-budget E3 import → E4 → E5-E construction/passive replay → F → restart/status UNCHECKED →
 new F validation, with ordinary evidence sync only. See scripts/manual-smoke/README.md.
 
-Real Kali F acceptance remains operator-run. E5-G synthetic vertical and E5-H broader real
-acceptance logically follow; no later slice is started automatically.
+Real Kali F acceptance passed as recorded above. E5-G's host-configured synthetic vertical
+is the current acceptance boundary; E5-H broader real acceptance remains deferred.

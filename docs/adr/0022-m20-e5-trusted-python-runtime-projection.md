@@ -1,8 +1,9 @@
 # ADR 0022 — E5 trusted Python executable projection
 
 Status: accepted by the operator's E5-D refinement request; real D provenance acceptance CLOSED.
-E5-E real v7 construction acceptance passed. E5-F is implemented offline with real
-revalidation acceptance pending; M20-F has not begun. Historical refinement descriptions remain unchanged;
+E5-E real v7 construction and E5-F real v9/v10 revalidation acceptance passed.
+E5-G configured-host positive acceptance is pending; M20-F has not begun.
+Historical refinement descriptions remain unchanged;
 the [D closure](../m20/M20E5D_IMPLEMENTATION.md#operator-supplied-real-d-acceptance) and
 [E implementation](../m20/M20E5E_IMPLEMENTATION.md) supersede their former status only.
 Refines [ADR 0021](0021-m20-e5-prepared-python-resource-and-enforcement.md).

@@ -1,8 +1,9 @@
 # M20-E5-E — empty environment construction
 
 **E5-E ACCEPTED on the supplied real Kali v7 construction and passive-replay evidence.**
-E5-D is CLOSED. E5-F is implemented offline with real revalidation acceptance pending;
-E5-G/H, E6–E9 and M20-F have not begun; M20-E remains OPEN. This implements the already approved
+E5-D is CLOSED. E5-F real v9/v10 revalidation acceptance passed;
+E5-G coverage exists with configured-host positive acceptance pending; E5-H, E6–E9 and
+M20-F have not begun; M20-E remains OPEN. This implements the already approved
 [provider](M20E5_PYTHON_PROVIDER.md), [limits](M20E5_RUNTIME_LIMITS.md), and
 [Resource](M20E5_RUNTIME_RESOURCE.md) design, not a new execution architecture.
 

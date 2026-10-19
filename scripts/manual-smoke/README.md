@@ -694,7 +694,12 @@ for exact C2/C3 refs and digests. This negative result is neither safety nor aut
 **M20-D CLOSED. M20-E1–E3 COMPLETE; real E3 acceptance PASSED.** Production
 `execute_plan()` remains denied.
 
-## M20-E5-F — fresh runtime revalidation (manual-only; acceptance pending)
+## M20-E5-F — fresh runtime revalidation (manual-only; real acceptance passed)
+
+The operator's retained Node v9 / Core v10 acceptance passed, including exact replay,
+restart VALID → UNCHECKED and a new explicit proof restoring VALID on the same Resource.
+See the [exact acceptance record](../../docs/m20/M20E5F_IMPLEMENTATION.md#operator-supplied-real-v9v10-acceptance).
+These commands document the procedure; do not rerun or reuse accepted v7/v9/v10 runtimes.
 
 E5-E v7 is accepted and retained untouched. **Do not use v7 or any quarantined runtime.**
 Use a fresh Node runtime and fresh E5-budget Core admission. This proves preparation
@@ -758,7 +763,59 @@ The script reopens Core each time, reuses E4 publication, prints typed Resource/
 construction/evidence identities and synchronizes ordinary evidence Artifacts. It reports
 execution_authorized=false and preparation_terminal=false. No source import/entrypoint, package
 manager, target connection, Secret resolution, terminal Result or Core completion occurs.
-Real E5-F acceptance is **not claimed** until the operator supplies fresh-chain evidence.
+The supplied v9/v10 evidence accepts E5-F only. It does not close E5-G/H, authorize
+execution or complete Core preparation.
+
+## M20-E5-G — configured production synthetic vertical
+
+**Positive configured-host acceptance is pending; G is not CLOSED.** The portable
+suite tests selection and fail-closed denial, never a fake positive Linux backend.
+The opt-in integration test composes the actual configured Node, Core admission,
+Router, serialized authenticated in-memory transport, E3/E4 and E5. It closes/reopens
+Core and Node and requires fresh positive controls for READY / PUBLISHED / VALID.
+This is not an E5-H real MCP/Kali harness; H has not begun.
+
+Run only on an already provisioned supported Linux host, as the ordinary Node user
+inside its existing delegated service. Mandatory helper/ancestor modes, trusted CPython
+closure pins, Bubblewrap pin and cgroup-v2 delegation remain unchanged. The test neither
+installs tools nor creates delegation, repairs modes or weakens enforcement. It uses a
+fresh pytest-managed runtime, never an accepted or quarantined runtime.
+
+Create an explicit operator configuration file with actual pins, not placeholders:
+
+```json
+{
+  "confinement": {
+    "delegated_parent": "/sys/fs/cgroup/EXPLICIT_EMPTY_DELEGATED_PARENT",
+    "helper_sha256": "EXACT_64_HEX",
+    "bubblewrap_sha256": "EXACT_64_HEX"
+  },
+  "distribution": {
+    "distribution_root": "/opt/boberagent/trusted-python/DISTRIBUTION",
+    "system_library_root": "/usr/lib/x86_64-linux-gnu",
+    "expected_manifest_sha256": "EXACT_64_HEX",
+    "expected_interpreter_sha256": "EXACT_64_HEX"
+  },
+  "helper": "/absolute/trusted/e5-confinement-helper",
+  "bubblewrap": "/usr/bin/bwrap"
+}
+```
+
+From the repository root, inside the already provisioned service:
+
+```bash
+BOBERAGENT_E5G_CONFIGURATION=/absolute/operator-config/e5g.json \
+  uv run pytest -v packages/core/tests/test_m20e5g_vertical.py \
+  -k opt_in_actual_linux_vertical_replay_reopen_revalidate
+```
+
+The opt-in case skips only when the variable is absent. An explicitly supplied invalid
+configuration or unavailable prerequisite fails; it must not be replaced with mocked
+evidence. A skip is not positive G acceptance. The test performs no acquired-source
+import/entrypoint, installation, target/public network/DNS, Secret resolution, Session,
+terminal CapabilityResult or Core completion. Fixed trusted C/D/E helpers/probes run
+under the production controls. `execute_plan()` remains denied. See
+[G implementation and pending acceptance](../../docs/m20/M20E5G_IMPLEMENTATION.md).
 
 ## M20-E5-C confinement-only Kali preflight
 
@@ -851,8 +908,9 @@ uv run pytest packages/execution-node/tests/test_runtime_confinement_linux.py
 Without opt-in delegation that test skips; a skip is not enforcement proof. Supplying an
 invalid/broken opt-in configuration fails, not skips. Do not run either real mode automatically
 during implementation. After even a successful check the runtime remains UNAVAILABLE / NOT READY;
-E5-D is CLOSED on operator real provenance acceptance; E5-E is implemented offline with
-real construction acceptance required. E5-F–H and M20-F have not begun.
+E5-D is CLOSED on operator real provenance acceptance; E5-E v7 construction and
+E5-F v9/v10 revalidation acceptance passed. E5-G configured-host positive acceptance
+is pending; E5-H and M20-F have not begun.
 No production execute_plan() authorization is created.
 
 ## M20-E5-D trusted CPython provenance-only Kali preflight

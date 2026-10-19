@@ -1,7 +1,9 @@
 # M20-E5 implementation slices and acceptance
 
-**E5-A–D COMPLETE/CLOSED; E5-E real v7 ACCEPTED; E5-F IMPLEMENTED OFFLINE /
-REAL REVALIDATION ACCEPTANCE REQUIRED; E5-G/H NOT STARTED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+**E5-A–D COMPLETE/CLOSED; E5-E real v7 ACCEPTED; E5-F real v9/v10 ACCEPTED;
+E5-G coverage implemented, configured-host positive acceptance PENDING; E5-H NOT STARTED.**
+See [F acceptance](M20E5F_IMPLEMENTATION.md#operator-supplied-real-v9v10-acceptance) and
+[G's explicit acceptance boundary](M20E5G_IMPLEMENTATION.md). Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
 
 The operator-supplied [D acceptance](M20E5D_IMPLEMENTATION.md#operator-supplied-real-d-acceptance)
 is PASS/revalidation PASS without a Resource or READY. E5-E's
@@ -71,8 +73,8 @@ rerun the [complete thirteen-probe Kali harness](../../scripts/manual-smoke/READ
 That first-run failure remains historical. The operator subsequently passed all thirteen
 probes under `m20-e5-linux-bwrap-cgroup@1`, result PASS, runtime UNAVAILABLE, ready=false,
 digest `3f01339cf9c473004d1b038fa3b6afe9427897d06ec096f354450b4257ce08b8`.
-E5-C/D are CLOSED; E5-E real v7 construction acceptance passed. E5-F is implemented
-offline with real revalidation acceptance pending; E5-G/H have not begun.
+E5-C/D are CLOSED; E5-E real v7 and E5-F real v9/v10 acceptance passed.
+E5-G coverage exists with configured-host positive acceptance pending; E5-H has not begun.
 
 ### Read-only host reconnaissance
 
@@ -237,8 +239,9 @@ E5-H real runtime acceptance supplements E4; E9 remains the later full E real ac
 ## E5 implementation sequence
 
 E5-A–D are **COMPLETE/CLOSED**; E5-E is **ACCEPTED on operator real Kali v7 evidence**;
-E5-F is **IMPLEMENTED OFFLINE / REAL REVALIDATION ACCEPTANCE REQUIRED**;
-E5-G/H are **NOT STARTED**. Their letter order deliberately puts enforcement
+E5-F is **ACCEPTED on operator real v9/v10 evidence**;
+E5-G is **coverage implemented / configured-host positive acceptance PENDING**;
+E5-H is **NOT STARTED**. Their letter order deliberately puts enforcement
 before construction. No slice may claim the next one's acceptance.
 
 | Slice | Goal / production behavior added | Contracts and persistence | Tests / acceptance | Explicit non-goals |
@@ -249,7 +252,7 @@ before construction. No slice may claim the next one's acceptance.
 | E5-D — Interpreter provenance (CLOSED) | Explicit pinned uv CPython 3.12 closure and confined fixed inspection | Node migration 0010 immutable existing Resource-bound evidence; no READY | Operator real PASS/revalidation PASS and exact retained pins | Source imports, installs, venv construction |
 | E5-E — Empty environment construction (ACCEPTED, real v7) | Closed accounted fresh venv, bounded publication and read-only same-path verification | Node migration 0011, existing ownership/ledger, immutable inventory; no new domain ID | Real construction and same-identity passive replay PASS, still UNCHECKED/unready | Runtime execution, READY promotion, dynamic source imports |
 | E5-F — Evidence/revalidation + narrow pump | Seal evidence, READY/current validity, typed same-Run prepare/status/revalidate through existing Core admission/neutral adapters | E5 evidence Artifact; append verification; existing Run/preparation refs; no final manifest/result acceptance | Replay/conflict/expiry/disconnect/Node restart/drift/cleanup tests; current proof required | E6 terminal Result/Core COMPLETED, F authorization |
-| E5-G — Synthetic vertical | Real D→E2→E3→E4→E5 chain with production boundaries and controlled source | Migration-backed isolated Core/Node stores | One Resource, restart/reuse, immutable source, no source/package/Secret/target activity | Real target, full E6–E9 acceptance |
+| E5-G — Synthetic vertical (coverage implemented; positive host acceptance pending) | D→E2→E3→E4→E5 through configured production composition, no provider substitution | Migration-backed isolated Core/Node stores; no new schema | Portable denial/selection passed; opt-in Linux positive must prove one Resource/restart/immutability/non-execution before G closes | Real target, fake positive controls, full E6–E9 acceptance |
 | E5-H — Real Kali acceptance | Manual-only preflight/preparation/restart harness and operator record | No new authority or persistence semantics | Actual 3.12/delegation/limits and same-Resource revalidation proven; fail-closed report if host lacks any requirement | PoC entrypoint, host configuration automation, M20-F |
 
 Before each implementation, read this package and existing E1–E4 code. If a platform fact

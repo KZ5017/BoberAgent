@@ -2,7 +2,7 @@
 
 **Status: E5-A–D COMPLETE/CLOSED; E5-E real Kali v7 ACCEPTED; E5-F real v9/v10 ACCEPTED;
 E5-G CLOSED on operator real Kali positive acceptance (2026-10-19);
-E5-H IMPLEMENTED / REAL ACCEPTANCE PENDING.** E1–E3 COMPLETE,
+E5-H CLOSED / real Core↔Kali v2 acceptance PASSED (reported 2026-10-20); E5 CLOSED.** E1–E3 COMPLETE,
 E4 COMPLETE/CLOSED with real Kali acceptance; E6–E9 NOT STARTED; M20-E OPEN;
 M20-F NOT STARTED. This package defines the preparation boundary, not permission,
 blanket host capability attestation or execution authorization. The bounded G synthetic
@@ -11,8 +11,11 @@ See [E5-E implementation](M20E5E_IMPLEMENTATION.md): retained construction ends
 CREATING / VERIFYING / UNCHECKED, not READY. E5-F owns promotion and fresh current validity.
 See [E5-F implementation](M20E5F_IMPLEMENTATION.md). Terminal preparation Result and Core
 completion remain E6-owned, as explicitly confirmed by the operator for E5-F.
-See [H's manual final acceptance tooling](M20E5H_IMPLEMENTATION.md); portable tests
-are not its real Kali acceptance. E5 remains OPEN until the operator supplies H PASS.
+See [H's operator-supplied v2 acceptance](M20E5H_IMPLEMENTATION.md#operator-supplied-real-corekali-v2-acceptance):
+one Resource, same construction/binding after restart, retained accounting, and new
+explicit verification restoring current VALID. Portable tests are not that real PASS.
+The expired H v1 remains failed historical evidence. E5 closure does not complete Core
+preparation or grant execution authorization; those boundaries are unchanged.
 
 Read this with [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md),
 [ADR 0019](../adr/0019-m20-e-immutable-source-import-and-prepared-resource.md),
@@ -53,7 +56,10 @@ of current Resource integrity, available enforcement, target and plan compatibil
 authorization remains a separate Core decision. F must re-prove its own launch controls.
 Production `ProcessService.execute_plan()` remains denied throughout E.
 
-## Current repository audit
+## Pre-E5 repository audit (historical)
+
+This inventory records the original implementation gaps, not the post-H repository
+status. E5-A–H have since completed/closed; E6 finalization remains NOT STARTED.
 
 | Existing component | Reuse / exact gap |
 | --- | --- |
@@ -83,9 +89,10 @@ This is an implementation gap inventory, not permission to rewrite completed E1�
 - [Recovery/revalidation](M20E5_RECOVERY_AND_REVALIDATION.md): authority expiry and current validity.
 - [Acceptance and slices](M20E5_ACCEPTANCE.md): safe Kali preflight, test oracles and implementation order.
 
-Initial identifiers specified here are `python_runtime`, provider `python-stdlib@1`, and
-backend profile `m20-e5-linux-bwrap-cgroup@1`. These are not additions to the current
-registry. Retain the E1 preparation profile `m20-e-python-stdlib-kali@1`; new backend
+Initial identifiers specified here were `python_runtime`, provider `python-stdlib@1`, and
+backend profile `m20-e5-linux-bwrap-cgroup@1`. The original architecture-only pass did not
+register implementations; subsequent E5 slices implemented them. Retain the E1 preparation
+profile `m20-e-python-stdlib-kali@1`; new backend
 mechanism detail is not a widening of that profile's permitted actions.
 
 E5-A implements immutable Contracts and unwired neutral messages. E5-B adds Node-only

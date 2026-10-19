@@ -1,8 +1,12 @@
 # M20-E runtime preparation authority
 
 **Status:** E1–E4 COMPLETE; real Core↔Kali E3/E4 acceptance PASSED.
-E5 architecture SPECIFIED / implementation NOT STARTED; E6–E9 NOT STARTED;
+E5 CLOSED, including E5-H real Core↔Kali v2 acceptance PASSED; E6–E9 NOT STARTED;
 M20-E remains OPEN, M20-F NOT STARTED. [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md)
+
+[H's acceptance](M20E5H_IMPLEMENTATION.md) did not renew authority: expired H v1 failed
+closed and remains historical evidence. Fresh v2 passed within its own authority; historical
+VALID never substitutes for a current permit or fresh revalidation. No authority rule changed.
 
 [E5 expiry/revalidation rules](M20E5_RECOVERY_AND_REVALIDATION.md) preserve this authority:
 retained runtime bytes are not a current permit, and historical preparation is not permission

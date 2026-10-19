@@ -3,8 +3,11 @@
 **Status:** Accepted architecture; E5-A typed boundary and E5-B durable metadata ownership COMPLETE.
 E5-C/D CLOSED on operator real acceptance; E5-E ACCEPTED on retained real v7 evidence;
 E5-F real v9/v10 revalidation acceptance passed; E5-G CLOSED on operator real Kali
-configured-host positive acceptance (2026-10-19); E5-H IMPLEMENTED / REAL ACCEPTANCE PENDING;
-E5 remains OPEN. The existing decision is unchanged.
+configured-host positive acceptance (2026-10-19); E5-H CLOSED / real Core↔Kali v2
+acceptance PASSED (reported 2026-10-20); E5 CLOSED. M20-E remains OPEN;
+E6–E9 and M20-F remain NOT STARTED. The existing decision is unchanged.
+[H's v2 acceptance](../m20/M20E5H_IMPLEMENTATION.md) retains the same Resource/binding/construction
+after restart with fresh current revalidation/accounting; expired v1 remains failed history.
 [G's acceptance record](../m20/M20E5G_IMPLEMENTATION.md#operator-supplied-real-kali-configured-host-acceptance)
 adds validation evidence only, not execution authority or an architecture change.
 [E5-E](../m20/M20E5E_IMPLEMENTATION.md) retains CREATING / VERIFYING / UNCHECKED, not READY.

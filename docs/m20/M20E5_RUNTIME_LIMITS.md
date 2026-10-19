@@ -1,7 +1,10 @@
 # M20-E5 enforcement and runtime confinement backend
 
 **E5-C/D CLOSED; E5-E limits accepted on real v7; E5-F fresh verification accepted on real v9/v10.
-E5-G CLOSED on operator real Kali configured-host positive acceptance (2026-10-19).** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+E5-G CLOSED on operator real Kali configured-host positive acceptance (2026-10-19);
+E5-H CLOSED / real Core↔Kali v2 acceptance PASSED; E5 CLOSED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+See [H's retained-accounting acceptance](M20E5H_IMPLEMENTATION.md).
+M20-E remains OPEN; E6–E9 and M20-F remain NOT STARTED. Limits are unchanged.
 
 The thirteen C controls and D identity limits remain unchanged. E has separate fixed
 144 MiB / 256-inode constructor scratch, 512 MiB memory, pids 8, 30-second / 4-KiB-output

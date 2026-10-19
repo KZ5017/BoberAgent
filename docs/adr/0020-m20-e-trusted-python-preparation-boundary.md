@@ -1,8 +1,10 @@
 # ADR 0020: M20-E trusted Python preparation and E/F boundary
 
 **Status:** Accepted for M20-E architecture. E1–E4 are complete, including real Core↔Kali
-E3 import and E4 confinement/source-materialization acceptance; Python runtime behavior
-has not begun.
+E3 import and E4 confinement/source-materialization acceptance; E5 Python runtime behavior
+is implemented and E5 CLOSED after separate real Core↔Kali H v2 acceptance.
+See [H's intermediate-evidence acceptance](../m20/M20E5H_IMPLEMENTATION.md).
+E6–E9 and M20-F remain NOT STARTED; M20-E remains OPEN. The E/F boundary is unchanged.
 
 **E5-D refinement:** the original Tool Registry/system-interpreter selection assumption
 below is superseded by [ADR 0021](0021-m20-e5-prepared-python-resource-and-enforcement.md#approved-e5-d-refinement).

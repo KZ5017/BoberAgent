@@ -2,7 +2,7 @@
 
 M20-E and M20-F have distinct authority and implementation gates. **M20-E architecture is
 SPECIFIED; E1–E4 are COMPLETE, including real Core↔Kali E3 and E4 acceptance;
-E5 architecture is SPECIFIED / implementation NOT STARTED; E6–E9 have NOT STARTED,
+E5 CLOSED, including E5-H real Core↔Kali v2 acceptance PASSED; E6–E9 remain NOT STARTED,
 and M20-E remains OPEN.
 M20-F has NOT STARTED.** Both depend on exact
 immutable v2 intent and current D decisions, but E uses a preparation-only permit and F later
@@ -11,6 +11,8 @@ non-interactive, user-space, apparently standard-library-only CPython 3.12 on Ka
 languages and target-side or remote-Session execution are future adapter classes.
 
 The [focused E5 architecture](M20E5_ARCHITECTURE.md) specifies a prepared Resource only.
+The separate [H v2 acceptance](M20E5H_IMPLEMENTATION.md) proves same-Resource restart and
+fresh current revalidation with retained accounting, not completion of the overall E flow.
 Keep the existing slice meanings: E6 = final preparation manifest/Result/Core acceptance;
 E7 = recovery/reuse/cleanup. Execution readiness, authorization and acquired-code launch
 remain M20-F, not E5, E6 or E7. `execute_plan()` remains denied throughout E.

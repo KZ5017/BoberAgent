@@ -2,7 +2,7 @@
 
 **CLOSED on operator-supplied real Kali provenance acceptance.** E5-C is CLOSED.
 E5-E real v7 and E5-F real v9/v10 acceptance passed; E5-G CLOSED on real Kali positive acceptance (2026-10-19);
-E5-H manual tooling is implemented with real acceptance pending; E6–E9 and M20-F
+E5-H CLOSED on separate real Core↔Kali v2 acceptance; E5 CLOSED; E6–E9 and M20-F
 have not begun. The implementation/finding chronology below remains historical;
 its former pending-acceptance statements are superseded only by this explicit closure.
 
@@ -100,7 +100,8 @@ package-manager exclusion, required venv, split-PT_LOAD and `$ORIGIN` checks rem
 Diagnostics remain bounded `RUNTIME_INTEGRITY_FAILURE`, stage `distribution_inventory`.
 See ADR 0022 for exact supported-root criteria and membership authority boundaries.
 No distribution bytes are patched/deleted, schemas/history are not rewritten, and
-E5-E/F remain unimplemented; runtime stays UNAVAILABLE, not READY.
+At this historical D correction's boundary E5-E/F remained unimplemented;
+runtime stayed UNAVAILABLE, not READY. Later E/F/H acceptance does not rewrite that result.
 
 The next real-Kali finding was trusted uv provisioned pip 26.2.1 in nonempty
 site-packages. Base presence is no longer rejected: the complete

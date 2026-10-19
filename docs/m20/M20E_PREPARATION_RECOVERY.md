@@ -2,7 +2,10 @@
 
 **Status:** E3 dispatch/import and E4 source recovery COMPLETE, including real Core↔Kali
 restart/replay and E4 published-tree revalidation acceptance;
-E5 architecture is SPECIFIED; E5–E9 preparation recovery implementation remains future work.
+E5 CLOSED after E5-H real Core↔Kali v2 acceptance PASSED: same Resource/binding/construction,
+Core reopen, old proof without current promotion, new explicit validation and cumulative
+accounting retained. See [H's evidence and expired v1](M20E5H_IMPLEMENTATION.md).
+E6–E9 and M20-F remain NOT STARTED; M20-E remains OPEN.
 The [E5 runtime recovery specification](M20E5_RECOVERY_AND_REVALIDATION.md) defines local
 Resource foundations; E7 retains full cross-component recovery acceptance. This refines
 [authority](M20E_RUNTIME_AUTHORITY.md).

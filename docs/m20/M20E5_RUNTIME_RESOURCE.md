@@ -2,7 +2,9 @@
 
 **E5-A–D COMPLETE/CLOSED; E5-E real v7 ACCEPTED; E5-F real v9/v10 ACCEPTED;
 E5-G CLOSED on operator real Kali positive acceptance (2026-10-19);
-E5-H IMPLEMENTED / REAL ACCEPTANCE PENDING.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+E5-H CLOSED / real Core↔Kali v2 acceptance PASSED; E5 CLOSED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+See [H's same-Resource restart/accounting proof](M20E5H_IMPLEMENTATION.md).
+M20-E remains OPEN; E6–E9 and M20-F remain NOT STARTED.
 
 E5-E adds Node migration 0011 and immutable Resource-owned construction evidence.
 Its successful state is CREATING / VERIFYING / UNCHECKED, never READY or current VALID.
@@ -100,7 +102,11 @@ Core attempt or a terminal success Result to make intermediate evidence delivera
 E4 transport evidence is mapped explicitly to the final Contract materialization summary;
 the similarly named types are not interchangeable.
 
-## Future persistence, not migrations in this task
+## Original persistence design (historical architecture-only pass)
+
+The design below predates the implemented E5 migrations/ownership/evidence sections.
+It did not create migrations itself; closure introduces none. E6 final acceptance is still
+NOT STARTED. Keep the existing E5 implementation/history, not a second persistence model.
 
 Reuse the existing Node Resource/workspace/process infrastructure. One provider-detail row
 keyed by ResourceRef records unique preparation/permit binding, construction phase, immutable

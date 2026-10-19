@@ -3,7 +3,7 @@
 **Architecture status:** SPECIFIED. **Implementation status:** E1–E4 COMPLETE, including
 real Core↔Kali E4 acceptance; E5-A–D COMPLETE/CLOSED; E5-E real v7 ACCEPTED;
 E5-F real v9/v10 ACCEPTED; E5-G CLOSED on operator real Kali positive acceptance (2026-10-19);
-E5-H IMPLEMENTED / REAL ACCEPTANCE PENDING;
+E5-H CLOSED / real Core↔Kali v2 acceptance PASSED; E5 CLOSED;
 E6–E9 NOT STARTED;
 M20-E remains OPEN. M20-D remains CLOSED; M20-F has NOT STARTED. This plan authorizes no
 preparation. The architectural
@@ -184,17 +184,21 @@ this acceptance.
   Stop before Python environment creation.
 - **Non-goals:** Unrestricted extract, source patching, network retrieval, F lease implementation.
 
-## E5 — Trusted Python environment Resource provider (ARCHITECTURE SPECIFIED)
+## E5 — Trusted Python environment Resource provider (CLOSED)
 
 **E5-A–D COMPLETE/CLOSED; E5-E real v7 ACCEPTED; E5-F real v9/v10 ACCEPTED;
 E5-G CLOSED on operator real Kali positive acceptance (2026-10-19);
-E5-H IMPLEMENTED / REAL ACCEPTANCE PENDING.**
+E5-H CLOSED / real Core↔Kali v2 acceptance PASSED; E5 CLOSED.**
 See [G's configured synthetic acceptance record](M20E5G_IMPLEMENTATION.md#operator-supplied-real-kali-configured-host-acceptance).
 H's [single manual acceptance harness/procedure](M20E5H_IMPLEMENTATION.md) reuses the
-existing production path and adds no provider/authority/schema semantics. E5 remains OPEN.
+existing production path and adds no provider/authority/schema semantics. The operator's
+[real v2 acceptance](M20E5H_IMPLEMENTATION.md#operator-supplied-real-corekali-v2-acceptance)
+closed H and E5: same Resource/binding/construction after restart, retained accounting,
+historical replay without current promotion, then fresh VALID. Expired H v1 stays failed.
+M20-E remains OPEN; E6–E9 and M20-F remain NOT STARTED.
 E5-A's typed Resource/evidence models and neutral messages alone did not make a runtime
 available. E5-A added no migration or Node runtime effect.
-Neither A nor B adds a runtime/venv, Python subprocess, E5 dispatch or execution authority.
+Neither A nor B added a runtime/venv, Python subprocess, E5 dispatch or execution authority.
 The authoritative package is
 [E5 architecture](M20E5_ARCHITECTURE.md), with
 [ADR 0021](../adr/0021-m20-e5-prepared-python-resource-and-enforcement.md).
@@ -225,8 +229,8 @@ execution readiness. E6 finalization and E7 recovery keep their existing meaning
   carry intermediate evidence under existing admission, not the E6 final receipt.
 - **Tests/manual smoke:** exact interpreter/version, fixed environment, no user site/PATH
   injection, no pip or source import, empty external set, network/socket/filesystem/descendant/
-  memory/time/output/storage limits and failure closure. E5-H now specifies focused real Kali
-  runtime preflight/acceptance before E5 closure; E9 remains the later complete E real vertical.
+  memory/time/output/storage limits and failure closure. E5-H passed focused real Kali
+  preflight/preparation/restart acceptance and closed E5; E9 remains the later complete E real vertical.
   Neither is assumed from a binary check or E4 acceptance.
 - **Acceptance/stop:** A harmless synthetic source may be staged while only provider-owned
   operations run; Resource not READY until verification. Stop before capability completion.

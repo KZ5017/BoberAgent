@@ -1,8 +1,9 @@
 # M20-E trusted Python preparation profile
 
 **Status:** E1 profile typed; E4 source materializer and bubblewrap *preflight* COMPLETE
-after real Kali CHECK/materialization/restart acceptance. E5 Python provider/venv
-unimplemented. E5 architecture is now specified in the
+after real Kali CHECK/materialization/restart acceptance. E5 Python provider/venv and
+fresh revalidation are implemented; E5-H real Core↔Kali v2 acceptance PASSED and E5 is CLOSED.
+See [H's accepted evidence](M20E5H_IMPLEMENTATION.md), the
 [focused E5 package](M20E5_ARCHITECTURE.md) and
 [ADR 0021](../adr/0021-m20-e5-prepared-python-resource-and-enforcement.md), refining
 [ADR 0020](../adr/0020-m20-e-trusted-python-preparation-boundary.md).

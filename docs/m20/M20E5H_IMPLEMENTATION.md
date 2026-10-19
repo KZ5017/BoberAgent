@@ -1,10 +1,76 @@
 # M20-E5-H — final real Kali E5 acceptance
 
-**IMPLEMENTED; real Core↔Kali operator acceptance PENDING. E5 is not CLOSED.**
+**M20-E5-H CLOSED / real Core↔Kali acceptance PASSED. M20-E5 CLOSED.**
+Recorded from the operator's successful v2 acceptance report on 2026-10-20;
+no accepted runtime was opened, mutated or rerun for this documentation closure.
 E5-G remains CLOSED on its separately recorded 2026-10-19 configured-host synthetic
 acceptance. This slice adds manual acceptance tooling only, not a new provider,
 transport, authority, persistence model or acquired-code executor. E6–E9 and M20-F
-have not begun. M20-E remains OPEN.
+remain NOT STARTED. M20-E remains OPEN.
+
+## Operator-supplied real Core↔Kali v2 acceptance
+
+The successful **v2** run, not the expired v1 attempt, closes H and E5:
+
+| Retained acceptance identity | Value |
+| --- | --- |
+| Kali Node runtime | `~/boberagent-runtimes/m20e5h-real-acceptance-v2` |
+| WSL Core runtime | `~/boberagent-data/m20e5h-core-acceptance-v2` |
+| Node ID | `node-ac6331a1-ecdb-47ef-aa9c-d44dd539b615` |
+| ResourceRef | `resource-ad6b7821-af17-439c-a706-95b1adf75499` |
+| PreparationPermitRef | `preparation-permit-c89f2cdc72274c7b9e8d78e6d18a1137` |
+| CapabilityRunRef | `run-preparation-7a35929b35aa4ccaab136c380601b534` |
+| Construction SHA-256 | `74efa984590f4da547d8f1a128a3962978db7c067e3ad53b30183b891ec1ea79` |
+| Binding SHA-256 | `bb09639e824737bfa1fd835755a05ded9162b801900810d71780a3d3590a6f09` |
+
+Paths above are operator diagnostics on the respective machines, not logical identity.
+No additional refs, hashes or asset pins are inferred beyond the supplied evidence.
+
+Observed acceptance sequence:
+
+1. Fresh real Kali preflight **PASS**: `resource_created=false`, `ready=false`,
+   `execution_authorized=false`.
+2. Real Core → Router → MCP → Kali preparation **PASS**: fresh verification produced
+   **READY / PUBLISHED / VALID**. Acquired source did not execute; no package installation,
+   target activity, execution authorization or terminal preparation occurred.
+3. Passive `before-restart` report **PASS**: exactly one Resource; retained construction,
+   accounting and source verification matched Core evidence.
+4. Only the Node process stopped/restarted. The same delegated systemd service/parent,
+   persistent runtime, DB, Node identity and configuration were preserved.
+5. Core reopen and restart revalidation **PASS**: `core_reopened=true` and
+   `historical_replay_did_not_promote=true`. Historical proof remained retained while
+   current validity was UNCHECKED; old-ID replay did not silently restore validity.
+   A new explicit validation under a new Node boot generation produced fresh evidence
+   and restored **READY / PUBLISHED / VALID** on the same ResourceRef, construction and
+   binding digests. Cumulative budgets/accounting were retained, not reset.
+6. Passive `after-revalidation` report **PASS**: `resource_count=1`, the same ResourceRef,
+   `source_verified=true`, `secret_delivery=false`, `target_activity=false`,
+   `stage=after-revalidation`.
+
+Throughout successful preparation/revalidation: `execution_authorized=false`,
+`acquired_source_executed=false`, `package_installation=false`,
+`preparation_terminal=false`, `target_activity=false`; no Secret delivery, execution
+Session/listener, acquired-source import or entrypoint execution occurred.
+
+### Historical expired H v1 — preserved failure
+
+The earlier v1 attempt expired during the original **15-minute** preparation-authority
+window and correctly failed closed with `CURRENT_PREPARATION_AUTHORITY_REQUIRED`.
+It remains failed historical evidence: it was not rewritten as PASS, repaired, renewed
+or reused. The accepted v2 used fresh state. E5-A–G acceptance history, including E5-E
+v7, E5-F v9/v10 and G's separate configured-host record, remains unchanged.
+
+### Closure authority boundary
+
+This is historical evidence of a prepared/currently valid Resource at acceptance,
+not permanent current availability, renewed preparation authority or permission to execute.
+**`PREPARED != EXECUTION_READY != EXECUTION_AUTHORIZED`.** E5 produced the Resource
+and intermediate runtime evidence only; Core preparation remained nonterminal.
+Ordinary E5 evidence Artifacts use the existing synchronization path, but **E6 alone**
+owns the final `RuntimePreparationManifest`, normal terminal CapabilityResult/receipt,
+final preparation Artifact synchronization completion and Core preparation completion.
+Production `execute_plan()` remains denied throughout M20-E. E6–E9 and M20-F remain
+NOT STARTED; this closure neither implements nor redesigns them.
 
 ## One harness, three acceptance modes
 
@@ -114,7 +180,7 @@ working inputs. Host paths are operator diagnostics, never cross-boundary identi
 No host provisioning, package installation, chmod repair, controller delegation or
 service management is performed. Missing controls produce bounded failure, not fallback.
 
-## Portable verification versus real closure
+## Historical implementation verification versus real closure
 
 Focused tests cover parser/config/error handling, private/exclusive/bounded records,
 absence of startup recovery during passive audit, denial without a real restart or
@@ -135,7 +201,18 @@ Implementation validation passed:
 Local MCP/socket fixtures required the approved sandbox network-permission escalation;
 no Kali, public target or remote acceptance was contacted by these checks.
 
-H implementation is ready for operator acceptance. Close E5-H, and
-then E5 if all its acceptance requirements are met, only upon the operator's real
-paired Core↔Kali PASS/restart/probe/ledger evidence. No such H PASS is claimed here.
-Do not begin E6 automatically.
+Those portable checks established implementation readiness, not real-host acceptance.
+The separately supplied real v2 evidence above now closes **M20-E5-H and M20-E5**.
+The historical implementation check counts are preserved, not presented as newly run
+closure checks. M20-E remains OPEN; E6–E9 and M20-F remain NOT STARTED.
+
+## Documentation-only closure verification (2026-10-20)
+
+- Architecture suite: **70 passed**.
+- Ruff check, formatting (574 files), strict mypy (519 source files), exact supplied
+  acceptance-ref/hash checks, stale-status scan, Markdown-only diff scope and
+  `git diff --check`: PASS.
+- No production code, tests, dependencies, migrations or helper bytes changed.
+  No real smoke, runtime or retained evidence was accessed/rerun. The full repository
+  suite was not repeated for this Markdown-only closure; the earlier implementation
+  suite counts above remain explicitly historical.

@@ -2,7 +2,9 @@
 
 **E5-D CLOSED; E5-E real v7 ACCEPTED; E5-F real v9/v10 ACCEPTED;
 E5-G CLOSED on operator real Kali positive acceptance (2026-10-19);
-E5-H IMPLEMENTED / REAL ACCEPTANCE PENDING.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+E5-H CLOSED / real Core↔Kali v2 acceptance PASSED; E5 CLOSED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+See [H's separate retained v2 acceptance](M20E5H_IMPLEMENTATION.md).
+M20-E remains OPEN; E6–E9 and M20-F remain NOT STARTED.
 The exact closed EnvBuilder, bounded export/publisher and unready lifecycle are documented
 in [E5-E implementation](M20E5E_IMPLEMENTATION.md). These are not E5-F promotion or dispatch.
 This is closed preparation of trusted runtime infrastructure, not execution of the plan.

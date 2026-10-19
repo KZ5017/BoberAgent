@@ -696,11 +696,23 @@ for exact C2/C3 refs and digests. This negative result is neither safety nor aut
 
 ## M20-E5-H — final real Core↔Kali acceptance
 
-**H implemented; real operator acceptance PENDING. E5 remains OPEN.** E5-G's real
+**M20-E5-H CLOSED / real Core↔Kali v2 acceptance PASSED. M20-E5 CLOSED.**
+The operator supplied the successful v2 record on 2026-10-20: Node runtime
+`~/boberagent-runtimes/m20e5h-real-acceptance-v2`, Core runtime
+`~/boberagent-data/m20e5h-core-acceptance-v2`, same Resource/construction/binding after
+Node restart and Core reopen, historical replay without current promotion, new fresh VALID
+and retained cumulative accounting. Both passive Node reports passed with one Resource.
+See the [exact refs, hashes and non-action guarantees](../../docs/m20/M20E5H_IMPLEMENTATION.md#operator-supplied-real-corekali-v2-acceptance).
+The earlier v1 expired in the original 15-minute window and correctly failed closed with
+`CURRENT_PREPARATION_AUTHORITY_REQUIRED`; retain it as failed evidence, never reuse it
+or rewrite it as success. Accepted v2 is retained evidence too, not working input to rerun.
+M20-E remains OPEN; E6–E9 and M20-F remain NOT STARTED. E5-G's real
 configured-host synthetic PASS is separate, not H. Do not reuse accepted E5-E v7,
 E5-F v9/v10, G pytest state or quarantined attempts. No helper/native bytes changed;
 no rebuild or repin is required. Reuse reviewed assets only while their hashes remain
 exact. This tooling installs/repairs/delegates nothing and does not begin E6.
+The following commands retain the reproduction procedure, not a request to repeat the
+accepted run. No real smoke was rerun during this documentation-only closure.
 
 Use the same repository revision on WSL and Kali. Choose **nonexistent final runtime
 directories** under existing operator-owned parents. The harness creates private owned
@@ -842,7 +854,12 @@ Secret/target/Session, terminal CapabilityResult or Core COMPLETED. Evidence Art
 use ordinary M6 synchronization, not E6 finalization. Full report inventory, limits and
 closure criteria: [H implementation](../../docs/m20/M20E5H_IMPLEMENTATION.md).
 Automated tests use synthetic enforcement/local MCP fixtures; they are **not** real H
-acceptance. H/E5 closure requires the operator's real paired PASS evidence. E6 is not begun.
+acceptance. The separately supplied v2 paired PASS evidence closes H and E5.
+`PREPARED != EXECUTION_READY != EXECUTION_AUTHORIZED`. E6 alone owns the final
+RuntimePreparationManifest, normal terminal CapabilityResult/receipt, final preparation
+Artifact synchronization completion and Core preparation completion; ordinary E5 evidence
+sync above is not E6 finalization. E6–E9 and M20-F remain NOT STARTED; `execute_plan()`
+remains denied throughout M20-E.
 
 ## M20-E5-F — fresh runtime revalidation (manual-only; real acceptance passed)
 
@@ -933,7 +950,7 @@ The opt-in integration test composes the actual configured Node, Core admission,
 Router, serialized authenticated in-memory transport, E3/E4 and E5. It closes/reopens
 Core and Node and requires fresh positive controls for READY / PUBLISHED / VALID.
 This in-memory synthetic acceptance on Kali is not E5-H real MCP acceptance.
-H manual tooling is now implemented; its real acceptance remains pending. No accepted E5-E/E5-F runtime was reused;
+H's separate real Core↔Kali v2 acceptance has since closed H and E5. No accepted E5-E/E5-F runtime was reused;
 the transient pytest-managed G Resource is not a reusable production runtime.
 
 The commands below document the procedure, not a request to rerun the accepted test.
@@ -1073,8 +1090,8 @@ invalid/broken opt-in configuration fails, not skips. Do not run either real mod
 during implementation. After even a successful check the runtime remains UNAVAILABLE / NOT READY;
 E5-D is CLOSED on operator real provenance acceptance; E5-E v7 construction and
 E5-F v9/v10 revalidation acceptance passed; E5-G CLOSED on operator real Kali positive
-acceptance (2026-10-19). E5-H manual tooling is implemented with real acceptance pending;
-M20-F has not begun.
+acceptance (2026-10-19). Separate H v2 real Core↔Kali acceptance has since closed H and E5;
+M20-E remains OPEN; E6–E9 and M20-F remain NOT STARTED.
 No production execute_plan() authorization is created.
 
 ## M20-E5-D trusted CPython provenance-only Kali preflight
@@ -1198,12 +1215,18 @@ copy**, pin it, then modify a stdlib file in that copy and rerun with the origin
 It must reject before candidate execution. Do not mutate the trusted installed distribution,
 system Python, live Resource or retained source. Ordinary CI already covers byte/mode/root
 substitution and identity mismatches. This task does not automatically run a Kali check.
-E5-E is implemented offline; E5-F–H, E6–E9 and M20-F remain unimplemented;
+The D-only procedure above grants no runtime availability. E5-E subsequently passed
+real v7 acceptance, E5-F passed v9/v10, and G and separate real H v2 acceptance closed
+E5. M20-E remains OPEN; E6–E9 and M20-F remain NOT STARTED;
 production execute_plan() stays denied.
 
 ## M20-E5-E empty environment construction (operator-only)
 
-**Offline implementation only; real Kali E construction acceptance pending.** This local
+**E5-E real Kali v7 construction ACCEPTED; retained evidence unchanged.** See the
+[E acceptance record](../../docs/m20/M20E5E_IMPLEMENTATION.md#operator-supplied-real-kali-v7-acceptance).
+The commands below preserve the local procedure, not a request to rerun/reuse v7 or any
+other accepted/quarantined runtime. Subsequent F/G/H acceptance closed E5 without
+changing the construction-only stop boundary below. This local
 harness constructs a dependency-empty environment from the exact accepted D projection and
 reports CREATING / VERIFYING / UNCHECKED, `runtime=UNAVAILABLE`, `ready=false` and
 `execution_authorized=false`. It never executes source, resolves Secrets, installs packages,
@@ -1397,8 +1420,8 @@ Preparation `preparation-7a156e8a25c647b591589689a0d374c3` and Run
 `run-preparation-287e2192955a4caf9b92c6fffe55ffda`. Both exact Artifacts verified
 on the first import and again after Node restart against the same Core runtime; see the
 [E3 acceptance record](../../docs/m20/M20E_ACCEPTANCE.md#e3-real-corekali-acceptance-passed).
-**M20-E3 COMPLETE.** E4 real acceptance is recorded below; M20-E remains OPEN, and
-E5–E9 and M20-F have not begun. Production
+**M20-E3 COMPLETE.** E4 real acceptance is recorded below; separate H v2 acceptance
+has since closed E5. M20-E remains OPEN; E6–E9 and M20-F remain NOT STARTED. Production
 `execute_plan()` remains denied.
 
 ## M20-E4 exact source materialization (operator-only; accepted)
@@ -1450,5 +1473,6 @@ one file, 336 bytes, tree SHA-256
 `bubblewrap 0.11.0` with only the four reported E4 features and created no workspace. See the
 [E4 acceptance record](../../docs/m20/M20E_ACCEPTANCE.md#e4-real-corekali-acceptance-passed).
 
-**M20-E4 CLOSED.** M20-E remains OPEN; E5–E9 and M20-F have not begun. Production
+**M20-E4 CLOSED. E5 subsequently CLOSED on separate real H v2 acceptance.**
+M20-E remains OPEN; E6–E9 and M20-F remain NOT STARTED. Production
 `execute_plan()` remains denied.

@@ -3,9 +3,9 @@
 **Status:** E1–E4 COMPLETE; real Core↔Kali E3 and E4 acceptance PASSED.
 E5 architecture is SPECIFIED; E5-A–D COMPLETE/CLOSED; E5-E real Kali v7 ACCEPTED;
 E5-F real v9/v10 revalidation acceptance passed; E5-G CLOSED on operator real Kali
-configured-host positive acceptance (2026-10-19); E5-H manual tooling is IMPLEMENTED,
-real acceptance PENDING; E6–E9 have not begun.
-**M20-E4 CLOSED. M20-E remains OPEN.** See [F's supplied evidence](M20E5F_IMPLEMENTATION.md)
+configured-host positive acceptance (2026-10-19); E5-H CLOSED / real Core↔Kali v2
+acceptance PASSED (reported 2026-10-20); E6–E9 remain NOT STARTED.
+**M20-E4 CLOSED. M20-E5 CLOSED. M20-E remains OPEN.** See [F's supplied evidence](M20E5F_IMPLEMENTATION.md)
 and [G's real configured-host acceptance](M20E5G_IMPLEMENTATION.md#operator-supplied-real-kali-configured-host-acceptance).
 See [E5-E implementation](M20E5E_IMPLEMENTATION.md) and the operator-supplied
 [D closure](M20E5D_IMPLEMENTATION.md#operator-supplied-real-d-acceptance).
@@ -14,8 +14,14 @@ M20-F has not begun. See [slice plan](M20E_IMPLEMENTATION.md).
 [E5 acceptance and preflight](M20E5_ACCEPTANCE.md) records separate Python Resource and
 enforcement acceptance, not an extension of the historical E4 acceptance below.
 G's real configured synthetic PASS is not E5-H, execution authorization, a reusable
-production Resource or terminal Core completion. [E5-H tooling](M20E5H_IMPLEMENTATION.md)
-is implemented, but its real Core↔Kali acceptance remains pending; E5 and M20-E stay OPEN.
+production Resource or terminal Core completion. The separate
+[real H v2 acceptance](M20E5H_IMPLEMENTATION.md#operator-supplied-real-corekali-v2-acceptance)
+now closes H and E5: one Resource, exact construction/binding across restart, Core reopen,
+fresh current revalidation and retained cumulative accounting. H v1 expired and remains
+failed evidence. E5 supplies the prepared Resource/intermediate evidence, not execution
+readiness or authorization. E6 alone owns final manifest, terminal Result/receipt, final
+preparation Artifact synchronization completion and Core preparation completion.
+M20-E stays OPEN; E6–E9 and M20-F remain NOT STARTED.
 
 E4's synthetic E2→E3→E4 test uses a controlled confinement proof and therefore does not
 substitute for the real Kali bubblewrap check. The Linux integration test skips explicitly

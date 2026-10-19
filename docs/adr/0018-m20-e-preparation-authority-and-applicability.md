@@ -1,7 +1,10 @@
 # ADR 0018: M20-E preparation ownership, authority and applicability
 
 **Status:** Accepted for M20-E architecture. E1–E4 are complete, including real Core↔Kali
-E3/E4 acceptance; E5–E9 and M20-F have not begun.
+E3/E4 acceptance; E5 CLOSED on separate real Core↔Kali H v2 acceptance.
+E6–E9 and M20-F remain NOT STARTED; M20-E remains OPEN.
+See [H's acceptance and expired v1 history](../m20/M20E5H_IMPLEMENTATION.md).
+This status update changes no authority/applicability decision.
 
 ## Decision
 

@@ -2,7 +2,9 @@
 
 **Status:** Accepted for M20-E architecture. E1–E4 are complete, including real Core↔Kali
 opaque import and bounded source-materialization acceptance; E5 Python Resource behavior
-has not begun.
+is implemented and E5 CLOSED after separate real Core↔Kali H v2 acceptance.
+See [H's same-Resource/source/accounting proof](../m20/M20E5H_IMPLEMENTATION.md).
+E6–E9 and M20-F remain NOT STARTED; M20-E remains OPEN. The existing decision is unchanged.
 
 ## Decision
 

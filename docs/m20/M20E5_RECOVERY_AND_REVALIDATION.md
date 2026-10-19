@@ -1,7 +1,12 @@
 # M20-E5 recovery, expiry and failure classification
 
 **E5-B metadata recovery COMPLETE; E5-C/D CLOSED; E5-E real v7 ACCEPTED;
-E5-F revalidation/promotion accepted on real v9/v10; E5-G CLOSED on real Kali positive acceptance (2026-10-19).** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+E5-F revalidation/promotion accepted on real v9/v10; E5-G CLOSED on real Kali positive acceptance (2026-10-19);
+E5-H CLOSED / real Core↔Kali v2 acceptance PASSED; E5 CLOSED.** Parent: [E5 architecture](M20E5_ARCHITECTURE.md).
+H's [retained v2 proof](M20E5H_IMPLEMENTATION.md) preserves the same Resource/binding/construction
+and cumulative accounting: historical replay did not promote current validity, a new explicit
+validation after restart restored VALID. Expired H v1 remains failed evidence.
+M20-E remains OPEN; E6–E9 and M20-F remain NOT STARTED; E7 acceptance is not claimed here.
 See [E5-F](M20E5F_IMPLEMENTATION.md) for the current proof-backed projection and explicit pump.
 Historical evidence, current integrity, authority and execution readiness are separate.
 
@@ -37,7 +42,7 @@ and records interruption. Changed delegation fails closed. After reboot, old wor
 without killing possibly reused groups/PIDs. Terminal evidence never reopens. Node startup
 performs safety reconciliation only; active probes are explicit. Missing recovery configuration
 is surfaced as degraded, not successful cleanup. Shutdown waits for owned operation finalization.
-See [implemented boundary and pending real acceptance](M20E5C_IMPLEMENTATION.md).
+See [implemented boundary and retained real C acceptance](M20E5C_IMPLEMENTATION.md).
 
 | Event | Required action before any reuse |
 | --- | --- |

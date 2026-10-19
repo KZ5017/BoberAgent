@@ -3,7 +3,7 @@
 **E5-E ACCEPTED on the supplied real Kali v7 construction and passive-replay evidence.**
 E5-D is CLOSED. E5-F real v9/v10 revalidation acceptance passed;
 E5-G CLOSED on real Kali configured-host positive acceptance (2026-10-19);
-E5-H manual tooling is implemented with real acceptance pending. E6–E9 and
+E5-H CLOSED on separate real Core↔Kali v2 acceptance; E5 CLOSED. E6–E9 and
 M20-F have not begun; M20-E remains OPEN. This implements the already approved
 [provider](M20E5_PYTHON_PROVIDER.md), [limits](M20E5_RUNTIME_LIMITS.md), and
 [Resource](M20E5_RUNTIME_RESOURCE.md) design, not a new execution architecture.
@@ -208,7 +208,8 @@ native binary bytes change, so **both** require explicit fresh installation/SHA 
 D interpreter/distribution/projection pins, copy semantics and all security controls remain
 unchanged. The v3 runtime stays quarantined forensic evidence; no repair or reuse.
 The next real acceptance requires a fresh Core-approved budget/admission and fresh Node
-runtime. It is not run automatically. E5-F and readiness promotion have not begun.
+runtime. It is not run automatically. At that historical v3 correction, E5-F and
+readiness promotion had not begun; later acceptance does not change the v3 failure.
 
 ## Lifecycle, immutable evidence and recovery
 

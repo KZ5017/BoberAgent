@@ -7,7 +7,9 @@ See [H's retained v2 acceptance and expired v1 history](M20E5H_IMPLEMENTATION.md
 reported 2026-10-20: same Resource/construction/binding across Node restart and Core reopen,
 old proof did not promote current validity, fresh validation restored READY / PUBLISHED /
 VALID, and cumulative accounting was retained. No source executed or execution was authorized.
-M20-E remains OPEN; E6–E9 and M20-F remain NOT STARTED.
+At E5 closure, E6–E9 and M20-F were NOT STARTED. Subsequent E6 status/acceptance is in
+[the separate E6 record](M20E6_IMPLEMENTATION.md); E7–E9 and M20-F remain NOT STARTED,
+and M20-E remains OPEN. The E5 acceptance chronology below is unchanged.
 See [F acceptance](M20E5F_IMPLEMENTATION.md#operator-supplied-real-v9v10-acceptance) and
 [G's real configured-host acceptance](M20E5G_IMPLEMENTATION.md#operator-supplied-real-kali-configured-host-acceptance).
 At commit `e2a5855`, the positive opt-in executed: **1 passed, 5 deselected in 60.81s**;

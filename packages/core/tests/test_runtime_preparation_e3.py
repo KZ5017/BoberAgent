@@ -74,7 +74,7 @@ def test_e3_forward_migrations_preserve_prior_schema(tmp_path: Path) -> None:
         assert "preparation_authorities" not in inspect(node.migration_engine).get_table_names()
         upgrade_database(core)
         upgrade_node_database(node)
-        assert current_revision(core) == "0017_m20_e3_import_progress"
+        assert current_revision(core) == "0018_m20_e6_completion"
         assert node_revision(node) == "0012_python_revalidation"
         assert "preparation_import_progress" in inspect(core._migration_engine).get_table_names()
         assert {"preparation_authorities", "preparation_imports", "imported_artifacts"} <= set(

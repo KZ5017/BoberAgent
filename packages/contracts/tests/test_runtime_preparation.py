@@ -63,6 +63,29 @@ def test_valid_baseline_round_trips_and_separate_identities() -> None:
     assert manifest.spec.profile.network.target_network == "DENY"
 
 
+@pytest.mark.parametrize("count", [1, 2, 10])
+def test_manifest_aggregate_file_count_may_exceed_source_count(count: int) -> None:
+    data = manifest_fixture().model_dump(mode="json")
+    data["usage"]["file_count"] = count
+    manifest = RuntimePreparationManifest.model_validate(data)
+    assert manifest.materialization.file_count == 1
+    assert manifest.usage.file_count == count
+    assert manifest.schema_version == "runtime-preparation-manifest-v1"
+
+
+@pytest.mark.parametrize("case", ["underreported", "over_budget", "materialized_bytes"])
+def test_manifest_preserves_source_minimum_budgets_and_exact_bytes(case: str) -> None:
+    data = manifest_fixture().model_dump(mode="json")
+    if case == "underreported":
+        data["usage"]["file_count"] = 0
+    elif case == "over_budget":
+        data["usage"]["file_count"] = data["spec"]["budgets"]["max_file_count"] + 1
+    else:
+        data["usage"]["materialized_bytes"] += 1
+    with pytest.raises(ValidationError):
+        RuntimePreparationManifest.model_validate(data)
+
+
 def test_nested_immutability_and_detachment() -> None:
     spec = spec_fixture()
     permit = permit_fixture(spec)

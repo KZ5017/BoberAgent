@@ -5,8 +5,9 @@ Recorded from the operator's successful v2 acceptance report on 2026-10-20;
 no accepted runtime was opened, mutated or rerun for this documentation closure.
 E5-G remains CLOSED on its separately recorded 2026-10-19 configured-host synthetic
 acceptance. This slice adds manual acceptance tooling only, not a new provider,
-transport, authority, persistence model or acquired-code executor. E6–E9 and M20-F
-remain NOT STARTED. M20-E remains OPEN.
+transport, authority, persistence model or acquired-code executor. At this H closure checkpoint,
+E6–E9 and M20-F were NOT STARTED. [Subsequent E6 work](M20E6_IMPLEMENTATION.md) is recorded
+separately; the acceptance history below is unchanged. M20-E remains OPEN.
 
 ## Operator-supplied real Core↔Kali v2 acceptance
 

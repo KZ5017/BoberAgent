@@ -4,7 +4,8 @@
 the [operator-supplied v7 record](M20E5E_IMPLEMENTATION.md#operator-supplied-real-kali-v7-acceptance).
 That runtime remains untouched. [E5-G](M20E5G_IMPLEMENTATION.md) is CLOSED on
 operator real Kali configured-host positive acceptance (2026-10-19).
-E5-H CLOSED on separate real Core↔Kali v2 acceptance; E5 CLOSED; E6–E9 and M20-F remain NOT STARTED.
+E5-H CLOSED on separate real Core↔Kali v2 acceptance; E5 CLOSED. At that checkpoint E6–E9
+and M20-F were NOT STARTED; [subsequent E6 work](M20E6_IMPLEMENTATION.md) is separate.
 M20-E stays OPEN.
 
 ## Operator-supplied real v9/v10 acceptance

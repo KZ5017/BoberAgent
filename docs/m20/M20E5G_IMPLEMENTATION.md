@@ -6,8 +6,8 @@ than skipping. The earlier development-host skips remain historical evidence bel
 they are not rewritten as Linux acceptance. E5-F's
 [operator v9/v10 acceptance](M20E5F_IMPLEMENTATION.md#operator-supplied-real-v9v10-acceptance)
 remains separate. E5-H subsequently CLOSED on separate real Core↔Kali v2 acceptance;
-E5 CLOSED. E6–E9 and
-M20-F remain unstarted. M20-E remains OPEN.
+E5 CLOSED. At that checkpoint E6–E9 and M20-F were unstarted;
+[subsequent E6 work](M20E6_IMPLEMENTATION.md) is separate. M20-E remains OPEN.
 
 ## Operator-supplied real Kali configured-host acceptance
 

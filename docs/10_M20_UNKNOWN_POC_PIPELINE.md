@@ -16,7 +16,8 @@ E5-D is CLOSED with real provenance acceptance; E5-E real Kali v7 construction i
 E5-F real v9/v10 acceptance PASSED; E5-G CLOSED on operator real Kali configured-host positive
 acceptance (2026-10-19); E5-H CLOSED / real Core↔Kali v2 acceptance PASSED (reported 2026-10-20);
 M20-E5 CLOSED;
-E6–E9 have NOT STARTED;
+M20-E6 terminal evidence/reconciliation is CLOSED;
+E7–E9 have NOT STARTED;
 M20-E remains OPEN; M20-F has NOT STARTED.** See the
 [M20-D closure record](m20/M20D_IMPLEMENTATION.md#m20-d-closed-real-retained-source-negative-acceptance) and the
 [retained-source acceptance record](m20/M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
@@ -106,7 +107,7 @@ be representable in plan intent but have no M20-v1 automatic adapter.
 | M20-B | [Acquisition and provenance](m20/02_ACQUISITION_AND_PROVENANCE.md) | pinned, hashed Artifact; no execution |
 | M20-C | [Inspection and classification](m20/03_INSPECTION_AND_CLASSIFICATION.md) | **CLOSED:** typed facts, explicit reasons, fail-closed uncertainty; calibrated real C4 accepted |
 | M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | **CLOSED:** D1–D8, synthetic D7 and real retained-source negative D8 accepted; STOP before permission/dispatch |
-| M20-E | [Runtime preparation](m20/M20E_IMPLEMENTATION.md), [E5 architecture](m20/M20E5_ARCHITECTURE.md) and [E/F boundary](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | **E1–E4 COMPLETE; E5-A–D COMPLETE/CLOSED; E5-E ACCEPTED (real v7); E5-F ACCEPTED (real v9/v10); E5-G CLOSED (real Kali configured-host positive, 2026-10-19); E5-H CLOSED (real Core↔Kali v2 PASS reported 2026-10-20); E5 CLOSED; E6–E9 NOT STARTED; overall OPEN:** E5-F promotes freshly proven runtime availability, never execution authorization; no terminal preparation Result/Core completion |
+| M20-E | [Runtime preparation](m20/M20E_IMPLEMENTATION.md), [E5 architecture](m20/M20E5_ARCHITECTURE.md), [E6 completion](m20/M20E6_IMPLEMENTATION.md) and [E/F boundary](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | **E1–E5 CLOSED/COMPLETE; E5-H real v2 PASS; E6 CLOSED; E7–E9 NOT STARTED; overall OPEN:** E6 owns normal terminal preparation evidence and Core completion, never execution readiness/authorization |
 | M20-F | [Controlled execution](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md#m20-f-execute-and-capture-evidence) | **NOT STARTED:** separate execution authorization, managed evidence and honest Result |
 | M20-G | [Interpretation, adaptation, HITL](m20/06_INTERPRETATION_ADAPTATION_AND_HITL.md) | separate outcome, bounded attempts, durable wait/stop |
 | M20-H | [Vertical smoke and acceptance](m20/07_VERTICAL_SMOKE_AND_ACCEPTANCE.md) | controlled fixture then authorized real unknown PoC |
@@ -189,12 +190,14 @@ at commit `e2a5855` (2026-10-19), with unchanged pins and no source execution.
 E5-H's [real Core↔Kali v2 acceptance](m20/M20E5H_IMPLEMENTATION.md#operator-supplied-real-corekali-v2-acceptance)
 passed and closes H and E5. The same Resource/construction/binding survived restart and Core
 reopen, old proof did not restore current validity, and fresh verification restored VALID
-with cumulative accounting retained. Expired H v1 remains failed history. E6–E9 and M20-F
-remain NOT STARTED; M20-E remains OPEN.
+with cumulative accounting retained. Expired H v1 remains failed history. At H closure,
+E6–E9 and M20-F were NOT STARTED; subsequent E6 work is recorded separately in the
+[E6 implementation record](m20/M20E6_IMPLEMENTATION.md). E7–E9 and M20-F remain NOT STARTED;
+M20-E remains OPEN.
 Even VALID + ALLOW + operator approval is not preparation or execution authorization. E must
 issue a separate PreparationPermit bound to exact digest, Mission, action, Run, Node/provider,
 source, profile and limits. F must separately authorize execution and revalidate current
-applicability. E6–E9 implementation remains open; H accepted the E5 Kali preparation
+applicability. E7–E9 implementation remains open; H accepted the E5 Kali preparation
 controls only, not a blanket host attestation. F's execution gate is not specified by E.
 
 D7 now proves six offline, migration-backed D3→D6 vertical cases using synthetic
@@ -215,5 +218,5 @@ Core-only durable admission, and E3's authenticated exact Artifact Import are co
 E3/E4 and E5-C/D/E real acceptance passed; E5-E alone remains unready. E5-F fresh promotion
 passed operator real v9/v10 acceptance; E5-G is CLOSED on operator real Kali configured-host
 positive acceptance (2026-10-19); E5-H real Core↔Kali v2 acceptance PASSED, closing H and E5.
-M20-E stays OPEN. E6–E9 and M20-F remain NOT STARTED.
+M20-E stays OPEN. E6 terminal completion is recorded separately; E7–E9 and M20-F remain NOT STARTED.
 **M20-D is CLOSED.**

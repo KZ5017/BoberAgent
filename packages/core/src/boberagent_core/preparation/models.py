@@ -21,8 +21,12 @@ from boberagent_contracts.runtime_preparation import (
     PreparationAction,
     PreparationBudgets,
     PreparationNodeId,
+    RuntimePreparationManifest,
+    RuntimePreparationReceipt,
     RuntimePreparationSpec,
 )
+from boberagent_transport import MaterializationEvidence
+from boberagent_transport.preparation_runtime import PythonRuntimeAccepted
 from pydantic import AwareDatetime, Field, model_validator
 
 from boberagent_core.capabilities.models import ProviderAvailability
@@ -115,6 +119,13 @@ class PreparationContext(FrozenContractModel):
     manifest_size_bytes: int | None = Field(default=None, ge=0)
 
 
+class PreparationCompletionContext(FrozenContractModel):
+    """Exact authoritative E4/E5 observations retained before terminal dispatch."""
+
+    materialization: MaterializationEvidence
+    runtime: PythonRuntimeAccepted
+
+
 class PreparationAttempt(FrozenContractModel):
     """Durable request and immutable determination; no CapabilityRun row exists in E2."""
 
@@ -132,9 +143,22 @@ class PreparationAttempt(FrozenContractModel):
     created_at: AwareDatetime
     updated_at: AwareDatetime
     terminal_at: AwareDatetime | None = None
+    completion_context: PreparationCompletionContext | None = None
+    receipt: RuntimePreparationReceipt | None = None
+    manifest: RuntimePreparationManifest | None = None
+    completion_error_code: str | None = None
 
     @model_validator(mode="after")
     def coherent(self) -> Self:
+        if self.lifecycle.is_terminal != (self.terminal_at is not None):
+            raise ValueError("terminal preparation needs an exact terminal timestamp")
+        if self.lifecycle is PreparationLifecycle.COMPLETED and (
+            self.completion_context is None
+            or self.receipt is None
+            or self.manifest is None
+            or self.completion_error_code is not None
+        ):
+            raise ValueError("completed preparation requires retained accepted evidence")
         if self.lifecycle is PreparationLifecycle.REQUESTED:
             if (
                 self.disposition is not PreparationDisposition.ELIGIBLE

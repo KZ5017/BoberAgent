@@ -27,6 +27,10 @@ from boberagent_sdk import (
     SensitiveValue,
     UtcClock,
 )
+from boberagent_sdk.services.preparation import (
+    RuntimePreparationService,
+    UnavailableRuntimePreparationService,
+)
 from boberagent_transport import SecretGrant
 
 from boberagent_execution_node.artifacts import LocalArtifactSpool
@@ -228,12 +232,14 @@ class NodeExecutionContext:
         interactions: NodeInteractionService,
         logger: NodeCapabilityLogger,
         cancellation: NodeCancellationService,
+        preparation: RuntimePreparationService | None = None,
     ) -> None:
         self.invocation = invocation
         self.mission = mission
         self.scope = scope
         self.entities = entities
         self.processes = processes
+        self.preparation = preparation or UnavailableRuntimePreparationService()
         self.workspace = workspace
         self.resources = resources
         self.sessions = sessions
@@ -289,6 +295,8 @@ class ExecutionContextFactory:
         self,
         invocation: InvocationContext,
         environment: LocalInvocationEnvironment,
+        *,
+        preparation: RuntimePreparationService | None = None,
     ) -> ContextBundle:
         if environment.mission.mission_ref != invocation.mission_ref:
             raise ValueError("local Mission projection does not match invocation")
@@ -367,5 +375,6 @@ class ExecutionContextFactory:
                 redactor=redactor,
             ),
             cancellation=cancellation,
+            preparation=preparation,
         )
         return ContextBundle(context=context, events=events, cancellation=cancellation)

@@ -7,7 +7,8 @@ See [H's accepted evidence](M20E5H_IMPLEMENTATION.md), the
 [focused E5 package](M20E5_ARCHITECTURE.md) and
 [ADR 0021](../adr/0021-m20-e5-prepared-python-resource-and-enforcement.md), refining
 [ADR 0020](../adr/0020-m20-e-trusted-python-preparation-boundary.md).
-E6–E9 and M20-F remain NOT STARTED; M20-E remains OPEN.
+E6 terminal evidence/reconciliation is CLOSED;
+E7–E9 and M20-F remain NOT STARTED; M20-E remains OPEN. See [E6](M20E6_IMPLEMENTATION.md).
 
 E5 requires the full E1 feature set before construction/READY. Its initial backend requires
 verified unprivileged cgroup-v2 delegation, bounded scratch and supervised descendants;

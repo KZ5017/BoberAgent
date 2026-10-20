@@ -1,5 +1,6 @@
-"""Core-owned, metadata-only runtime preparation admission (M20-E2)."""
+"""Core-owned preparation admission, explicit pumps and terminal evidence reconciliation."""
 
+from .completion import CorePreparationCompletionService
 from .dispatch import CorePreparationDispatchService, PreparationDispatchError
 from .import_repository import ImportProgressState, PreparationImportProgress
 from .models import (
@@ -14,6 +15,7 @@ from .runtime import CorePythonRuntimeService
 from .service import CoreRuntimePreparationAdmissionService
 
 __all__ = [
+    "CorePreparationCompletionService",
     "CorePreparationDispatchService",
     "CorePythonRuntimeService",
     "CoreRuntimePreparationAdmissionService",

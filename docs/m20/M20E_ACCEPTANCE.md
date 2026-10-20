@@ -4,7 +4,8 @@
 E5 architecture is SPECIFIED; E5-A–D COMPLETE/CLOSED; E5-E real Kali v7 ACCEPTED;
 E5-F real v9/v10 revalidation acceptance passed; E5-G CLOSED on operator real Kali
 configured-host positive acceptance (2026-10-19); E5-H CLOSED / real Core↔Kali v2
-acceptance PASSED (reported 2026-10-20); E6–E9 remain NOT STARTED.
+acceptance PASSED (reported 2026-10-20); E6 CLOSED;
+E7–E9 remain NOT STARTED.
 **M20-E4 CLOSED. M20-E5 CLOSED. M20-E remains OPEN.** See [F's supplied evidence](M20E5F_IMPLEMENTATION.md)
 and [G's real configured-host acceptance](M20E5G_IMPLEMENTATION.md#operator-supplied-real-kali-configured-host-acceptance).
 See [E5-E implementation](M20E5E_IMPLEMENTATION.md) and the operator-supplied
@@ -21,7 +22,10 @@ fresh current revalidation and retained cumulative accounting. H v1 expired and 
 failed evidence. E5 supplies the prepared Resource/intermediate evidence, not execution
 readiness or authorization. E6 alone owns final manifest, terminal Result/receipt, final
 preparation Artifact synchronization completion and Core preparation completion.
-M20-E stays OPEN; E6–E9 and M20-F remain NOT STARTED.
+E6 now implements that separate terminal boundary; see [focused E6 acceptance](M20E6_IMPLEMENTATION.md).
+M20-E stays OPEN; E7–E9 and M20-F remain NOT STARTED. No real H evidence/runtime is reused
+or mutated by E6's isolated synthetic tests; full E7 recovery, E8 vertical and E9 real E
+acceptance are not claimed.
 
 E4's synthetic E2→E3→E4 test uses a controlled confinement proof and therefore does not
 substitute for the real Kali bubblewrap check. The Linux integration test skips explicitly

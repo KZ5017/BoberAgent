@@ -153,7 +153,15 @@ class NodePreparationService:
                     or run.mission_id != str(spec.mission_ref)
                     or run.capability_id != "runtime.prepare"
                     or run.operation != "prepare"
-                    or run.status != CapabilityRunStatus.QUEUED.value
+                    or run.status
+                    not in {
+                        CapabilityRunStatus.QUEUED.value,
+                        CapabilityRunStatus.RUNNING.value,
+                        CapabilityRunStatus.COMPLETED.value,
+                        CapabilityRunStatus.FAILED.value,
+                        CapabilityRunStatus.CANCELLED.value,
+                        CapabilityRunStatus.TIMED_OUT.value,
+                    }
                     or run.invocation_fingerprint != delivery_fingerprint
                 ):
                     raise PreparationAdmissionError("PREPARATION_AUTHORITY_CONFLICT")

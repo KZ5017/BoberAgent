@@ -484,7 +484,14 @@ class PythonResourceRepository:
                     count += 1
         return count
 
-    def _admitted(self, session: Session, permit: PreparationPermit, principal: str) -> None:
+    def _admitted(
+        self,
+        session: Session,
+        permit: PreparationPermit,
+        principal: str,
+        *,
+        run_status: CapabilityRunStatus = CapabilityRunStatus.QUEUED,
+    ) -> None:
         row = session.get(PreparationAuthorityRow, str(permit.permit_ref))
         run = session.get(RunRow, str(permit.run_ref))
         if (
@@ -503,7 +510,7 @@ class PythonResourceRepository:
                 PreparationReasonCode.PREPARATION_NOT_AUTHORIZED,
                 "exact admitted authority required",
             )
-        if run.status != CapabilityRunStatus.QUEUED.value:
+        if run.status != run_status.value:
             raise ResourceOwnershipError(
                 PreparationReasonCode.AUTHORITY_STALE, "preparation Run is not pending"
             )

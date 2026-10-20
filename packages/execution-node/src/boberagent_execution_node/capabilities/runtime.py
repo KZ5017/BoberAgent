@@ -30,6 +30,7 @@ from boberagent_sdk import (
     ToolExecutionError,
     UtcClock,
 )
+from boberagent_sdk.services.preparation import RuntimePreparationService
 from pydantic import ValidationError
 
 from boberagent_execution_node.interactions import InteractionRuntime
@@ -71,31 +72,40 @@ class CapabilityRuntime:
         environment: LocalInvocationEnvironment,
         *,
         invocation_fingerprint: str | None = None,
+        preparation: RuntimePreparationService | None = None,
     ) -> CapabilityResult:
         existing = self._store.get_run(invocation.run_id)
         if existing is not None:
             stored_result = self._results.get(invocation.run_id)
             if stored_result is not None:
                 return stored_result
-            raise CapabilityError(
-                f"CapabilityRun already exists locally without a replayable result: "
-                f"{invocation.run_id} ({existing.status})"
-            )
+            if not (
+                preparation is not None
+                and invocation.capability_id == "runtime.prepare"
+                and existing.status is CapabilityRunStatus.QUEUED
+                and invocation_fingerprint is not None
+                and existing.invocation_fingerprint == invocation_fingerprint
+            ):
+                raise CapabilityError(
+                    f"CapabilityRun already exists locally without a replayable result: "
+                    f"{invocation.run_id} ({existing.status})"
+                )
 
         now = self._clock.now()
-        self._store.add_run(
-            RunRecord(
-                run_ref=invocation.run_id,
-                mission_ref=invocation.mission_ref,
-                capability_id=invocation.capability_id,
-                operation=invocation.operation,
-                status=CapabilityRunStatus.CREATED,
-                created_at=now,
-                parent_run_ref=invocation.parent_run_ref,
-                workflow_run_ref=invocation.workflow_run_ref,
-                invocation_fingerprint=invocation_fingerprint,
+        if existing is None:
+            self._store.add_run(
+                RunRecord(
+                    run_ref=invocation.run_id,
+                    mission_ref=invocation.mission_ref,
+                    capability_id=invocation.capability_id,
+                    operation=invocation.operation,
+                    status=CapabilityRunStatus.CREATED,
+                    created_at=now,
+                    parent_run_ref=invocation.parent_run_ref,
+                    workflow_run_ref=invocation.workflow_run_ref,
+                    invocation_fingerprint=invocation_fingerprint,
+                )
             )
-        )
         invocation_context = InvocationContext(
             run_id=invocation.run_id,
             capability_id=invocation.capability_id,
@@ -104,7 +114,7 @@ class CapabilityRuntime:
             parent_run_ref=invocation.parent_run_ref,
             workflow_run_ref=invocation.workflow_run_ref,
         )
-        bundle = self._contexts.create(invocation_context, environment)
+        bundle = self._contexts.create(invocation_context, environment, preparation=preparation)
         self._active[str(invocation.run_id)] = bundle
         try:
             result = await self._execute_started(invocation, bundle)

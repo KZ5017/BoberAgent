@@ -9,6 +9,7 @@ from boberagent_contracts import CapabilityRunRef, MissionRef
 
 from boberagent_sdk.context import InvocationContext, MissionContext
 
+from .preparation import FakeRuntimePreparationService
 from .services import (
     FakeArtifactService,
     FakeCancellationService,
@@ -58,6 +59,7 @@ class FakeExecutionContext:
         self._scope = FakeScopeService()
         self._entities = FakeEntityReader()
         self._processes = FakeProcessService()
+        self._preparation = FakeRuntimePreparationService()
         self._workspace = FakeWorkspaceService(selected_invocation.run_id)
         self._resources = FakeResourceService(selected_invocation.run_id, self._clock)
         self._sessions = FakeSessionService(selected_invocation.run_id, self._clock)
@@ -93,6 +95,10 @@ class FakeExecutionContext:
     @property
     def processes(self) -> FakeProcessService:
         return self._processes
+
+    @property
+    def preparation(self) -> FakeRuntimePreparationService:
+        return self._preparation
 
     @property
     def workspace(self) -> FakeWorkspaceService:

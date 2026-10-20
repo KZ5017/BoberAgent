@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+from pathlib import Path
 from uuid import uuid4
 
 from boberagent_contracts import (
@@ -165,6 +166,19 @@ class ExecutionNode:
                     "non-restorable TCP Listener Resources/Sessions were marked LOST"
                 )
 
+            from .capabilities.registry import CapabilityManifest, CapabilityProvider
+            from .preparation.metadata import admission_definition
+
+            self.capabilities.register(
+                CapabilityProvider(
+                    CapabilityManifest(
+                        definition=admission_definition(),
+                        implementation="boberagent_execution_node.preparation.capability:RuntimePreparationCapability",
+                        input_models={"prepare": "boberagent_contracts:RuntimePreparationInput"},
+                    ),
+                    Path(__file__),
+                )
+            )
             CapabilityLoader().discover(self.configuration.capability_paths, self.capabilities)
             confinement_tools = ToolRegistry()
             for name, configuration in sorted(self.configuration.tools.items()):

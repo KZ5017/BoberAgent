@@ -2,8 +2,9 @@
 
 **CLOSED on operator-supplied real Kali provenance acceptance.** E5-C is CLOSED.
 E5-E real v7 and E5-F real v9/v10 acceptance passed; E5-G CLOSED on real Kali positive acceptance (2026-10-19);
-E5-H CLOSED on separate real Core↔Kali v2 acceptance; E5 CLOSED; E6–E9 and M20-F
-have not begun. The implementation/finding chronology below remains historical;
+E5-H CLOSED on separate real Core↔Kali v2 acceptance; E5 CLOSED. At that checkpoint E6–E9
+and M20-F had not begun; [subsequent E6 work](M20E6_IMPLEMENTATION.md) is separate.
+The implementation/finding chronology below remains historical;
 its former pending-acceptance statements are superseded only by this explicit closure.
 
 ## Operator-supplied real D acceptance

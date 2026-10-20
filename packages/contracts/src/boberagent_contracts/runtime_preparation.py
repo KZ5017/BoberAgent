@@ -483,7 +483,10 @@ class RuntimePreparationManifest(FrozenContractModel):
             if self.materialization.entrypoint_sha256 != self.spec.entrypoint.entry_sha256:
                 raise ValueError("prepared entrypoint hash differs from the plan")
             if (
-                self.materialization.file_count != self.usage.file_count
+                # E4 counts exact source files; aggregate retained E usage also
+                # includes runtime/control/revalidation work. E6 reconciles each
+                # value against its independent authoritative evidence.
+                self.materialization.file_count > self.usage.file_count
                 or self.materialization.total_bytes != self.usage.materialized_bytes
             ):
                 raise ValueError("prepared source summary disagrees with observed usage")

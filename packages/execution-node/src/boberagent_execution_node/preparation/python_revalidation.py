@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from math import ceil
 
 from boberagent_contracts import (
+    CapabilityRunStatus,
     ConfinementFeature,
     DomainRef,
     PreparationAction,
@@ -119,7 +120,12 @@ class PythonRevalidationRepository:
                 results.append(evidence)
             return tuple(results)
 
-    def current(self, ref: RuntimeResourceRef) -> PythonRuntimeCurrentState:
+    def current(
+        self,
+        ref: RuntimeResourceRef,
+        *,
+        run_status: CapabilityRunStatus = CapabilityRunStatus.QUEUED,
+    ) -> PythonRuntimeCurrentState:
         retained = self.provider.repository.inspect_retained(ref)
         with self.resources._database.transaction() as session:
             detail = self.resources._detail(session, ref)
@@ -128,7 +134,9 @@ class PythonRevalidationRepository:
                 authority = session.get(PreparationAuthorityRow, detail.permit_id)
                 assert authority is not None
                 permit = PreparationPermit.model_validate(authority.permit_json)
-                self.resources._admitted(session, permit, authority.principal_id)
+                self.resources._admitted(
+                    session, permit, authority.principal_id, run_status=run_status
+                )
                 self.resources._current(permit, PreparationAction.VERIFY_PYTHON_ENVIRONMENT)
                 if detail.checked_boot != str(self.resources._boot):
                     raise EnvironmentFailure(PythonRuntimeReason.PYTHON_RUNTIME_UNAVAILABLE)

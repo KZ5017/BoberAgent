@@ -2,7 +2,8 @@
 
 M20-E and M20-F have distinct authority and implementation gates. **M20-E architecture is
 SPECIFIED; E1–E4 are COMPLETE, including real Core↔Kali E3 and E4 acceptance;
-E5 CLOSED, including E5-H real Core↔Kali v2 acceptance PASSED; E6–E9 remain NOT STARTED,
+E5 CLOSED, including E5-H real Core↔Kali v2 acceptance PASSED; E6 CLOSED;
+E7–E9 remain NOT STARTED,
 and M20-E remains OPEN.
 M20-F has NOT STARTED.** Both depend on exact
 immutable v2 intent and current D decisions, but E uses a preparation-only permit and F later

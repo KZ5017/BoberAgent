@@ -2,19 +2,23 @@
 
 from collections.abc import Iterator
 from contextlib import contextmanager
+from datetime import datetime
 from sqlite3 import Connection as SQLiteConnection
 from typing import cast
 
 from boberagent_contracts import (
+    CapabilityRunRef,
     JsonObject,
     PreparationPermit,
     PreparationPermitRef,
+    RuntimePreparationManifest,
+    RuntimePreparationReceipt,
     RuntimePreparationRef,
     RuntimePreparationSpec,
 )
 from boberagent_contracts.plan_canonical import canonical_digest
 from boberagent_contracts.runtime_preparation import preparation_permit_digest
-from pydantic import TypeAdapter, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 from sqlalchemy import select, update
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.exc import IntegrityError
@@ -25,7 +29,12 @@ from boberagent_core.persistence.preparation_orm import (
     RuntimePreparationAttemptRow,
 )
 
-from .models import PreparationAttempt, PreparationContext, PreparationLifecycle
+from .models import (
+    PreparationAttempt,
+    PreparationCompletionContext,
+    PreparationContext,
+    PreparationLifecycle,
+)
 
 _json: TypeAdapter[JsonObject] = TypeAdapter(JsonObject)
 
@@ -53,7 +62,7 @@ def _atomic(session: Session) -> Iterator[None]:
 
 
 def _document(
-    value: PreparationContext | RuntimePreparationSpec | PreparationPermit,
+    value: BaseModel,
 ) -> JsonObject:
     return _json.validate_json(value.model_dump_json())
 
@@ -176,6 +185,123 @@ class RuntimePreparationRepository:
         row = self._session.get(RuntimePreparationAttemptRow, str(ref), populate_existing=True)
         return None if row is None else self._load(row)
 
+    def get_by_run(self, ref: CapabilityRunRef) -> PreparationAttempt | None:
+        row = self._session.scalar(
+            select(RuntimePreparationAttemptRow)
+            .where(RuntimePreparationAttemptRow.reserved_run_id == str(ref))
+            .execution_options(populate_existing=True)
+        )
+        return None if row is None else self._load(row)
+
+    def bind_completion(
+        self,
+        ref: RuntimePreparationRef,
+        context: PreparationCompletionContext,
+        *,
+        now: datetime,
+    ) -> PreparationAttempt:
+        current = self.get(ref)
+        if current is None:
+            raise PreparationConflict("unknown preparation")
+        if current.completion_context is not None:
+            if current.completion_context != context:
+                raise PreparationConflict("immutable completion context changed")
+            return current
+        if current.lifecycle is not PreparationLifecycle.DISPATCHED:
+            raise PreparationConflict("only a dispatched Run can bind completion")
+        result = self._session.execute(
+            update(RuntimePreparationAttemptRow)
+            .where(
+                RuntimePreparationAttemptRow.preparation_id == str(ref),
+                RuntimePreparationAttemptRow.revision == current.revision,
+            )
+            .values(
+                completion_context_json=_document(context),
+                revision=current.revision + 1,
+                updated_at=now,
+            )
+        )
+        if getattr(result, "rowcount", None) != 1:
+            raise PreparationConflict("completion context changed concurrently")
+        loaded = self.get(ref)
+        if loaded is None or loaded.completion_context != context:
+            raise PreparationPersistenceError("completion context persistence failed")
+        return loaded
+
+    def retain_completion(
+        self,
+        ref: RuntimePreparationRef,
+        *,
+        lifecycle: PreparationLifecycle,
+        receipt: RuntimePreparationReceipt | None,
+        manifest: RuntimePreparationManifest | None,
+        error_code: str | None,
+        now: datetime,
+    ) -> PreparationAttempt:
+        current = self.get(ref)
+        if current is None:
+            raise PreparationConflict("unknown preparation")
+        if (
+            current.lifecycle,
+            current.receipt,
+            current.manifest,
+            current.completion_error_code,
+        ) == (
+            lifecycle,
+            receipt,
+            manifest,
+            error_code,
+        ):
+            return current
+        if current.lifecycle not in {
+            PreparationLifecycle.DISPATCHED,
+            PreparationLifecycle.AWAITING_ARTIFACT,
+        }:
+            raise PreparationConflict("terminal preparation cannot reopen or change")
+        if lifecycle not in {
+            PreparationLifecycle.AWAITING_ARTIFACT,
+            PreparationLifecycle.COMPLETED,
+            PreparationLifecycle.FAILED,
+            PreparationLifecycle.INTERRUPTED,
+            PreparationLifecycle.CANCELLED,
+        }:
+            raise PreparationConflict("invalid completion transition")
+        if current.receipt is not None and current.receipt != receipt:
+            raise PreparationConflict("canonical receipt cannot change")
+        candidate = current.model_copy(
+            update=dict(
+                lifecycle=lifecycle,
+                receipt=receipt,
+                manifest=manifest,
+                completion_error_code=error_code,
+                revision=current.revision + 1,
+                updated_at=now,
+                terminal_at=now if lifecycle.is_terminal else None,
+            )
+        )
+        PreparationAttempt.model_validate(candidate.model_dump())
+        result = self._session.execute(
+            update(RuntimePreparationAttemptRow)
+            .where(
+                RuntimePreparationAttemptRow.preparation_id == str(ref),
+                RuntimePreparationAttemptRow.revision == current.revision,
+            )
+            .values(
+                lifecycle=lifecycle.value,
+                receipt_json=None if receipt is None else _document(receipt),
+                final_manifest_json=None if manifest is None else _document(manifest),
+                completion_error_code=error_code,
+                revision=current.revision + 1,
+                updated_at=now,
+                terminal_at=candidate.terminal_at,
+            )
+        )
+        if getattr(result, "rowcount", None) != 1:
+            raise PreparationConflict("completion changed concurrently")
+        loaded = self.get(ref)
+        assert loaded is not None
+        return loaded
+
     def find_by_fingerprint(self, fingerprint: str) -> PreparationAttempt | None:
         row = self._session.scalar(
             select(RuntimePreparationAttemptRow)
@@ -292,6 +418,16 @@ class RuntimePreparationRepository:
                     "created_at": row.created_at,
                     "updated_at": row.updated_at,
                     "terminal_at": row.terminal_at,
+                    "completion_context": (
+                        None
+                        if row.completion_context_json is None
+                        else PreparationCompletionContext.model_validate_json(
+                            _json.dump_json(row.completion_context_json)
+                        )
+                    ),
+                    "receipt": row.receipt_json,
+                    "manifest": row.final_manifest_json,
+                    "completion_error_code": row.completion_error_code,
                 }
             )
             source = context.source

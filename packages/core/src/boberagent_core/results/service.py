@@ -146,6 +146,10 @@ class ResultIngestionService:
                     "acquisition Result may not create target Observations, Findings, or Effects"
                 )
             _validate_result_provenance(result)
+            if run.capability_id == "runtime.prepare" and (
+                result.observations or result.findings or result.effects or result.sessions
+            ):
+                raise ResultProvenanceError("preparation cannot create target facts or Sessions")
             work.runs.reconcile_terminal(
                 run_ref,
                 result.execution_status,

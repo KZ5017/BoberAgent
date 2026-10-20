@@ -1,4 +1,4 @@
-"""E3 admission-only metadata; E6 supplies the executable preparation provider."""
+"""Static Node-owned preparation metadata; implementation loading remains lazy."""
 
 from boberagent_contracts import (
     CONTRACT_VERSION,
@@ -26,15 +26,15 @@ def admission_definition() -> CapabilityDefinition:
         capability_id="runtime.prepare",
         contract_version=CONTRACT_VERSION,
         implementation_version=PREPARATION_PROVIDER_VERSION,
-        title="Runtime preparation admission",
-        description="E3 admission and exact Artifact import only; no source preparation yet.",
+        title="Runtime preparation",
+        description="Permit-bound source/runtime preparation and verified final evidence; never source execution.",
         operations=(
             OperationDefinition(
                 name="prepare",
                 title="Admit preparation",
                 description="Queue a permit-bound preparation Run without executing source.",
                 input_schema=SchemaDeclaration(inline=RuntimePreparationInput.model_json_schema()),
-                result_types=(ResultObjectType.RESOURCE,),
+                result_types=(ResultObjectType.RESOURCE, ResultObjectType.ARTIFACT),
                 retry_semantics=RetrySemantics.UNSAFE,
             ),
         ),

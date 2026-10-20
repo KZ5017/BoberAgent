@@ -83,6 +83,9 @@ def test_runtime_wiring_is_confined_to_reviewed_e5f_modules() -> None:
     wiring = {
         ownership / "runtime_service.py",
         ROOT / "packages/core/src/boberagent_core/preparation/runtime.py",
+        ROOT / "packages/core/src/boberagent_core/preparation/models.py",
+        ROOT / "packages/core/src/boberagent_core/preparation/completion.py",
+        ownership / "completion.py",
         ROOT / "packages/execution-node/src/boberagent_execution_node/transport/endpoint.py",
         ROOT / "packages/transport-mcp/src/boberagent_transport_mcp/client.py",
     }

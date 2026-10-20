@@ -8,7 +8,9 @@ from boberagent_contracts import (
     CapabilityInvocation,
     CapabilityResult,
     CapabilityRunRef,
+    CapabilityRunStatus,
     EventRef,
+    RuntimePreparationInput,
 )
 from boberagent_sdk import (
     AssetSnapshot,
@@ -189,7 +191,47 @@ class ExecutionNodeTransportEndpoint:
             raise ProtocolError("preparation admission is unavailable on this Node")
         lock = self._locks.setdefault(str(envelope.correlation_id), asyncio.Lock())
         async with lock:
+            previous = self._require_store().get_run(envelope.correlation_id)
             self._node.preparation.admit(envelope, principal=principal)
+            runtime = self._node.python_runtime_service
+            if (
+                previous is None
+                or previous.status is not CapabilityRunStatus.QUEUED
+                or runtime is None
+            ):
+                return
+            from boberagent_execution_node.preparation.completion import (
+                NodePreparationCompletionService,
+            )
+
+            artifacts = LocalArtifactSpool(
+                root=self._node.configuration.artifact_spool_root,
+                allowed_source_roots=(),
+                store=self._require_store(),
+                run_ref=envelope.correlation_id,
+                clock=self._node._clock.now,
+            )
+            request = RuntimePreparationInput.model_validate(envelope.delivery.invocation.inputs)
+            completion = NodePreparationCompletionService(
+                runtime, principal, artifacts, permit=request.permit
+            )
+            if not completion.ready(request):
+                return
+            if self._node.runtime is None:
+                raise ProtocolError("Capability Runtime unavailable")
+            # A proven QUEUED admission is not a second Run or retry of execution.
+            # This explicit ordinary invocation replay finishes the existing Run.
+            await self._node.runtime.execute(
+                envelope.delivery.invocation,
+                LocalInvocationEnvironment(
+                    mission=MissionContext(
+                        mission_ref=envelope.delivery.mission.mission_ref,
+                        name=envelope.delivery.mission.name,
+                    )
+                ),
+                invocation_fingerprint=invocation_fingerprint(envelope.delivery),
+                preparation=completion,
+            )
 
     async def accept_preparation_runtime(self, message: bytes, *, principal: str) -> bytes:
         request = parse_python_runtime_request(message)

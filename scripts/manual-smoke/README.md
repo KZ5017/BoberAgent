@@ -5,6 +5,11 @@ Most require an explicitly running Kali Execution Node and lab configuration;
 the M20-A research smoke below is completely offline.
 Do not execute them automatically from CI or normal test runs.
 
+M20-E5/H records below retain their historical closure checkpoints. Subsequent
+[M20-E6 terminal preparation evidence/reconciliation](../../docs/m20/M20E6_IMPLEMENTATION.md)
+uses isolated automated fixtures, not a new real-host smoke. E7–E9 and M20-F remain
+NOT STARTED; M20-E remains OPEN. No retained real E5 runtime needs to be reused or rerun for E6.
+
 ## M20-A deterministic research smoke (offline)
 
 It creates a temporary Core database and verifies bounded hypothesis research, two candidates,

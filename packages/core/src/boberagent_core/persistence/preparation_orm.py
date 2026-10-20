@@ -70,6 +70,10 @@ class RuntimePreparationAttemptRow(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
     terminal_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    completion_context_json: Mapped[JsonObject | None] = mapped_column(JSON)
+    receipt_json: Mapped[JsonObject | None] = mapped_column(JSON)
+    final_manifest_json: Mapped[JsonObject | None] = mapped_column(JSON)
+    completion_error_code: Mapped[str | None] = mapped_column(String(128))
 
 
 class PreparationPermitRow(Base):

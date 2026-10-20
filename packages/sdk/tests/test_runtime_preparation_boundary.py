@@ -1,11 +1,12 @@
-"""E1 SDK preparation port is typed and fake-only, without runtime side effects."""
+"""Typed preparation port, fake expectations and explicit default unavailability."""
 
 import asyncio
 
 import pytest
 from boberagent_contracts import RuntimePreparationInput
-from boberagent_sdk import InputError, RuntimePreparationService
-from boberagent_sdk.testing import FakeRuntimePreparationService
+from boberagent_sdk import DependencyError, InputError, RuntimePreparationService
+from boberagent_sdk.services.preparation import UnavailableRuntimePreparationService
+from boberagent_sdk.testing import FakeExecutionContext, FakeRuntimePreparationService
 from preparation_test_fixtures import permit_fixture, receipt_fixture
 
 
@@ -44,3 +45,17 @@ def test_fake_rejects_receipt_for_other_run() -> None:
     receipt = receipt_fixture().model_copy(update={"run_ref": "run-other"})
     with pytest.raises(ValueError, match="must match"):
         FakeRuntimePreparationService().expect(request, receipt)
+
+
+def test_context_exposes_only_typed_preparation_port_and_default_is_denied() -> None:
+    async def scenario() -> None:
+        context = FakeExecutionContext()
+        request = RuntimePreparationInput(
+            schema_version="runtime-preparation-input-v1", permit=permit_fixture()
+        )
+        context.preparation.expect(request, receipt_fixture())
+        assert await context.preparation.prepare_runtime(request) == receipt_fixture()
+        with pytest.raises(DependencyError, match="No admitted preparation service"):
+            await UnavailableRuntimePreparationService().prepare_runtime(request)
+
+    asyncio.run(scenario())

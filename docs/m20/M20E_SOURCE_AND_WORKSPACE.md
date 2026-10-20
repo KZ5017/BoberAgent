@@ -2,7 +2,8 @@
 
 **Status:** E3 opaque import and E4 bounded materialization COMPLETE, including real
 Core↔Kali CHECK, publication and restart/revalidation acceptance.
-E5 CLOSED, including E5-H real Core↔Kali v2 acceptance PASSED; E6–E9 NOT STARTED.
+E5 CLOSED, including E5-H real Core↔Kali v2 acceptance PASSED; E6 CLOSED;
+E7–E9 NOT STARTED.
 M20-E remains OPEN; M20-F NOT STARTED. See
 [ADR 0019](../adr/0019-m20-e-immutable-source-import-and-prepared-resource.md).
 

@@ -22,6 +22,7 @@ from .services.entities import EntityReader
 from .services.events import EventService
 from .services.interactions import InteractionService
 from .services.logging import CapabilityLogger
+from .services.preparation import RuntimePreparationService
 from .services.processes import ProcessService
 from .services.resources import ResourceService
 from .services.scope import ScopeService
@@ -74,6 +75,9 @@ class ExecutionContext(Protocol):
 
     @property
     def processes(self) -> ProcessService: ...
+
+    @property
+    def preparation(self) -> RuntimePreparationService: ...
 
     @property
     def workspace(self) -> WorkspaceService: ...

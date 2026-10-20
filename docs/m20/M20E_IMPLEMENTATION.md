@@ -4,7 +4,7 @@
 real Core↔Kali E4 acceptance; E5-A–D COMPLETE/CLOSED; E5-E real v7 ACCEPTED;
 E5-F real v9/v10 ACCEPTED; E5-G CLOSED on operator real Kali positive acceptance (2026-10-19);
 E5-H CLOSED / real Core↔Kali v2 acceptance PASSED; E5 CLOSED;
-E6–E9 NOT STARTED;
+E6 CLOSED; E7–E9 NOT STARTED;
 M20-E remains OPEN. M20-D remains CLOSED; M20-F has NOT STARTED. This plan authorizes no
 preparation. The architectural
 decisions are [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md),
@@ -195,7 +195,8 @@ existing production path and adds no provider/authority/schema semantics. The op
 [real v2 acceptance](M20E5H_IMPLEMENTATION.md#operator-supplied-real-corekali-v2-acceptance)
 closed H and E5: same Resource/binding/construction after restart, retained accounting,
 historical replay without current promotion, then fresh VALID. Expired H v1 stays failed.
-M20-E remains OPEN; E6–E9 and M20-F remain NOT STARTED.
+At E5 closure, E6–E9 and M20-F were NOT STARTED. Current E6 work is recorded below;
+E7–E9 and M20-F remain NOT STARTED. M20-E remains OPEN.
 E5-A's typed Resource/evidence models and neutral messages alone did not make a runtime
 available. E5-A added no migration or Node runtime effect.
 Neither A nor B added a runtime/venv, Python subprocess, E5 dispatch or execution authority.
@@ -237,6 +238,14 @@ execution readiness. E6 finalization and E7 recovery keep their existing meaning
 - **Non-goals:** Dependency installation, package cache, source compilation/execution, secrets.
 
 ## E6 — `runtime.prepare` and Core evidence reconciliation
+
+**CLOSED / focused synthetic acceptance PASSED.** See [the E6 implementation/acceptance
+record](M20E6_IMPLEMENTATION.md). The existing Run is finished through the Router and normal
+Capability Runtime/SDK. An explicit Core pump freezes authoritative E4/E5 evidence before
+dispatch, waits for ordinary manifest/proof Artifact sync and independently reconciles both
+summaries before completion. Core migration 0018 retains that context, receipt and manifest;
+there is no new transport or Node schema. The approved manifest-v1 count validator correction
+expresses aggregate E5 count >= exact E4 count, without changing budgets or byte equality.
 
 - **Goal/authority:** Complete the normal capability result and immutable manifest/receipt;
   Core verifies binding, waits for Artifact sync and only then marks attempt COMPLETED.

@@ -3,7 +3,8 @@
 **Status: E5-A–D COMPLETE/CLOSED; E5-E real Kali v7 ACCEPTED; E5-F real v9/v10 ACCEPTED;
 E5-G CLOSED on operator real Kali positive acceptance (2026-10-19);
 E5-H CLOSED / real Core↔Kali v2 acceptance PASSED (reported 2026-10-20); E5 CLOSED.** E1–E3 COMPLETE,
-E4 COMPLETE/CLOSED with real Kali acceptance; E6–E9 NOT STARTED; M20-E OPEN;
+E4 COMPLETE/CLOSED with real Kali acceptance; E6 CLOSED;
+E7–E9 NOT STARTED; M20-E OPEN;
 M20-F NOT STARTED. This package defines the preparation boundary, not permission,
 blanket host capability attestation or execution authorization. The bounded G synthetic
 vertical passed as recorded in [G acceptance](M20E5G_IMPLEMENTATION.md#operator-supplied-real-kali-configured-host-acceptance).
@@ -45,7 +46,7 @@ construction and becomes READY only after verified durable publication. No provi
 | --- | --- | --- |
 | E4, already closed | Exact immutable source publication and its existing receipt | Python Resource or general subprocess confinement |
 | E5 | Resource construction, full preparation enforcement, runtime evidence, local revalidation/cleanup foundations | Terminal preparation Result/Core completion or acquired-code launch |
-| E6, not started | Final `RuntimePreparationManifest`, normal receipt/Result, Artifact sync and Core reconciliation | Execution authorization |
+| E6, CLOSED | Final `RuntimePreparationManifest`, normal receipt/Result, Artifact sync and Core reconciliation | Execution authorization |
 | E7, not started | Full preparation recovery/reuse/cleanup acceptance across components | Acquired-code launch |
 | E8/E9, not started | Complete synthetic/real E acceptance | Execution |
 | M20-F, not started | Separate current execution authorization, execution gate, controlled launch/evidence | Inferring authority from an E Resource |
@@ -59,7 +60,8 @@ Production `ProcessService.execute_plan()` remains denied throughout E.
 ## Pre-E5 repository audit (historical)
 
 This inventory records the original implementation gaps, not the post-H repository
-status. E5-A–H have since completed/closed; E6 finalization remains NOT STARTED.
+status. E5-A–H have since completed/closed; subsequent E6 finalization is recorded in
+[the separate E6 implementation record](M20E6_IMPLEMENTATION.md).
 
 | Existing component | Reuse / exact gap |
 | --- | --- |

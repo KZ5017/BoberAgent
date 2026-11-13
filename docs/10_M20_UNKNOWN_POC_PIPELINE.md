@@ -1,5 +1,11 @@
 # Milestone 20 — Generic Unknown PoC Pipeline
 
+**Archival notice — 2026-11-13:** Original M20 development is deliberately paused.
+E1–E6 remain CLOSED; **E7 is INCOMPLETE — DEVELOPMENT PAUSED**; E8–E9 and M20-F
+remain NOT STARTED; M20-E remains OPEN. The accepted planning/implementation history
+below is preserved. See the [pause and resumption handoff](m20/M20_ORIGINAL_TRACK_PAUSED.md)
+for the interrupted draft, approved-but-unimplemented E7 decisions and current status.
+
 **Status:** Normative implementation plan; M20-A is implemented and **M20-B — Acquisition +
 Immutable Provenance is CLOSED**. B1–B4 established the bounded acquisition path; B5 validated
 it against real public GitHub through a Kali Execution Node, TLS/MCP, Node→Core Artifact sync,
@@ -17,7 +23,7 @@ E5-F real v9/v10 acceptance PASSED; E5-G CLOSED on operator real Kali configured
 acceptance (2026-10-19); E5-H CLOSED / real Core↔Kali v2 acceptance PASSED (reported 2026-10-20);
 M20-E5 CLOSED;
 M20-E6 terminal evidence/reconciliation is CLOSED;
-E7–E9 have NOT STARTED;
+E7 is INCOMPLETE — DEVELOPMENT PAUSED; E8–E9 have NOT STARTED;
 M20-E remains OPEN; M20-F has NOT STARTED.** See the
 [M20-D closure record](m20/M20D_IMPLEMENTATION.md#m20-d-closed-real-retained-source-negative-acceptance) and the
 [retained-source acceptance record](m20/M20C_IMPLEMENTATION.md#m20-c-closed-real-retained-source-acceptance).
@@ -107,7 +113,7 @@ be representable in plan intent but have no M20-v1 automatic adapter.
 | M20-B | [Acquisition and provenance](m20/02_ACQUISITION_AND_PROVENANCE.md) | pinned, hashed Artifact; no execution |
 | M20-C | [Inspection and classification](m20/03_INSPECTION_AND_CLASSIFICATION.md) | **CLOSED:** typed facts, explicit reasons, fail-closed uncertainty; calibrated real C4 accepted |
 | M20-D | [ExecutionPlan and policy](m20/04_EXECUTION_PLAN_AND_POLICY.md) | **CLOSED:** D1–D8, synthetic D7 and real retained-source negative D8 accepted; STOP before permission/dispatch |
-| M20-E | [Runtime preparation](m20/M20E_IMPLEMENTATION.md), [E5 architecture](m20/M20E5_ARCHITECTURE.md), [E6 completion](m20/M20E6_IMPLEMENTATION.md) and [E/F boundary](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | **E1–E5 CLOSED/COMPLETE; E5-H real v2 PASS; E6 CLOSED; E7–E9 NOT STARTED; overall OPEN:** E6 owns normal terminal preparation evidence and Core completion, never execution readiness/authorization |
+| M20-E | [Runtime preparation](m20/M20E_IMPLEMENTATION.md), [E5 architecture](m20/M20E5_ARCHITECTURE.md), [E6 completion](m20/M20E6_IMPLEMENTATION.md) and [E/F boundary](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md) | **E1–E5 CLOSED/COMPLETE; E5-H real v2 PASS; E6 CLOSED; E7 INCOMPLETE — DEVELOPMENT PAUSED; E8–E9 NOT STARTED; overall OPEN:** E6 owns normal terminal preparation evidence and Core completion, never execution readiness/authorization |
 | M20-F | [Controlled execution](m20/05_RUNTIME_PREPARATION_AND_EXECUTION.md#m20-f-execute-and-capture-evidence) | **NOT STARTED:** separate execution authorization, managed evidence and honest Result |
 | M20-G | [Interpretation, adaptation, HITL](m20/06_INTERPRETATION_ADAPTATION_AND_HITL.md) | separate outcome, bounded attempts, durable wait/stop |
 | M20-H | [Vertical smoke and acceptance](m20/07_VERTICAL_SMOKE_AND_ACCEPTANCE.md) | controlled fixture then authorized real unknown PoC |

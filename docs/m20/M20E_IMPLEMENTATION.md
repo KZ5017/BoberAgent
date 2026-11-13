@@ -1,10 +1,16 @@
 # M20-E — Runtime Preparation implementation plan
 
+**Archival notice — 2026-11-13:** Original development is deliberately paused, not
+completed or permanently cancelled. E1–E6 remain CLOSED; **E7 is INCOMPLETE —
+DEVELOPMENT PAUSED**; E8–E9 and M20-F remain NOT STARTED; M20-E remains OPEN.
+See the [self-contained handoff and archived draft](M20_ORIGINAL_TRACK_PAUSED.md).
+The implementation plan and accepted E1–E6 history below are retained, not new authority.
+
 **Architecture status:** SPECIFIED. **Implementation status:** E1–E4 COMPLETE, including
 real Core↔Kali E4 acceptance; E5-A–D COMPLETE/CLOSED; E5-E real v7 ACCEPTED;
 E5-F real v9/v10 ACCEPTED; E5-G CLOSED on operator real Kali positive acceptance (2026-10-19);
 E5-H CLOSED / real Core↔Kali v2 acceptance PASSED; E5 CLOSED;
-E6 CLOSED; E7–E9 NOT STARTED;
+E6 CLOSED; E7 INCOMPLETE — DEVELOPMENT PAUSED; E8–E9 NOT STARTED;
 M20-E remains OPEN. M20-D remains CLOSED; M20-F has NOT STARTED. This plan authorizes no
 preparation. The architectural
 decisions are [ADR 0018](../adr/0018-m20-e-preparation-authority-and-applicability.md),
@@ -263,6 +269,12 @@ expresses aggregate E5 count >= exact E4 count, without changing budgets or byte
 - **Non-goals:** Vulnerability interpretation, PoC run, target network, execution authorization.
 
 ## E7 — Recovery, reuse and cleanup acceptance
+
+**INCOMPLETE — DEVELOPMENT PAUSED.** The successor-attempt and neutral maintenance
+designs were approved but not completed. Only an unreviewed 126-line transport draft
+was written; it is now archived outside production packages. No E7 acceptance is
+claimed. See the [handoff](M20_ORIGINAL_TRACK_PAUSED.md) before any separately authorized
+resumption. The following remains planned work.
 
 - **Goal/authority:** Demonstrate idempotent explicit pumping/reconciliation and conservative
   restart semantics. Historical completion and current availability remain separate.

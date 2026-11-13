@@ -1,0 +1,126 @@
+"""Safety-only preparation maintenance; correlation is NOT preparation authority."""
+
+import hashlib
+import json
+from enum import StrEnum
+from typing import Literal, Self
+
+from boberagent_contracts import CapabilityRunRef, PreparationPermitRef, RuntimePreparationRef
+from boberagent_contracts.python_runtime import (
+    PythonRuntimeRequestBinding,
+    RuntimeResourceRef,
+)
+from boberagent_contracts.runtime_preparation import PreparationNodeId
+from pydantic import AwareDatetime, model_validator
+
+from .errors import MalformedMessage
+from .models import TransportMessageId, TransportModel
+
+
+class MaintenanceOperation(StrEnum):
+    STATUS = "STATUS"
+    CANCEL = "CANCEL"
+    CLEANUP = "CLEANUP"
+
+
+class PreparationMaintenanceRequest(TransportModel):
+    protocol_version: Literal["preparation-maintenance-v1"] = "preparation-maintenance-v1"
+    message_type: Literal["preparation.maintenance.request"] = "preparation.maintenance.request"
+    message_id: TransportMessageId
+    node_id: PreparationNodeId
+    preparation_ref: RuntimePreparationRef
+    permit_ref: PreparationPermitRef
+    permit_sha256: str
+    run_ref: CapabilityRunRef
+    operation: MaintenanceOperation
+    timestamp: AwareDatetime
+
+    @model_validator(mode="after")
+    def identity(self) -> Self:
+        if len(self.permit_sha256) != 64 or any(c not in "0123456789abcdef" for c in self.permit_sha256):
+            raise ValueError("invalid permit digest")
+        if self.message_id != maintenance_message_id(
+            self.node_id, self.preparation_ref, self.permit_ref,
+            self.permit_sha256, self.run_ref, self.operation,
+        ):
+            raise ValueError("maintenance message identity mismatch")
+        return self
+
+
+def maintenance_message_id(
+    node_id: str, preparation_ref: RuntimePreparationRef, permit_ref: PreparationPermitRef,
+    permit_sha256: str, run_ref: CapabilityRunRef, operation: MaintenanceOperation,
+) -> TransportMessageId:
+    value = json.dumps(
+        ["preparation-maintenance-v1", node_id, str(preparation_ref), str(permit_ref),
+         permit_sha256, str(run_ref), operation.value], separators=(",", ":"),
+    ).encode()
+    return TransportMessageId("preparation-maintenance:" + hashlib.sha256(value).hexdigest())
+
+
+class PreparationMaintenanceEvidence(TransportModel):
+    protocol_version: Literal["preparation-maintenance-v1"] = "preparation-maintenance-v1"
+    message_type: Literal["preparation.maintenance.evidence"] = "preparation.maintenance.evidence"
+    request_message_id: TransportMessageId
+    node_id: PreparationNodeId
+    preparation_ref: RuntimePreparationRef
+    permit_ref: PreparationPermitRef
+    permit_sha256: str
+    run_ref: CapabilityRunRef
+    operation: MaintenanceOperation
+    state: Literal["ACTIVE", "RETIRED", "CLEANED", "UNCERTAIN"]
+    resource_ref: RuntimeResourceRef | None = None
+    request_binding: PythonRuntimeRequestBinding | None = None
+    binding_sha256: str | None = None
+    owned_processes_empty: bool
+    cleanup_complete: bool
+    history_preserved: Literal[True] = True
+    execution_authorized: Literal[False] = False
+    timestamp: AwareDatetime
+
+    @model_validator(mode="after")
+    def coherent(self) -> Self:
+        if self.cleanup_complete != (self.state == "CLEANED") or (
+            self.cleanup_complete and not self.owned_processes_empty
+        ):
+            raise ValueError("cleanup needs durable completion and empty ownership")
+        if (self.resource_ref is None) != (self.request_binding is None):
+            raise ValueError("Resource evidence requires its exact request binding")
+        if self.request_binding is not None and (
+            self.request_binding.run_ref != self.run_ref
+            or self.request_binding.permit_ref != self.permit_ref
+            or self.request_binding.permit_sha256 != self.permit_sha256
+            or self.request_binding.spec.preparation_ref != self.preparation_ref
+            or self.request_binding.spec.node_id != self.node_id
+        ):
+            raise ValueError("maintenance Resource correlation mismatch")
+        return self
+
+
+def parse_maintenance_request(data: bytes) -> PreparationMaintenanceRequest:
+    try:
+        return PreparationMaintenanceRequest.model_validate_json(data)
+    except ValueError:
+        raise MalformedMessage("invalid preparation maintenance request") from None
+
+
+def parse_maintenance_evidence(data: bytes) -> PreparationMaintenanceEvidence:
+    try:
+        return PreparationMaintenanceEvidence.model_validate_json(data)
+    except ValueError:
+        raise MalformedMessage("invalid preparation maintenance evidence") from None
+
+
+def verify_maintenance_response(
+    request: PreparationMaintenanceRequest, evidence: PreparationMaintenanceEvidence,
+) -> None:
+    if (
+        evidence.request_message_id != request.message_id
+        or evidence.node_id != request.node_id
+        or evidence.preparation_ref != request.preparation_ref
+        or evidence.permit_ref != request.permit_ref
+        or evidence.permit_sha256 != request.permit_sha256
+        or evidence.run_ref != request.run_ref
+        or evidence.operation != request.operation
+    ):
+        raise MalformedMessage("maintenance response identity mismatch")

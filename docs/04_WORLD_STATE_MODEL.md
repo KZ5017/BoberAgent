@@ -980,7 +980,8 @@ applicability status
 ExecutionPlan
 ```
 
-ExploitCandidate is state about a candidate technique, not executable code itself.
+ExploitCandidate is state about a candidate technique, not executable code itself. This
+conceptual metadata does not require candidate discovery, source acquisition or execution services.
 
 Executable/source material belongs to Artifact.
 
@@ -988,7 +989,9 @@ Executable/source material belongs to Artifact.
 
 # 39. ExecutionPlan
 
-ExecutionPlan may be represented in World State when generated for dynamic code or unknown PoCs.
+ExecutionPlan is a retained structured-intent concept. Its possible representation in World State
+does not require a producer, execution backend or generic unknown-PoC pipeline, and is not execution
+authorization.
 
 It SHOULD record:
 
@@ -1585,46 +1588,11 @@ Each transition remains explicit.
 
 ---
 
-# 61. Unknown PoC Example
+# 61. Unknown PoC Example — Withdrawn
 
-Initial state:
-
-```text
-Technology
-Vulnerability candidate
-ExploitCandidate
-repository Artifact
-```
-
-Inspection produces:
-
-```text
-ExecutionPlan
-```
-
-Execution may produce:
-
-```text
-Observation
-Artifact
-Effect
-Session
-UNKNOWN outcome
-```
-
-If a Session appears:
-
-```text
-session.created
-      ↓
-Session
-      ↓
-AccessContext
-      ↓
-new post-access capabilities become applicable
-```
-
-The workflow does not need special knowledge of that specific PoC.
+The former acquisition → inspection → plan → execution example is not a World State acceptance
+case following [ADR 0013](adr/0013-reject-generic-unknown-poc-pipeline.md). The generic evidence,
+Session, AccessContext and outcome models remain unchanged.
 
 ---
 
@@ -1995,7 +1963,7 @@ Examples:
 AD-assessment context
 web-assessment context
 post-access context
-PoC-evaluation context
+evidence-review context
 ```
 
 This reduces:
@@ -2282,8 +2250,6 @@ hash recovery
 listener → reverse shell
 
 SSH/WinRM sessions
-
-unknown PoC execution
 
 new credentials
 

@@ -1,6 +1,7 @@
 # BoberAgent Core — System Architecture
 
-**Status:** Initial normative architecture
+**Status:** Normative architecture, with the M20 direction removed by
+[ADR 0013](adr/0013-reject-generic-unknown-poc-pipeline.md)
 **Document:** `docs/01_SYSTEM_ARCHITECTURE.md`
 **Related:** `00_PROJECT_CONTEXT.md`, `02_CAPABILITY_CONTRACT.md`
 
@@ -70,7 +71,6 @@ The same architecture must support:
 * persistent remote sessions;
 * Burp-backed workflows;
 * hash or token analysis;
-* unknown third-party PoCs;
 * privilege and access transitions;
 * human-assisted execution.
 
@@ -100,7 +100,6 @@ The LLM is primarily responsible for:
 * interpretation of unstructured information;
 * hypothesis generation;
 * adaptive decision-making;
-* unknown PoC inspection;
 * choosing among non-deterministic alternatives.
 
 ---
@@ -686,9 +685,7 @@ The LLM Orchestrator supplies:
 * unstructured interpretation;
 * hypothesis generation;
 * knowledge-assisted decision-making;
-* unknown tool-output interpretation;
-* PoC inspection;
-* ExecutionPlan generation.
+* unknown tool-output interpretation.
 
 The LLM does not receive unrestricted execution access.
 
@@ -756,14 +753,9 @@ It records:
 * timeout;
 * resource state.
 
-Two primary execution paths are expected:
-
-```text
-managed known-tool execution
-planned arbitrary execution
-```
-
-Unknown PoCs use validated ExecutionPlans rather than direct arbitrary LLM shell execution.
+Managed known-tool execution is the implemented process path.
+The retained ExecutionPlan Contract/SDK surface does not imply an arbitrary-code backend;
+production `execute_plan()` remains denied. An LLM proposal never grants process authority.
 
 ---
 
@@ -833,12 +825,12 @@ Capabilities must use managed workspaces for temporary execution state.
 
 Especially relevant to:
 
-* repository acquisition;
-* PoC inspection;
+* managed tool output;
+* local Artifact analysis;
 * compilation;
 * dependency installation;
 * virtual environments;
-* generated payload material.
+* generated material used by approved capabilities.
 
 A workspace has a logical handle.
 
@@ -927,17 +919,17 @@ Human assistance must not terminate a workflow branch merely because automation 
 Example:
 
 ```text
-PoC execution
+Approved capability
    ↓
-known payload variants fail
+a required parameter is unavailable
    ↓
 InteractionRequest
    ↓
-human provides parameter or modified artifact
+human provides the requested non-secret parameter
    ↓
 Capability resumes
    ↓
-Session established
+ordinary CapabilityResult
    ↓
 normal workflow continues
 ```
@@ -973,33 +965,12 @@ Mission cleanup procedures can later operate from recorded Effects.
 
 ---
 
-# 13. Unknown PoC Architecture
+# 13. Unknown PoC Architecture — Withdrawn
 
-Unknown PoCs are treated as arbitrary acquired artifacts.
-
-Typical flow:
-
-```text
-Artifact acquisition
-        ↓
-PoC inspection
-        ↓
-ExecutionPlan
-        ↓
-Plan validation
-        ↓
-Policy evaluation
-        ↓
-Runtime preparation
-        ↓
-Managed execution
-        ↓
-Artifact / Observation / Effect / Session / Unknown result
-```
-
-The platform must allow the result to remain unknown.
-
-Unknown output is preserved and may be routed to an interpreter or human interaction.
+The former integrated unknown-PoC architecture is permanently rejected by
+[ADR 0013](adr/0013-reject-generic-unknown-poc-pipeline.md). It imposes no acquisition,
+inspection, planning, runtime preparation, execution or adaptation requirement on the platform.
+Generic evidence preservation and UNKNOWN outcome semantics remain applicable.
 
 ---
 
@@ -1154,11 +1125,10 @@ The architecture is considered viable only while the same fundamental model natu
 2. Stateful Playwright browser interaction.
 3. Long-running listener followed by incoming shell.
 4. Burp-backed interactive web assessment.
-5. Unknown third-party PoC acquisition, inspection and execution.
-6. Persistent remote-session interaction.
-7. Vertical and horizontal access transitions.
-8. Local hash, cookie and JWT processing.
-9. Human-assisted execution and resume.
+5. Persistent remote-session interaction.
+6. Vertical and horizontal access transitions.
+7. Local hash, cookie and JWT processing.
+8. Human-assisted execution and resume.
 
 New use cases should first be expressed through existing primitives.
 

@@ -10,6 +10,17 @@ Implementation convenience MUST NOT override the documented architecture.
 
 Before making non-trivial changes, understand the relevant specifications.
 
+## Current project direction
+
+Milestone 20 — Generic Unknown PoC Pipeline is permanently rejected and removed from the
+development plan by an explicit owner decision; see
+[ADR 0013](docs/adr/0013-reject-generic-unknown-poc-pipeline.md).
+This is not a pause or deferral. Earlier M20 instructions and plans are inactive, and M20 is
+neither an implementation requirement nor a prerequisite for other work. Do not restore the
+integrated pipeline under another name without a new explicit owner decision. Preserve the
+accepted M1–M19 architecture, contracts and capabilities. This decision does not prohibit
+authorized pentesting through existing platform boundaries.
+
 ---
 
 # 2. Required Reading
@@ -410,7 +421,8 @@ when ProcessService exists for the task.
 
 Known tools execute through managed tool execution.
 
-Unknown acquired code should execute through validated `ExecutionPlan` semantics.
+The existing `ExecutionPlan` model and SDK surface do not authorize acquired-code execution or
+require a runtime backend. Production `execute_plan()` remains denied; do not bypass that boundary.
 
 Do not expose a generic unrestricted remote-shell API as the Execution Node architecture.
 

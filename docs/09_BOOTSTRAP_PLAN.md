@@ -1,6 +1,7 @@
 # BoberAgent Core — Bootstrap Implementation Plan v1
 
-**Status:** Initial implementation plan
+**Status:** Completed M0–M19 baseline retained; M20 permanently rejected by
+[ADR 0013](adr/0013-reject-generic-unknown-poc-pipeline.md)
 **Document:** `docs/09_BOOTSTRAP_PLAN.md`
 **Related:** `00_PROJECT_CONTEXT.md` through `08_REFERENCE_CAPABILITIES.md`
 
@@ -1958,14 +1959,11 @@ Listeners
 
 Burp
 
-PoC execution
-
 Privilege escalation
 ```
 
-The architecture already accommodates them.
-
-They are not required to prove the first slice.
+These examples are outside the first slice; they are not an authorization or promise to implement
+all later capabilities. M20 is permanently excluded as recorded in section 100.
 
 ---
 
@@ -2117,18 +2115,15 @@ return Observation
 Test:
 
 ```text
-Core restart while waiting
+Core restart or transport disconnect while Node remains live:
+response arrives later → same Run resumes
 
-Node restart while waiting
-
-transport disconnect while waiting
-
-response arrives later
-
-same Run resumes
+Node restart while waiting:
+non-restorable Run fails → Interaction cancelled → late response rejected
 ```
 
-Only after this works should unknown-PoC human assistance depend on it.
+The synthetic interaction proof is independent of the rejected M20 pipeline. Its accepted M15
+restart semantics remain defined by ADR 0008; no unknown-PoC dependency follows from it.
 
 ---
 
@@ -2258,48 +2253,16 @@ Do NOT make the first LLM integration:
 
 ---
 
-# 100. Milestone 20 — Unknown PoC Pipeline
+# 100. Milestone 20 — Permanently rejected
 
-Only after:
+**The Generic Unknown PoC Pipeline is permanently rejected and removed from the development
+plan by explicit project-owner decision.** It is not paused, deferred or a prerequisite for any
+other work. The former integrated research/acquisition/inspection/planning/runtime/execution/
+interpretation/adaptation sequence is not an implementation or acceptance requirement.
 
-```text
-Artifacts
-
-Workspaces
-
-Resources
-
-Sessions
-
-Secrets
-
-Policy
-
-Interaction
-
-Knowledge
-
-Reasoner
-```
-
-are sufficiently real should the generic PoC pipeline be implemented.
-
-Sequence:
-
-```text
-research
-→ acquire
-→ inspect
-→ ExecutionPlan
-→ validate
-→ prepare runtime
-→ execute
-→ interpret
-→ adapt
-→ human assistance if required
-```
-
-This pipeline should be an integration test of the architecture, not the foundation on which the foundation is debugged.
+[ADR 0013](adr/0013-reject-generic-unknown-poc-pipeline.md) records the decision. Restoring the
+concept, including under another name, requires a new explicit owner decision. M0–M19 and their
+accepted architectural contracts remain intact.
 
 ---
 
@@ -2349,8 +2312,6 @@ M17  Procedure/Knowledge foundation
 M18  Semantic retrieval
 
 M19  LLM Reasoner
-
-M20  Generic unknown PoC pipeline
 ```
 
 ---
@@ -2379,8 +2340,6 @@ Secrets
 Knowledge
     ↓
 Reasoning
-    ↓
-unknown arbitrary execution
 ```
 
 Each stage stresses a new dimension while reusing the previous platform.

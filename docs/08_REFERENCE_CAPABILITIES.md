@@ -39,9 +39,10 @@ The initial reference set contains:
 5. web.proxy_assessment
 6. token.jwt_assessment
 7. secret.hash_recovery
-8. poc.candidate_execution
 9. access.transition
 ```
+
+Reference 8 is withdrawn in section 42; the remaining reference numbers are preserved.
 
 Together these exercise:
 
@@ -55,7 +56,6 @@ target-facing activity
 secret handling
 Artifact processing
 human interaction
-unknown third-party code
 target-side Effects
 privilege/access transitions
 ```
@@ -1028,234 +1028,14 @@ Artifact evidence
 
 ---
 
-# 42. Reference 8 — `poc.candidate_execution`
-
-## 42.1 Purpose
-
-Execute a previously acquired and inspected PoC candidate through a validated ExecutionPlan.
-
-This is deliberately generic.
-
-The Capability MUST NOT assume:
-
-```text
-Python
-reverse shell
-RCE
-GitHub
-one specific CVE
-```
-
----
-
-# 43. Required Inputs
-
-Conceptually:
-
-```yaml
-exploit_candidate_ref: exploit-candidate-17
-
-source_artifact_ref: artifact-repository-91
-
-execution_plan_ref: plan-44
-
-target_ref: asset-or-application-ref
-
-optional_resource_refs:
-  - listener
-  - runtime
-```
-
-Inputs depend on the validated ExecutionPlan.
-
----
-
-# 44. Preconditions
-
-At minimum:
-
-```text
-ExecutionPlan VALIDATED
-
-policy permits execution
-
-target in scope
-
-required runtime Resources available
-
-required Artifacts available
-```
-
-If policy requires explicit approval:
-
-```text
-ExecutionPlan APPROVED
-```
-
-must also be satisfied.
-
----
-
-# 45. Runtime Preparation
-
-The execution path MAY require:
-
-```text
-Workspace
-PythonEnvironment Resource
-Container Resource
-compiler
-listener
-other runtime dependency
-```
-
-These are resolved through SDK services.
-
----
-
-# 46. Execution
-
-Conceptually:
-
-```text
-PoC Artifact
-+
-ExecutionPlan
-      ↓
-managed Workspace
-      ↓
-managed Runtime
-      ↓
-ProcessService.execute_plan(...)
-      ↓
-evidence capture
-```
-
-The Capability implementation does not convert the ExecutionPlan into an unrestricted opaque shell escape.
-
----
-
-# 47. Valid PoC Outcomes
-
-The Result MAY contain any combination of:
-
-```text
-Observation
-Finding
-Artifact
-Session
-Resource
-Effect
-Diagnostic
-```
-
-Outcome may be:
-
-```text
-SUCCESS
-NEGATIVE
-PARTIAL
-UNKNOWN
-```
-
----
-
-# 48. Unknown Result
-
-Example:
-
-```text
-process exited
-target responded unexpectedly
-no clear success indicator
-no clear failure indicator
-```
-
-Correct response:
-
-```text
-COMPLETED
-+
-UNKNOWN
-+
-raw evidence
-```
-
-not fabricated success or failure.
-
----
-
-# 49. Human-Assisted PoC
-
-Suppose known execution variants fail.
-
-The Run MAY:
-
-```text
-persist Checkpoint
-      ↓
-InteractionRequest
-      ↓
-WAITING_INPUT
-```
-
-Example request:
-
-```text
-Known execution variants did not produce the expected result.
-
-Choose:
-- retry with alternate known configuration
-- provide custom parameter
-- provide modified Artifact
-- stop this branch
-```
-
-After response:
-
-```text
-Run resumes
-```
-
-using the same logical `run_id`.
-
----
-
-# 50. Human Assistance Provenance
-
-The final CapabilityResult is ordinary.
-
-However, Run/Decision history SHOULD record:
-
-```text
-human assistance occurred
-interaction ID
-human-supplied input reference
-```
-
-The next Workflow step does not require a special human-assisted success type.
-
----
-
-# 51. PoC Acceptance Tests
-
-Must cover:
-
-```text
-unknown runtime type support through ExecutionPlan
-Workspace isolation
-optional listener Resource
-UNKNOWN outcome
-human wait/resume
-Checkpoint persistence
-node restart during WAITING_INPUT
-Effect reporting
-Session creation
-unsafe automatic retry prevention
-raw evidence retention
-```
-
-This is one of the primary architecture stress tests.
+# 42. Reference 8 — `poc.candidate_execution` — Withdrawn
+
+This former reference and its sections 43–51 described the generic unknown-PoC pipeline.
+They are withdrawn following the permanent rejection recorded in
+[ADR 0013](adr/0013-reject-generic-unknown-poc-pipeline.md). The identifier is retained here only
+to explain the historical reference number; it is not an active capability, implementation task
+or architecture acceptance requirement. Generic Result, Resource, Session and evidence semantics
+are unchanged.
 
 ---
 
@@ -1497,46 +1277,19 @@ The local-analysis stage and target-facing stage remain separate.
 
 ---
 
-# 63. Cross-Reference Scenario — CVE to Session
+# 63. Cross-Reference Scenario — CVE to Session — Withdrawn
 
-```text
-Technology/version
-      ↓
-vulnerability research
-      ↓
-Vulnerability candidate
-      ↓
-PoC research
-      ↓
-ExploitCandidate
-      ↓
-repository Artifact
-      ↓
-PoC inspection
-      ↓
-ExecutionPlan
-      ↓
-runtime preparation
-      ↓
-listener Resource if required
-      ↓
-poc.candidate_execution
-      ↓
-Session
-      ↓
-AccessContext
-```
-
-The Workflow does not need prior knowledge of the PoC's language or payload mechanism.
+The former research → source → ExecutionPlan → runtime → `poc.candidate_execution` chain is
+withdrawn with M20. It is not a prerequisite for the remaining reference capabilities.
 
 ---
 
 # 64. Cross-Reference Scenario — Human Rescue
 
 ```text
-PoC Run
+Approved Capability Run
       ↓
-known variants fail
+a required parameter is unavailable
       ↓
 no new deterministic fallback
       ↓
@@ -1817,7 +1570,6 @@ Typical reference declarations:
 | `session.command_interaction` | active                        | depends on command           |
 | `token.jwt_assessment`        | none                          | none                         |
 | `secret.hash_recovery`        | none                          | none                         |
-| `poc.candidate_execution`     | active                        | possible/unknown             |
 | `access.transition`           | active                        | possible/expected            |
 
 Concrete manifests MUST be more precise than this summary.
@@ -1836,7 +1588,6 @@ Typical starting semantics:
 | hash recovery              | SAFE/CONDITIONAL |
 | browser navigation         | CONDITIONAL      |
 | listener start             | CONDITIONAL      |
-| arbitrary PoC              | UNKNOWN          |
 | target access transition   | UNSAFE/UNKNOWN   |
 
 Capability manifests define the authoritative value.
@@ -1850,8 +1601,6 @@ Human Interaction SHOULD be available where it adds meaningful recovery.
 Particularly relevant:
 
 ```text
-unknown PoC adaptation
-ambiguous runtime setup
 manual Artifact modification
 complex interactive web flow
 parameter selection
@@ -1953,8 +1702,7 @@ Resource lifetime must be tested independently from CapabilityRun lifetime.
 At least the following reference cases SHOULD eventually be tested across Execution Node restart:
 
 ```text
-persisted Python environment Resource
-WAITING_INPUT PoC Run
+WAITING_INPUT synthetic capability Run (non-restorable after Node restart)
 Artifact spool pending sync
 lost browser Session
 completed Result pending delivery
@@ -2079,7 +1827,6 @@ remote shell
 proxy-backed web assessment
 local crypto/token analysis
 GPU/CPU cracking
-unknown PoC
 access transition
 human assistance
 ```

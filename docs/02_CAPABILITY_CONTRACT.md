@@ -285,7 +285,7 @@ This permits target-independent capabilities such as:
 hash recovery
 token analysis
 file parsing
-PoC inspection
+local Artifact analysis
 runtime preparation
 ```
 
@@ -990,7 +990,8 @@ Capability implementations SHOULD use platform Process Manager APIs instead of u
 
 Known tools SHOULD execute through managed tool execution.
 
-Unknown or arbitrary acquired code SHOULD execute through validated ExecutionPlans and managed runtime services.
+The existence of an ExecutionPlan does not authorize execution. Unsupported process operations
+MUST fail explicitly rather than bypass managed services.
 
 ---
 
@@ -1024,41 +1025,18 @@ EXECUTED
 REJECTED
 ```
 
-LLMs MAY generate ExecutionPlans.
-
-LLMs MUST NOT thereby gain unrestricted process execution rights.
+This existing Contract model is retained independently of the rejected M20 pipeline. It does not
+require an acquired-code execution backend. Production `execute_plan()` remains denied; a plan
+status or LLM proposal MUST NOT confer process execution rights.
 
 ---
 
-# 37. Unknown PoC Handling
+# 37. Unknown PoC Handling — Withdrawn
 
-Unknown third-party PoCs MUST be representable without registering a new special-case Core pathway for each PoC.
-
-Typical handling:
-
-```text
-Artifact
-→ inspect
-→ ExecutionPlan
-→ validate
-→ policy
-→ prepare runtime
-→ execute
-→ interpret
-```
-
-A PoC execution MAY produce any combination of:
-
-```text
-Observation
-Finding
-Artifact
-Resource
-Session
-Effect
-Diagnostic
-UNKNOWN outcome
-```
+The former mandatory integrated handling of unknown third-party PoCs is withdrawn by
+[ADR 0013](adr/0013-reject-generic-unknown-poc-pipeline.md). It is not a Contract acceptance
+requirement. Generic CapabilityResult, Artifact, Effect, Session and UNKNOWN semantics remain
+unchanged for authorized capabilities.
 
 ---
 
@@ -1405,7 +1383,7 @@ Target-independent local operations such as:
 hash recovery
 JWT analysis
 cookie analysis
-PoC source inspection
+local Artifact inspection
 ```
 
 MUST be valid capabilities without artificial Target references.
@@ -1432,9 +1410,9 @@ No privilege-escalation-specific Core exception is permitted.
 
 ---
 
-# 53. Reference Case: Human-Assisted PoC
+# 53. Reference Case: Human-Assisted Capability
 
-A PoC that cannot proceed autonomously MUST be able to:
+An approved capability requiring a bounded non-secret parameter uses:
 
 ```text
 RUNNING
@@ -1459,11 +1437,10 @@ Any future major Contract revision SHOULD be checked against at least the follow
 2. stateful Playwright browser
 3. long-running listener + incoming shell
 4. Burp-backed interactive assessment
-5. unknown acquired PoC
-6. persistent remote session
-7. vertical/horizontal access transition
-8. local hash/JWT processing
-9. human-assisted execution
+5. persistent remote session
+6. vertical/horizontal access transition
+7. local hash/JWT processing
+8. human-assisted execution
 ```
 
 If one scenario requires a unique Core exception, the abstraction SHOULD be reconsidered before adding the exception.

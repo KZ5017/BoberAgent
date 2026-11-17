@@ -21,6 +21,11 @@ The authoritative design specifications live in [`docs/`](docs/). Start with
 [`docs/01_SYSTEM_ARCHITECTURE.md`](docs/01_SYSTEM_ARCHITECTURE.md), then read the normative document
 for the area being changed. [`AGENTS.md`](AGENTS.md) contains mandatory rules for coding agents.
 
+The M1–M19 foundation is retained. **Milestone 20 — Generic Unknown PoC Pipeline is permanently
+rejected and removed from the development plan**, not paused or deferred. See the owner decision
+in [ADR 0013](docs/adr/0013-reject-generic-unknown-poc-pipeline.md). It is not a prerequisite for
+further development and may not be restored under another name without a new explicit owner decision.
+
 ## Repository layout
 
 - `packages/contracts`: transport-independent Capability Contract v1 models

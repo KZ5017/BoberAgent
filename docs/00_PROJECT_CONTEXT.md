@@ -1,5 +1,9 @@
 # BoberAgent Core — Project Context
 
+**Current direction:** the M1–M19 foundation is retained; the Generic Unknown PoC Pipeline
+is permanently rejected, not deferred. [ADR 0013](adr/0013-reject-generic-unknown-poc-pipeline.md)
+records the owner decision and its scope.
+
 ## 1. Purpose
 
 BoberAgent Core is a capability-driven orchestration platform for authorized penetration testing, security labs, CTF environments, and similar controlled assessment workflows.
@@ -123,7 +127,6 @@ interactive sessions
 listeners
 external research
 runtime preparation
-unknown third-party PoCs
 human-assisted execution
 target-side state changes
 ```
@@ -329,7 +332,6 @@ cookie analysis
 token generation
 file parsing
 artifact inspection
-PoC preparation
 dependency analysis
 repository processing
 runtime compilation/preparation
@@ -361,43 +363,13 @@ A CapabilityInvocation therefore does not have a universally mandatory target fi
 
 ---
 
-## 10. Unknown PoC Handling
+## 10. Unknown PoC Pipeline — Rejected
 
-Unknown third-party exploit code is a primary design case rather than an exception.
-
-A typical future workflow is:
-
-```text
-technology/version identification
-        ↓
-CVE research
-        ↓
-PoC discovery
-        ↓
-repository acquisition
-        ↓
-README/source inspection
-        ↓
-ExecutionPlan
-        ↓
-isolated runtime preparation
-        ↓
-execution
-        ↓
-result interpretation
-```
-
-The PoC may initially be completely unknown.
-
-It may require Python, Go, Ruby, compilation, containers, credentials, files, callbacks, listeners or other resources.
-
-The platform must not need prior knowledge of the specific PoC.
-
-The LLM may inspect documentation and source code and produce a structured ExecutionPlan.
-
-Deterministic runtime components validate and execute that plan.
-
-Unknown results are legitimate outcomes and must preserve raw evidence for further interpretation.
+The former generic research → acquisition → inspection → planning → runtime preparation →
+execution → interpretation/adaptation pipeline is not part of the development plan.
+[ADR 0013](adr/0013-reject-generic-unknown-poc-pipeline.md) records its permanent rejection.
+The platform has no requirement to handle arbitrary previously unknown PoCs end to end.
+General evidence, outcome and authorized capability semantics remain unchanged.
 
 ---
 
@@ -574,9 +546,6 @@ Stateful Playwright browser automation
 Long-running listener followed by an incoming shell
 
 Burp-backed interactive web assessment
-
-Unknown GitHub PoC:
-acquire → inspect → prepare → execute → unknown result
 
 Persistent remote-session interaction
 

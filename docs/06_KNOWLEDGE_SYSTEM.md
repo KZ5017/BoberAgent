@@ -18,7 +18,6 @@ The Knowledge System provides reusable technical knowledge to:
 * Reasoning;
 * diagnostics;
 * unknown-output interpretation;
-* PoC inspection;
 * capability selection.
 
 The Knowledge System is not Mission state.
@@ -631,7 +630,7 @@ Example:
 simple error interpretation
 → few focused sections
 
-PoC/source analysis
+complex technical evidence analysis
 → larger supporting context
 ```
 
@@ -816,8 +815,6 @@ Examples:
 ```text
 new CVEs
 vendor advisories
-GitHub PoCs
-current exploit repositories
 current tool documentation
 recent security research
 ```
@@ -893,43 +890,19 @@ A CVE match based only on a version string SHOULD remain a candidate until targe
 
 ---
 
-# 43. PoC Research
+# 43. External Research and Execution Boundary
 
-PoC discovery is distinct from PoC execution.
-
-Research produces candidates and Artifacts.
-
-Example:
-
-```text
-Vulnerability candidate
-        ↓
-external research
-        ↓
-ExploitCandidate
-        ↓
-repository/source Artifact
-```
-
-No discovered PoC becomes trusted executable code merely because it appeared in a search result.
+External technical research is distinct from execution. An external result is untrusted source
+material; it never authorizes running source code. The former PoC candidate/acquisition flow is
+not a development requirement under [ADR 0013](adr/0013-reject-generic-unknown-poc-pipeline.md).
 
 ---
 
-# 44. PoC Knowledge Boundary
+# 44. External Source Knowledge Boundary
 
-README or repository documentation is source material associated with an ExploitCandidate.
-
-It is not automatically promoted into global canonical Knowledge.
-
-It may be temporarily used for:
-
-```text
-inspection
-ExecutionPlan generation
-applicability reasoning
-```
-
-during that Mission.
+Externally obtained documentation or source evidence belongs to its Mission provenance. It is
+not automatically promoted into canonical Knowledge. Its permitted use for evidence review does
+not imply source acquisition, runtime preparation or execution services.
 
 ---
 
@@ -940,7 +913,7 @@ Some retrieved information is useful only during one Mission.
 Examples:
 
 ```text
-PoC README
+external technical README
 temporary vendor advisory
 target-specific API documentation
 downloaded source
@@ -1240,7 +1213,7 @@ knowledge/procedures/
 ├── post_access/
 ├── credentials/
 ├── vulnerability_research/
-└── poc/
+└── troubleshooting/
 ```
 
 Procedures SHOULD remain readable by humans and machines.
@@ -1286,7 +1259,7 @@ The permanent Semantic Knowledge index SHOULD NOT automatically absorb:
 ```text
 raw Mission Artifacts
 all scanner output
-temporary PoC repositories
+unreviewed external source repositories
 all shell output
 every external web result
 private Mission state
@@ -1304,7 +1277,7 @@ Mission Artifacts MAY support temporary scoped retrieval when useful.
 For example:
 
 ```text
-large PoC repository
+large retained technical evidence Artifact
 target API documentation
 downloaded source tree
 ```
@@ -1465,7 +1438,6 @@ InterpretationResult
 Hypothesis
 ActionProposal
 CandidateAssessment
-ExecutionPlanDraft
 ```
 
 rather than relying only on prose.
@@ -1729,61 +1701,14 @@ The LLM is unnecessary for the normal path.
 
 ---
 
-# 87. CVE/PoC Knowledge Flow
+# 87. Technical Evidence and Knowledge Flow
 
-Example:
+The existing reasoning path combines explicitly selected Mission evidence with curated technical
+Knowledge and returns validated advisory InterpretationResult/ActionProposal objects. Canonical
+Knowledge, external source material and Mission evidence remain separate.
 
-```text
-World State:
-Technology + version
-
-        ↓
-
-Procedure:
-vulnerability research
-
-        ↓
-
-External Research Capability
-
-        ↓
-
-candidate Vulnerability(s)
-
-        ↓
-
-PoC research
-
-        ↓
-
-ExploitCandidate + repository Artifact
-
-        ↓
-
-Mission-scoped artifact inspection
-
-        ↓
-
-relevant internal PoC/runtime Knowledge
-
-        ↓
-
-LLM Reasoner
-
-        ↓
-
-ExecutionPlanDraft
-```
-
-This flow deliberately separates:
-
-```text
-internal reusable knowledge
-current external research
-mission-specific PoC source
-reasoning
-execution
-```
+The former CVE → PoC research → source inspection → ExecutionPlanDraft flow is withdrawn. It is
+not a Knowledge or Reasoner acceptance condition and adds no execution authority.
 
 ---
 
@@ -1792,7 +1717,7 @@ execution
 After a Mission:
 
 ```text
-PoC failed with uncommon runtime condition.
+An approved capability encountered an uncommon tool error.
 Human identified repeatable cause and workaround.
 ```
 
@@ -1863,10 +1788,6 @@ hash-recovery guidance
 unknown technology interpretation
 
 CVE research
-
-unknown GitHub PoC inspection
-
-runtime preparation guidance
 
 privilege-escalation reasoning
 

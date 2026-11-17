@@ -400,7 +400,7 @@ Examples of Workspace use:
 
 ```text
 Git repository checkout
-PoC modification
+local Artifact processing
 compilation
 temporary output
 virtual environment preparation
@@ -490,34 +490,16 @@ The Process Manager MUST support secret-aware redaction.
 
 ---
 
-# 18. Arbitrary or Unknown Code Execution
+# 18. ExecutionPlan Boundary
 
-Unknown acquired code, especially PoCs, MUST NOT use the ordinary known-tool path as an unrestricted shell escape.
+The existing `ProcessService.execute_plan(plan=..., timeout=...)` interface and testing fake
+remain part of the SDK. Production Execution Node execution through this method is deliberately
+unavailable and raises `PolicyDenied`. No capability may turn that denial into an unrestricted
+known-tool or shell escape.
 
-It SHOULD be executed through:
-
-```python
-await ctx.processes.execute_plan(
-    execution_plan_ref=plan_ref,
-    runtime_ref=runtime_ref,
-)
-```
-
-The runtime MUST validate the ExecutionPlan before execution.
-
-Validation may include:
-
-```text
-policy
-scope
-runtime availability
-dependencies
-bindings
-expected effects
-isolation requirements
-```
-
-An ExecutionPlan is structured intent, not an opaque shell command.
+ExecutionPlan remains structured intent, not an opaque shell command or execution authorization.
+Retaining it does not require the rejected unknown-PoC pipeline or a runtime backend; see
+[ADR 0013](adr/0013-reject-generic-unknown-poc-pipeline.md).
 
 ---
 
@@ -1432,43 +1414,16 @@ The plaintext recovered secret is not returned in ordinary CapabilityResult seri
 
 ---
 
-# 54. Reference Implementation — Human-Assisted PoC
+# 54. Reference Implementation — Human-Assisted Capability
 
-Conceptually:
+An approved capability may request a bounded non-secret parameter through
+`ctx.interactions.request()`, consume the validated response and return an ordinary Result.
+It must not use private console input.
 
-```python
-for variant in known_variants:
-    result = await attempt_variant(variant)
-
-    if result.session_created:
-        return success(result)
-
-response = await ctx.interactions.request(
-    interaction_type="structured_form",
-    title="PoC requires assistance",
-    message="Known payload variants failed.",
-    schema={
-        "type": "object",
-        "properties": {
-            "action": {
-                "enum": [
-                    "retry_variant",
-                    "provide_custom_value",
-                    "stop",
-                ]
-            },
-            "value": {
-                "type": ["string", "null"]
-            },
-        },
-        "required": ["action"],
-    },
-)
-```
-
-The Runtime may suspend and later reconstruct the Run while waiting.
-
-The capability implementation MUST NOT assume the original Python stack remains continuously resident.
+The implemented M15 lifecycle is defined by
+[ADR 0008](adr/0008-durable-human-interaction.md): Core can reopen while the Node's live waiter
+remains active, but Node restart cannot reconstruct a suspended Python continuation. This
+reference does not require PoC adaptation or an acquired-code execution backend.
 
 ---
 
@@ -1618,8 +1573,6 @@ listener management
 remote-session interaction
 
 local JWT/hash analysis
-
-unknown PoC execution
 
 privilege/access transition capability
 

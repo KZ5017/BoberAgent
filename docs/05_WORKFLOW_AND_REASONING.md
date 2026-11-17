@@ -349,7 +349,7 @@ Example:
 ```text
 procedure.ad.baseline@1
 procedure.web.jwt_assessment@1
-procedure.poc.evaluate_candidate@1
+procedure.network.service_discovery@1
 ```
 
 ---
@@ -644,8 +644,6 @@ choosing among several plausible investigation paths
 
 interpreting unstructured tool output
 
-unknown PoC analysis
-
 forming a diagnostic hypothesis
 
 selecting a useful alternative after structured fallbacks fail
@@ -780,7 +778,7 @@ When a human materially changes execution direction, the resulting choice SHOULD
 Example:
 
 ```text
-Human selected custom PoC payload variant.
+Human supplied a required non-secret capability parameter.
 ```
 
 The platform does not need to treat the resulting successful state differently from autonomous success.
@@ -856,7 +854,7 @@ Example:
 safe read operation
 → automatic retry may be reasonable
 
-unknown PoC
+state-changing capability
 → automatic blind retry is not reasonable
 ```
 
@@ -954,13 +952,13 @@ Example:
 
 ```text
 Observation:
-PoC executed but no callback.
+An approved tool timed out.
 
 Hypothesis:
-target lacks bash.
+the configured service endpoint is unreachable.
 
 Test:
-check alternate execution primitive.
+inspect the retained connection diagnostic evidence.
 ```
 
 Then update World State/Attempt history and reevaluate.
@@ -1198,7 +1196,7 @@ SMB path or web path next?
 Example tactical:
 
 ```text
-Which payload family should this PoC try next?
+Which retained diagnostic explains the current tool failure?
 ```
 
 These decisions may use different Context Projections and knowledge.
@@ -1492,9 +1490,8 @@ Example:
 
 ```text
 latest CVEs
-GitHub PoCs
 vendor advisories
-current exploit repositories
+current tool documentation
 ```
 
 Such actions SHOULD use explicit research capabilities/services.
@@ -1511,59 +1508,13 @@ rather than becoming invisible LLM knowledge.
 
 ---
 
-# 66. Unknown PoC Procedure
+# 66. Unknown PoC Procedure and Adaptation Loop — Withdrawn
 
-A general reusable procedure SHOULD eventually represent:
-
-```text
-candidate vulnerability
-        ↓
-research candidate PoCs
-        ↓
-acquire artifact
-        ↓
-inspect artifact
-        ↓
-assess applicability
-        ↓
-construct ExecutionPlan
-        ↓
-validate/policy
-        ↓
-prepare runtime
-        ↓
-execute
-        ↓
-interpret result
-```
-
-The Procedure does not assume the PoC's language or execution behavior.
-
----
-
-# 67. PoC Adaptation Loop
-
-When a PoC does not achieve the desired effect:
-
-```text
-result
- ↓
-classify failure/unknown state
- ↓
-inspect evidence
- ↓
-known deterministic fallback?
- ├── yes → attempt
- └── no
-      ↓
-knowledge + reasoner
-      ↓
-bounded adaptation
-      ↓
-human assistance if needed
-```
-
-Every materially different attempt SHOULD be represented in Attempt history.
+The former sections 66–67 required a generic acquisition, inspection, planning, runtime,
+execution and adaptation procedure. That requirement is permanently removed by
+[ADR 0013](adr/0013-reject-generic-unknown-poc-pipeline.md). No replacement procedure is planned
+here. General bounded reasoning, attempt provenance and SDK human interaction remain applicable
+to authorized capabilities.
 
 ---
 
@@ -1826,7 +1777,6 @@ ActionProposal
 InterpretationResult
 Hypothesis
 CandidateRanking
-ExecutionPlanDraft
 ```
 
 Free-form prose MAY accompany these objects.
@@ -2254,10 +2204,6 @@ service discovery → environment classification
 new credential → validation workflow
 
 web technology → vulnerability research
-
-candidate CVE → PoC workflow
-
-PoC failure → structured adaptation → human assistance
 
 listener → incoming session → post-access procedure
 

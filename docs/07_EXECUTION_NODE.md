@@ -1,6 +1,7 @@
 # BoberAgent Core — Execution Node v1
 
-**Status:** Initial normative specification
+**Status:** Normative specification; the unknown-PoC pipeline requirement is removed by
+[ADR 0013](adr/0013-reject-generic-unknown-poc-pipeline.md)
 **Document:** `docs/07_EXECUTION_NODE.md`
 **Related:** `01_SYSTEM_ARCHITECTURE.md`, `02_CAPABILITY_CONTRACT.md`, `03_CAPABILITY_SDK.md`, `04_WORLD_STATE_MODEL.md`, `05_WORKFLOW_AND_REASONING.md`
 
@@ -810,25 +811,12 @@ tool ID
 
 ---
 
-# 40. Arbitrary Code Execution
+# 40. ExecutionPlan Boundary
 
-Unknown acquired PoC code MUST use the ExecutionPlan path.
-
-Conceptually:
-
-```text
-Artifact
-      ↓
-ExecutionPlan
-      ↓
-validation
-      ↓
-runtime preparation
-      ↓
-managed process
-```
-
-Unknown code MUST NOT receive unrestricted node-level execution merely because an LLM requested it.
+The existing ExecutionPlan model and SDK surface are retained. Production `execute_plan()`
+remains denied; their presence does not require source staging, runtime preparation or arbitrary
+acquired-code execution. Capability code and LLM proposals MUST NOT bypass this denial using the
+known-tool path or unrestricted node-level execution.
 
 ---
 
@@ -851,21 +839,11 @@ Isolation SHOULD be proportional to the operation.
 
 ---
 
-# 42. Unknown PoC Default
+# 42. Untrusted Source Evidence
 
-Unknown third-party executable code SHOULD default to stronger isolation than trusted built-in capability code.
-
-Where supported, prefer:
-
-```text
-dedicated Workspace
-isolated dependency environment
-explicit network requirements
-explicit file bindings
-managed process
-```
-
-Container isolation MAY be added when appropriate.
+External source content in an Artifact is evidence, not executable authority. Preserve its bytes
+and provenance without automatically installing, preparing or executing it. General Workspace
+and isolation concepts remain available to explicitly supported capability implementations.
 
 ---
 
@@ -1490,9 +1468,9 @@ while its Resources remain active.
 Example:
 
 ```text
-PoC attempt failed
-listener remains READY
-Run requests human alternative payload
+A bounded non-secret parameter is missing
+referenced Resource remains active
+Run requests that parameter through Human Interaction
 ```
 
 The runtime MUST preserve referenced Resources while the Checkpoint requires them.
@@ -2157,68 +2135,21 @@ No target is required.
 
 ---
 
-# 115. Capability Reference — Unknown PoC
+# 115. Capability Reference — Unknown PoC — Withdrawn
 
-```text
-PoC Artifact
-ExecutionPlan
-      ↓
-validate runtime requirements
-      ↓
-Workspace
-      ↓
-isolated Runtime Resource
-      ↓
-optional Listener Resource
-      ↓
-managed execution
-      ↓
-capture stdout/stderr/files
-      ↓
-Artifact
-Observation
-Effect
-Session
-Diagnostic
-UNKNOWN outcome
-```
-
-The node does not need prior knowledge of the specific PoC.
+The former generic runtime preparation/execution reference is withdrawn under
+[ADR 0013](adr/0013-reject-generic-unknown-poc-pipeline.md). It is not a Node implementation or
+acceptance requirement.
 
 ---
 
-# 116. Capability Reference — Human-Assisted PoC
+# 116. Capability Reference — Human-Assisted Capability
 
-```text
-Run starts
-      ↓
-known variants attempted
-      ↓
-no useful result
-      ↓
-Checkpoint persisted
-      ↓
-InteractionRequest
-      ↓
-Run WAITING_INPUT
-
-transport may disconnect
-node may restart
-
-      ↓
-
-InteractionResponse arrives
-      ↓
-Run reconstructed
-      ↓
-existing Resource handles resolved
-      ↓
-next phase executes
-      ↓
-ordinary Result
-```
-
-Human assistance requires no separate Execution Node execution model.
+Use the existing InteractionRequest → WAITING_INPUT → validated InteractionResponse path for
+approved capabilities requiring non-secret input. A final Result uses ordinary ingestion.
+[ADR 0008](adr/0008-durable-human-interaction.md) remains authoritative: Core restart can preserve
+pending interaction state, while Node restart cancels the request and fails the non-restorable Run.
+No PoC adaptation or Python-continuation restoration is required by this reference.
 
 ---
 
@@ -2481,8 +2412,6 @@ incoming reverse shell
 Burp-backed browser workflow
 
 CPU/GPU-heavy local cracking
-
-unknown GitHub PoC runtime
 
 persistent SSH/WinRM-style Session
 
